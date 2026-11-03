@@ -703,12 +703,12 @@ const ROLES = [['wh', 'คลัง (WH)'], ['view', 'ดูอย่างเ�
 const roleName = (r) => (ROLES.find((x) => x[0] === r) || [r, r])[1];
 function viewUsers(d) {
   const us = Array.isArray(S.users) ? S.users : S.users === null ? null : []; const f = S.uf; const me = d.s.me.username; const isNew = f.mode === 'new';
-  const okU = /^[a-z0-9._-]{3,32}$/.test(f.username.trim().toLowerCase()) && f.name.trim() && (!isNew || f.password.length >= 8);
+  const okU = /^[a-z0-9._-]{3,32}$/.test(f.username.trim().toLowerCase()) && f.name.trim();
   const rows = (us || []).map((x) => `<tr class="${x.active ? '' : 'void'}"><td class="mono">${esc(x.username)}</td><td>${esc(x.name)}</td><td>${esc(roleName(x.role))}</td>
       <td>${x.active ? '<span class="tag ok">ใช้งาน</span>' : '<span class="tag bad">ปิด</span>'}${x.must_change ? ' <span class="tag warn">รอเปลี่ยนรหัส</span>' : ''}</td><td class="smt">${x.last_login ? esc(dtShow(x.last_login)) : '–'}</td>
       <td style="white-space:nowrap"><button type="button" class="ghost sm" data-uedit="${esc(x.username)}">แก้ไข</button>${x.username !== me ? ` <button type="button" class="ghost sm" data-upw="${esc(x.username)}">ตั้งรหัสใหม่</button>` : ''}</td></tr>
       ${S.upw.user === x.username ? `<tr><td colspan="6"><div class="note" style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end"><label class="fld" style="flex:1 1 220px">รหัสผ่านชั่วคราวของ ${esc(x.username)} (อย่างน้อย 8 ตัว · ผู้ใช้ต้องเปลี่ยนตอนเข้าครั้งแรก)<input type="password" data-bind="upw.pw" value="${esc(S.upw.pw)}" autocomplete="new-password"></label>
-        <button type="button" data-upwdo="1" ${S.upw.pw.length >= 8 && !S.busy ? '' : 'disabled'}>บันทึกรหัสใหม่</button><button type="button" class="ghost" data-upw="">ปิด</button></div></td></tr>` : ''}`).join('');
+        <button type="button" data-upwdo="1" ${!S.busy ? '' : 'disabled'}>บันทึกรหัสใหม่</button><button type="button" class="ghost" data-upw="">ปิด</button></div></td></tr>` : ''}`).join('');
   return `<div class="card" style="display:flex;flex-direction:column;gap:12px"><div class="fc"><h2 style="margin:0">ผู้ใช้</h2><button type="button" class="ghost sm" data-unew="1">+ เพิ่มผู้ใช้</button></div>
     ${us === null ? '<p class="muted">กำลังโหลด…</p>' : `<div class="tw"><table><thead><tr><th>ชื่อผู้ใช้</th><th>ชื่อ</th><th>สิทธิ์</th><th>สถานะ</th><th>เข้าล่าสุด</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`}
     <div class="note" style="display:flex;flex-direction:column;gap:10px"><b>${isNew ? 'เพิ่มผู้ใช้ใหม่' : 'แก้ไข ' + esc(f.username)}</b>
@@ -1820,10 +1820,11 @@ document.addEventListener('click', async (e) => {
   if (ds.uedit) { const x = (S.users || []).find((y) => y.username === ds.uedit); if (x) S.uf = { mode: 'edit', username: x.username, name: x.name, role: x.role, active: x.active, password: '' }; render(); return; }
   if (ds.uact !== undefined) { S.uf.active = ds.uact === '1'; render(); return; }
   if (ds.usave) { const f = S.uf; S.keepScroll = true;
+    if (f.mode === 'new' && String(f.password).length < 8) { S.toast = 'รหัสผ่านเริ่มต้นต้องมีอย่างน้อย 8 ตัว'; S.toastErr = true; render(); return; }
     act('rm_user_save', { p: { mode: f.mode, username: f.username.trim().toLowerCase(), name: f.name.trim(), role: f.role, active: f.active, password: f.mode === 'new' ? f.password : undefined } },
       (r) => (r.new ? 'เพิ่มผู้ใช้ ' : 'บันทึกผู้ใช้ ') + r.username + ' แล้ว' + (r.new ? ' · ผู้ใช้ต้องเปลี่ยนรหัสตอนเข้าครั้งแรก' : ''), () => { S.uf = { mode: 'new', username: '', name: '', role: 'wh', active: true, password: '' }; setTimeout(loadAdmin, 0); }); return; }
   if (ds.upw !== undefined) { S.upw = { user: ds.upw, pw: '' }; render(); return; }
-  if (ds.upwdo) { S.keepScroll = true; act('rm_user_reset_pw', { p_username: S.upw.user, p_password: S.upw.pw }, 'ตั้งรหัสใหม่ให้ ' + S.upw.user + ' แล้ว · ผู้ใช้ต้องเปลี่ยนรหัสตอนเข้าครั้งแรก', () => { S.upw = { user: '', pw: '' }; setTimeout(loadAdmin, 0); }); return; }
+  if (ds.upwdo) { S.keepScroll = true; if (String(S.upw.pw).length < 8) { S.toast = 'รหัสผ่านต้องมีอย่างน้อย 8 ตัว'; S.toastErr = true; render(); return; } act('rm_user_reset_pw', { p_username: S.upw.user, p_password: S.upw.pw }, 'ตั้งรหัสใหม่ให้ ' + S.upw.user + ' แล้ว · ผู้ใช้ต้องเปลี่ยนรหัสตอนเข้าครั้งแรก', () => { S.upw = { user: '', pw: '' }; setTimeout(loadAdmin, 0); }); return; }
   if (ds.menu) { S.menuOpen = !S.menuOpen; render(); return; }
   if (ds.ncp) { window.open(NCP_URL, '_blank', 'noopener'); S.menuOpen = false; render(); return; }
   if (ds.repk) { S.repKind = ds.repk; S.fx = { doc: '' }; render(); return; }
@@ -1971,7 +1972,7 @@ const isTyping = (el) => (el.tagName === 'INPUT' && el.type !== 'checkbox') || e
 
 document.addEventListener('input', (e) => {
   const el = e.target;
-  if (el.dataset && el.dataset.nore) { setPath(el.dataset.bind, el.value); return; }
+  if (el.dataset && (el.dataset.nore || (el.type === 'password' && el.dataset.bind))) { setPath(el.dataset.bind, el.value); return; }
   if (isTyping(el) && applyField(el)) renderKeep(el);
 });
 
