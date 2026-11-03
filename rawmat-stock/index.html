@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>BFL WH System · Bluefalo</title>
+<title>BFL Raw Material System · Bluefalo</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
 <style>
@@ -103,6 +103,24 @@ tr.cut td{background:var(--blue-weak)}
 .slot.hold{border:2px solid var(--bad)}
 .slot .fill{position:absolute;left:0;right:0;bottom:0}
 .slot .t{position:relative;display:flex;flex-direction:column;gap:2px}
+.bplan{display:grid;grid-template-columns:repeat(2,minmax(0,1fr)) 6px repeat(4,minmax(0,1fr));grid-auto-rows:minmax(92px,auto);gap:8px}
+.blane{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.btile{position:relative;overflow:hidden;text-align:left;padding:9px 10px;border-radius:10px;background:var(--card);border:1.5px solid var(--line2);color:var(--ink);font-weight:400;display:flex;flex-direction:column;gap:3px;min-width:0;min-height:92px}
+.btile.round{border-radius:46px 46px 12px 12px;padding-top:20px;padding-left:16px}
+.btile.big{min-height:118px}
+.btile:hover{border-color:var(--blue)}
+.btile[aria-pressed=true]{border:2px solid var(--blue);box-shadow:0 0 0 3px var(--blue-weak)}
+.btile.neg{border:2px solid var(--bad)}
+.btile.off{background:repeating-linear-gradient(135deg,var(--card) 0 8px,var(--line) 8px 9px)}
+.btile .fill{position:absolute;left:0;right:0;bottom:0;pointer-events:none}
+.btile>span{position:relative}
+.btile .bc{font:600 15px 'IBM Plex Mono',monospace;display:flex;justify-content:space-between;gap:6px}
+.btile .bn{font-size:12px;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.btile .bi{font:11px 'IBM Plex Mono',monospace;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.btile .bk{font-size:12px;margin-top:auto}
+.modal{position:fixed;inset:0;z-index:60;background:rgba(15,23,42,.5);display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:28px 12px}
+.mbox{background:var(--bg,#f4f6fa);width:100%;max-width:980px;border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+@media (max-width:700px){.bplan{grid-template-columns:repeat(2,minmax(0,1fr))}.bplan>*{grid-column:auto!important;grid-row:auto!important}.bplan>.sp{display:none}.modal{padding:0}.mbox{border-radius:0;min-height:100%}}
 .forms{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:12px}
 .form{display:flex;flex-direction:column;gap:10px}
 .form p{margin:0;font-size:13px}
@@ -813,14 +831,31 @@ function fifoUnits(d, item, unit) {
 }
 const prog = (o) => o.unit === 'BAG' ? Number(o.bags) : Number(o.units);
 const ordLine = (d, o) => `<b>${esc(inm(d, o.item))}</b> → ถัง <b class="mono">${esc(o.bin)}</b> · ${fmt(prog(o))}/${fmt(o.qty)} ${OUNIT[o.unit]} · ${fmt(o.kg)} กก.`;
-function binTile(d, b) {
+// ถัง: การ์ดแบบผังจริง (รหัส · ชื่อวัตถุดิบ · กก. · % ความจุ) แตะเพื่อดูรายละเอียด
+function binTile(d, b, cls, style) {
   const ck = capKg(b); const frac = ck ? Math.max(0, Math.min(1, b.bal / ck)) : (b.bal > 0 ? 1 : 0); const pct = ck ? Math.round(b.bal / ck * 100) : null;
-  const neg = b.bal < -0.5; const low = ck && b.start && pct < 15; const off = !b.start && b.grp !== 'PILE' && b.grp !== 'LOADOUT';
-  const col = neg || (pct !== null && pct > 100) ? 'var(--bad)' : low ? 'var(--warn, #c77700)' : 'var(--blue)';
-  return `<button type="button" class="slot ${neg ? 'hold' : ''}" aria-pressed="${S.bsel === b.code}" data-bsel="${esc(b.code)}" style="width:132px;height:92px" aria-label="ถัง ${esc(b.code)} ${fmt(b.bal)} กก.">
-    <span class="fill" aria-hidden="true" style="height:${Math.round(frac * 100)}%;background:${col}22;border-top:${frac ? '3px solid ' + col : '0'}"></span>
-    <span class="t"><b class="mono" style="font-size:13px">${esc(b.code)}${b.mismatch ? ' ⚠' : ''}</b><span style="font-size:11px;line-height:1.2;max-height:2.4em;overflow:hidden">${esc(b.item ? inm(d, b.item) : off ? 'ยังไม่ตั้งยอด' : 'ว่าง')}</span>
-      <span style="font-size:12px"><b>${fmt(b.bal)}</b> กก.${pct !== null && b.start ? ' · ' + pct + '%' : b.item && b.cap_m3 && !b.density ? ' · <span class="err">ไม่มี density</span>' : ''}</span></span></button>`;
+  const neg = b.bal < -0.5; const low = ck && b.start && pct < 15; const off = !b.start && ['B1', 'B2', 'HAND'].includes(b.grp);
+  const col = neg || (pct !== null && pct > 100) ? 'var(--bad)' : low ? 'var(--warn, #c77700)' : b.ncp ? '#8e44ad' : 'var(--blue)';
+  return `<button type="button" class="btile ${cls || ''} ${neg ? 'neg' : ''} ${off ? 'off' : ''}" aria-pressed="${S.bsel === b.code}" data-bsel="${esc(b.code)}" style="${style || ''}" aria-label="ถัง ${esc(b.code)} ${esc(b.item ? inm(d, b.item) : 'ว่าง')} ${fmt(b.bal)} กก.">
+    <span class="fill" aria-hidden="true" style="height:${Math.round(frac * 100)}%;background:${col}1f;border-top:${frac ? '3px solid ' + col : '0'}"></span>
+    <span class="bc"><span>${esc(b.code)}</span><span>${b.mismatch ? '<span title="batch ดึงรหัสไม่ตรง">⚠</span>' : ''}${b.ncp ? '<span class="tag" style="font-size:10px">NCP</span>' : ''}</span></span>
+    <span class="bn">${b.item ? esc(inm(d, b.item)) : off ? '<span class="muted">ยังไม่ตั้งยอด</span>' : '<span class="muted">ว่าง</span>'}</span>
+    ${b.item ? `<span class="bi">${esc(b.item)}</span>` : ''}
+    <span class="bk"><b>${fmt(b.bal)}</b> กก.${pct !== null && b.start ? ' · ' + pct + '%' : b.item && b.cap_m3 && !b.density ? ' · <span class="err">ไม่มี density</span>' : ''}</span></button>`;
+}
+// ตำแหน่งตามผังถัง (รูปในไฟล์ Batching_Bin_Size): [รหัส, คอลัมน์, แถว, แถวที่กิน, ทรง]
+const BIN_PLAN = [['BI25', 1, 1, 2, 'round'], ['BI26', 2, 1, 2], ['B135', 1, 3, 2, 'round'], ['B136', 2, 3, 2],
+  ['B001', 4, 1, 1, 'big'], ['B002', 5, 1, 1, 'big'], ['B003', 6, 1, 1, 'big'], ['B004', 7, 1, 1, 'big'],
+  ['B012', 4, 2], ['B010', 5, 2], ['B007', 6, 2], ['B005', 7, 2], ['B011', 4, 3], ['B009', 5, 3], ['B008', 6, 3], ['B006', 7, 3],
+  ['B019', 4, 4], ['B020', 5, 4], ['B021', 6, 4], ['B023', 7, 4], ['B018', 4, 5], ['B017', 5, 5], ['B022', 6, 5], ['B024', 7, 5],
+  ['B016', 4, 6, 1, 'big'], ['B015', 5, 6, 1, 'big'], ['B014', 6, 6, 1, 'big'], ['B013', 7, 6, 1, 'big'],
+  ['BIA1', 5, 7, 1, 'round'], ['BIA2', 6, 7, 1, 'round'], ['BIA3', 7, 7, 1, 'round']];
+function binPlan(d, bins) {
+  const by = Object.fromEntries(bins.map((b) => [b.code, b])); const used = new Set();
+  const cells = BIN_PLAN.filter(([c]) => by[c]).map(([c, col, row, span, shape]) => { used.add(c);
+    return binTile(d, by[c], shape || '', `grid-column:${col};grid-row:${row} / span ${span || 1}`); }).join('');
+  const rest = bins.filter((b) => !used.has(b.code) && ['B1', 'B2', 'HAND'].includes(b.grp));
+  return `<div class="bplan"><span class="sp" style="grid-column:3;grid-row:1 / span 7" aria-hidden="true"></span>${cells}</div>${rest.length ? `<div class="blane">${rest.map((b) => binTile(d, b)).join('')}</div>` : ''}`;
 }
 function pdHead(title, lead) {
   const P = S.pd.data; const bt = P && P.batching;
@@ -835,7 +870,11 @@ function viewBins(d) {
   if (!P) return head;
   const bins = pdBins(); const b = bins.find((x) => x.code === S.bsel);
   const unk = (P.unknown || []).filter((x) => !PD_IGNORE_BINS.includes(x.bin)); // H1, DL, B803 ไม่เกี่ยว (ผู้ใช้ยืนยัน 3 พ.ย.)
-  const groups = PD_GRP.map(([g, l]) => { const bs = bins.filter((x) => x.grp === g); return bs.length ? `<div style="display:flex;flex-direction:column;gap:8px"><span class="smt" style="font-weight:600">${l} · รวม ${fmt(bs.reduce((a, x) => a + Number(x.bal), 0))} กก.</span><div class="lane">${bs.map((x) => binTile(d, x)).join('')}</div></div>` : ''; }).join('');
+  const sumOf = (gs) => fmt(bins.filter((x) => gs.includes(x.grp)).reduce((a, x) => a + Number(x.bal), 0));
+  const lane = (g, l) => { const bs = bins.filter((x) => x.grp === g); return bs.length ? `<div style="display:flex;flex-direction:column;gap:8px"><span class="smt" style="font-weight:600">${l} · รวม ${sumOf([g])} กก.</span><div class="blane">${bs.map((x) => binTile(d, x)).join('')}</div></div>` : ''; };
+  const groups = `<div style="display:flex;flex-direction:column;gap:8px"><span class="smt" style="font-weight:600">ผังถัง Batching · ซ้าย BI25 BI26 B135 B136 (scale 2) · ขวา B001–B024 (Batching 1) · ล่าง BIA เทมือ · รวม ${sumOf(['B1', 'B2', 'HAND'])} กก.</span>${binPlan(d, bins)}</div>
+    ${lane('PILE', 'กอง Intake 1 · IN11–IN14')}${lane('LOADOUT', 'Load out → BFL-PC · B138–B141')}
+    <div style="display:flex;flex-wrap:wrap;gap:14px;font-size:12px" class="muted"><span>แถบสี = % ความจุ (ลบ.ม. × density)</span><span style="color:var(--warn, #c77700)">■ ต่ำกว่า 15%</span><span style="color:var(--bad)">■ ติดลบ / เกินความจุ</span><span style="color:#8e44ad">■ NCP</span><span>ลายขีด = ยังไม่ตั้งยอด</span></div>`;
   const notes = [];
   const mis = bins.filter((x) => x.mismatch); if (mis.length) notes.push(`⚠ batch ดึงวัตถุดิบไม่ตรงกับที่ตั้งไว้ในถัง: ${mis.map((x) => `${esc(x.code)} (ตั้ง ${esc(x.item || '-')} · batch ใช้ ${esc(x.mismatch)})`).join(' · ')}`);
   if (unk.length) notes.push(`batch ที่ bin ไม่อยู่ในระบบ (7 วัน · ไม่ตัดถัง): ${unk.map((x) => `${esc(x.bin)} ${fmt(x.n)} รายการ ${fmt(x.kg)} กก.`).join(' · ')}`);
@@ -844,9 +883,11 @@ function viewBins(d) {
   if (nostart) notes.push(`ถังที่ยังไม่ตั้งยอด ${nostart} ถัง — ยังไม่ตัดยอดใช้จาก batch จนกว่าจะตั้งยอดตั้งต้น`);
   return `${head}
     ${notes.length ? `<div class="note smt" style="display:flex;flex-direction:column;gap:4px">${notes.map((n) => `<span>${n}</span>`).join('')}</div>` : ''}
-    <div class="row"><div class="map" style="flex:2 1 560px;min-width:0">${groups}</div>
-      <div class="card" style="flex:1 1 320px;min-width:0;display:flex;flex-direction:column;gap:10px">${b ? binPanel(d, b) : '<p class="muted">แตะถังเพื่อดูรายละเอียด</p>'}</div></div>
-    ${b ? binCardView(d, b) : ''}`;
+    <div class="card" style="display:flex;flex-direction:column;gap:16px">${groups}</div>
+    ${b ? `<div class="modal" role="dialog" aria-modal="true" aria-label="ถัง ${esc(b.code)}" data-bclose="bg"><div class="mbox">
+      <div class="fc" style="position:sticky;top:-28px;z-index:2;background:var(--bg,#f4f6fa);padding:4px 0"><b class="smt muted">รายละเอียดถัง · แตะนอกกรอบหรือกด Esc เพื่อปิด</b><button type="button" class="ghost sm" data-bclose="1" aria-label="ปิด">✕ ปิด</button></div>
+      <div class="card" style="display:flex;flex-direction:column;gap:10px">${binPanel(d, b)}</div>
+      ${binCardView(d, b)}</div></div>` : ''}`;
 }
 function binPanel(d, b) {
   const bs = S.bs; const ctl = isCtl(); const first = !b.start;
@@ -992,7 +1033,7 @@ function viewIntake(d) {
   return `${head}<div class="chips" role="group" aria-label="จุด Intake">${INTAKES.map(([id, l]) => { const n = pdOrders().filter((x) => x.intake === id && x.status === 'started').length; return `<button type="button" class="tg" aria-pressed="${k.point === id}" data-ikpt="${id}">${l}${n ? ' ●' : ''}</button>`; }).join('')}</div>
     ${body}${queue.length && o ? `<div class="card smt"><b>คิวถัดไป</b>${queue.map((x) => `<div class="lrow" style="display:block">${x.seq}. ${ordLine(d, x)}</div>`).join('')}</div>` : ''}
     ${ncpBins.length ? `<details class="card"><summary><b>เท NCP เข้าถัง (ใส่ กก.)</b></summary><div class="chips" style="margin:8px 0">${ncpBins.map((x) => `<button type="button" class="tg" aria-pressed="${S.bsel === x.code}" data-bsel="${esc(x.code)}">${esc(x.code)} · ${esc(inm(d, x.item))}</button>`).join('')}</div>${ncpBins.find((x) => x.code === S.bsel) ? ncpForm(ncpBins.find((x) => x.code === S.bsel)) : ''}</details>` : ''}
-    ${pile.length ? `<div class="card" style="display:flex;flex-direction:column;gap:8px"><h2 style="margin:0">กอง Intake 1</h2><div class="lane">${pile.map((x) => binTile(d, x)).join('')}</div>${pile.find((x) => x.code === S.bsel) ? haulForm(d, pile.find((x) => x.code === S.bsel), pdBins().filter((x) => ['B1', 'B2', 'HAND'].includes(x.grp))) : '<span class="muted smt">แตะกองเพื่อลากขึ้นถัง</span>'}</div>` : ''}
+    ${pile.length ? `<div class="card" style="display:flex;flex-direction:column;gap:8px"><h2 style="margin:0">กอง Intake 1</h2><div class="blane">${pile.map((x) => binTile(d, x)).join('')}</div>${pile.find((x) => x.code === S.bsel) ? haulForm(d, pile.find((x) => x.code === S.bsel), pdBins().filter((x) => ['B1', 'B2', 'HAND'].includes(x.grp))) : '<span class="muted smt">แตะกองเพื่อลากขึ้นถัง</span>'}</div>` : ''}
     ${list}`;
 }
 
@@ -1042,7 +1083,7 @@ function viewStockRep(d) {
 function viewLogin() {
   return `<form id="login" class="card" data-form="login">
     <div class="logo"><img src="${LOGO}" alt="Bluefalo"></div>
-    <h2>Rawmat Stock — เข้าสู่ระบบ</h2>
+    <h2>BFL Raw Material System</h2><p class="muted" style="margin:-6px 0 4px">เข้าสู่ระบบ</p>
     <label class="fld">ชื่อผู้ใช้<input name="u" autocomplete="username" required></label>
     <label class="fld">รหัสผ่าน<input name="p" type="password" autocomplete="current-password" required></label>
     <button type="submit" ${S.busy ? 'disabled' : ''}>เข้าสู่ระบบ</button>
@@ -1762,7 +1803,7 @@ function render() {
   app.innerHTML = `<header>
       <div class="logo"><img src="${LOGO}" alt="Bluefalo"></div>
       <button type="button" class="menu-t" data-menu="1" aria-expanded="${!!S.menuOpen}" aria-label="เมนู">☰ เมนู</button>
-      <div class="title"><b>BFL WH System</b><span>คลังวัตถุดิบ · NCP · รอบวัน ${dmy(S.snap.biz_day)} (08:00–07:59)</span></div>
+      <div class="title"><b>BFL Raw Material System</b><span>คลังวัตถุดิบ · NCP · รอบวัน ${dmy(S.snap.biz_day)} (08:00–07:59)</span></div>
       <span class="sp"></span>
       <button type="button" data-scanopen="1" title="สแกน QR หรือค้นหาพาเลท">📷 สแกน</button>
       <button type="button" data-refresh="1" title="โหลดข้อมูลใหม่">⟳ โหลดใหม่</button>
@@ -1792,9 +1833,10 @@ function printForm(kind) {
 }
 
 document.addEventListener('click', async (e) => {
+  if (e.target.classList && e.target.classList.contains('modal')) { S.bsel = ''; S.bcard = { bin: '', rows: null }; S.keepScroll = true; render(); return; }
   const b = e.target.closest('button'); if (!b) return;
   const ds = b.dataset;
-  if (ds.go) { S.screen = ds.go; S.toast = ''; if (ds.lab) { S.labelLot = ds.lab; S.labelP = ''; } if (ds.store) S.storeF = ds.store; if (ds.go === 'admin') loadAdmin(); S.fx = { doc: '' }; S.menuOpen = false; render(); if (repScreen(ds.go)) loadRep(); if (pdScreen(ds.go)) loadPD(); if (ds.go === 'master') loadMaster(); return; }
+  if (ds.go) { S.screen = ds.go; S.toast = ''; S.bsel = ''; S.bcard = { bin: '', rows: null }; if (ds.lab) { S.labelLot = ds.lab; S.labelP = ''; } if (ds.store) S.storeF = ds.store; if (ds.go === 'admin') loadAdmin(); S.fx = { doc: '' }; S.menuOpen = false; render(); if (repScreen(ds.go)) loadRep(); if (pdScreen(ds.go)) loadPD(); if (ds.go === 'master') loadMaster(); return; }
   if (ds.adjopen !== undefined) { S.adj = { unit: ds.adjopen, kg: '', bags: '', loc: '', reason: '' }; render(); return; }
   if (ds.adjzero) { S.adj.kg = '0'; S.adj.bags = '0'; render(); return; }
   if (ds.adjdo) { const u = S.snap.units.find((x) => x.id === ds.adjdo); if (!u) return; const a = S.adj; const per = u.bags > 0 && u.kg > 0 ? u.kg / u.bags : 0;
@@ -1842,6 +1884,7 @@ document.addEventListener('click', async (e) => {
     return; }
   if (ds.ipick) { const it = S.snap.items.find((i) => i.code === ds.code); if (it) setItem(ds.ipick, it); render(); return; }
   if (ds.pack) { const o = S[ds.pt]; o.pack = ds.pack; o.cont = ds.cont || ''; if (ds.pt === 'f') S.f.labels = ''; render(); return; }
+  if (ds.bclose) { S.bsel = ''; S.bcard = { bin: '', rows: null }; render(); return; }
   if (ds.pdload) { loadPD(); return; }
   if (ds.ncpdo) { const n = S.nf; S.keepScroll = true; act('rm_bin_ncp_add', { p_bin: ds.ncpdo, p: { kg: num(n.kg), note: n.note } }, (r) => 'เท NCP เข้า ' + r.bin + ' ' + fmt(r.kg) + ' กก. แล้ว', () => { S.nf = { bin: '', kg: '', note: '' }; }); return; }
   if (ds.msttab) { S.mst.tab = ds.msttab; S.mst.chg = {}; render(); return; }
@@ -1988,6 +2031,7 @@ document.addEventListener('change', (e) => {
 
 // ช่องค้นหาวัตถุดิบ: Enter = เลือกรายการแรก (ไม่ส่งฟอร์ม)
 document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && S.bsel && S.screen === 'bins') { S.bsel = ''; S.bcard = { bin: '', rows: null }; render(); return; }
   const el = e.target; if (e.key === 'Enter' && (el.id === 'scanq' || el.id === 'ikq')) { e.preventDefault(); el.select(); return; }
   if (e.key !== 'Enter' || !el.dataset || !el.dataset.ikey) return;
   const k = el.dataset.ikey; e.preventDefault();
