@@ -783,7 +783,7 @@ function viewUsers(d) {
 
 // ---------- สแกน QR / ค้นหาพาเลท ----------
 function scanParse(q) {
-  const t = String(q || '').trim().toUpperCase(); const m = t.match(/(WH\d{10})(?:\s*[|·,\s]\s*P?(G?\d{1,4}))?/);
+  const t = String(q || '').trim().toUpperCase(); const m = t.match(/(WH(?:\d{10}|\d{9}(?:-PC)?))(?:\s*[|·,\s]\s*P?(G?\d{1,4}))?/); // Lot ระบบ 10 หลัก · Lot เดิม WHYYMMDDNNN(-PC)
   return m ? { lot: m[1], p: m[2] || '' } : null;
 }
 function viewScan(d) {
@@ -1907,14 +1907,14 @@ function viewOpening(d) {
   const o = S.ob; const it = d.items[o.item];
   const ls = obLines(o.lines); const bad = ls.filter((x) => !/^G?\d{1,4}$/.test(x.p) || !(x.kg > 0));
   const kg = ls.reduce((a, x) => a + (x.kg > 0 ? x.kg : 0), 0);
-  const ok = it && /^WH\d{10}$/.test(o.lot.trim().toUpperCase()) && o.recv && ls.length && !bad.length && !S.busy;
+  const ok = it && /^WH(\d{10}|\d{9}(-PC)?)$/.test(o.lot.trim().toUpperCase()) && o.recv && ls.length && !bad.length && !S.busy;
   const stores = ['RM', 'RM-G', 'PX'].map((s) => `<button type="button" class="tg" aria-pressed="${o.store === s}" data-set="ob.store" data-val="${s}">${s}</button>`).join('');
   const packs = packChipsOf(o, 'ob'); const ow = CONT[o.cont] || 'ถุง';
   return `<div class="card" style="display:flex;flex-direction:column;gap:12px">
     <div><h2 style="margin:0">ยอดยกมา (วันเริ่มใช้ระบบ)</h2><p class="muted smt" style="margin:2px 0 0">ใช้เลข Lot และเลขพาเลทเดิม · ลงเป็นพร้อมใช้ · 1 ครั้ง = 1 Lot · ลงผิดให้ยกเลิก Lot แล้วลงใหม่</p></div>
     <div class="grid2">
       ${itemPicker('ob', 'วัตถุดิบ', o.itemText, it)}
-      <label class="fld">เลข Lot เดิม<input data-bind="ob.lot" value="${esc(o.lot)}" placeholder="WH2610150003" maxlength="12" autocomplete="off"></label>
+      <label class="fld">เลข Lot เดิม<input data-bind="ob.lot" value="${esc(o.lot)}" placeholder="WH261015003 / WH261019004-PC" maxlength="14" autocomplete="off"></label>
       <label class="fld">วันที่รับเข้า<input type="date" data-bind="ob.recv" value="${esc(o.recv)}"></label>
       <label class="fld">วันหมดอายุ (ถ้ามี)<input data-bind="ob.exp" value="${esc(o.exp)}" maxlength="20"></label>
       <label class="fld">ผู้ส่ง (ถ้ามี)<input data-bind="ob.sup" value="${esc(o.sup)}" maxlength="120" autocomplete="off"></label>
