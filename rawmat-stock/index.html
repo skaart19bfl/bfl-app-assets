@@ -137,19 +137,21 @@ const pcs = (l) => CONT[l.cont] || (l.pack === 'BIGBAG' ? 'ใบ' : 'ถุง'
 const bigName = (l) => l.cont === 'TOTE' ? 'เต๋า' : 'Bigbag';
 const packChipsOf = (o, key) => PACKS.map(([pk, ct, t]) => `<button type="button" class="tg" aria-pressed="${o.pack === pk && (o.cont || '') === ct}" data-pack="${pk}" data-cont="${ct}" data-pt="${key}">${t}</button>`).join('');
 // ค้นหาวัตถุดิบจากรหัสหรือชื่อ (ทุกคำต้องเจอ) · รหัสที่ขึ้นต้นด้วยคำค้นมาก่อน
-function itemMatches(q) {
+const ncpKey = (k) => k === 'bs';
+const itemPool = (k) => S.snap.items.filter((i) => ncpKey(k) || i.category !== 'NCP');
+function itemMatches(q, k) {
   const t = String(q || '').toUpperCase().split(/\s+/).filter(Boolean); if (!t.length) return [];
-  return S.snap.items.filter((i) => i.status === 'Active').filter((i) => { const x = (i.code + ' ' + i.name).toUpperCase(); return t.every((w) => x.includes(w)); })
+  return itemPool(k).filter((i) => i.status === 'Active').filter((i) => { const x = (i.code + ' ' + i.name).toUpperCase(); return t.every((w) => x.includes(w)); })
     .sort((a, b) => (b.code.toUpperCase().startsWith(t[0]) - a.code.toUpperCase().startsWith(t[0])) || (a.code < b.code ? -1 : 1)).slice(0, 12);
 }
-function itemResolve(v) {
+function itemResolve(v, k) {
   const x = String(v || '').trim().toUpperCase(); if (!x) return null; const code = x.split(' · ')[0].trim();
-  return S.snap.items.find((i) => i.code.toUpperCase() === code || i.name.toUpperCase() === x || (i.code + ' · ' + i.name).toUpperCase() === x) || null;
+  return itemPool(k).find((i) => i.code.toUpperCase() === code || i.name.toUpperCase() === x || (i.code + ' · ' + i.name).toUpperCase() === x) || null;
 }
 function itemPicker(key, label, text, it) {
-  const list = !it && String(text || '').trim() ? itemMatches(text) : [];
+  const list = !it && String(text || '').trim() ? itemMatches(text, key) : [];
   return `<div class="ipick"><label class="fld">${label}<input data-bind="${key}.itemText" data-ikey="${key}" value="${esc(it ? it.code + ' · ' + it.name : text || '')}" autocomplete="off" placeholder="เช่น 01PT004 หรือ SOYBEAN" role="combobox" aria-expanded="${list.length > 0}" aria-controls="ipl-${key}"></label>
-    ${!it && String(text || '').trim() ? `<div class="ipl" id="ipl-${key}" role="listbox">${list.length ? list.map((i, n) => `<button type="button" role="option" data-ipick="${key}" data-code="${esc(i.code)}"${n === 0 ? ' class="first"' : ''}><span class="mono">${esc(i.code)}</span><span>${esc(i.name)}</span></button>`).join('') : '<span class="muted smt" style="padding:8px 10px">ไม่พบวัตถุดิบ</span>'}</div>` : ''}</div>`;
+    ${!it && String(text || '').trim() ? `<div class="ipl" id="ipl-${key}" role="listbox">${list.length ? list.map((i, n) => `<button type="button" role="option" data-ipick="${key}" data-code="${esc(i.code)}"${n === 0 ? ' class="first"' : ''}><span class="mono">${esc(i.code)}</span><span>${esc(i.name)}${i.category === 'NCP' ? ' <span class="tag">NCP</span>' : ''}</span></button>`).join('') : '<span class="muted smt" style="padding:8px 10px">ไม่พบวัตถุดิบ</span>'}</div>` : ''}</div>`;
 }
 function setItem(key, it) {
   const o = S[key]; const was = o.item; o.item = it ? it.code : ''; o.itemText = it ? it.code + ' · ' + it.name : o.itemText;
@@ -191,9 +193,9 @@ const NCP_URL = 'https://script.google.com/macros/s/AKfycbwL2RlhYt3DsouOa2juTE48
 const MENU = [
   { g: 'WH คลังสินค้า', roles: ['wh', 'view'], items: [['home', 'งานวันนี้'], ['recv', 'รับเข้า วัตถุดิบ'], ['ncp', 'ตรวจรับ NCP'], ['grind', 'บด TC'], ['issue', 'จ่ายออก / ส่ง BFL-PC'], ['count', 'ตรวจนับ'], ['loc', 'Location'], ['stock', 'คงเหลือ / Stock card'], ['docs', 'ป้าย / แบบฟอร์ม']] },
   { g: 'PD ฝ่ายผลิต', roles: ['intake', 'control', 'wh'], items: [['intake', 'Intake สแกนเท'], ['bins', 'ยอดในถัง'], ['ncp', 'เบิก / ใช้ผลิต NCP']] },
-  { g: 'Control', roles: ['control'], items: [['dumpctl', 'ใบสั่งเท'], ['bins', 'ยอดในถัง / นับถัง'], ['ncp', 'บอร์ด NCP'], ['soon', 'Plan batch', 'เฟส 3']] },
+  { g: 'Control', roles: ['control'], items: [['dumpctl', 'ใบสั่งเท'], ['bins', 'ยอดในถัง / นับถัง'], ['master', 'Master วัตถุดิบ / NCP'], ['ncp', 'บอร์ด NCP'], ['soon', 'Plan batch', 'เฟส 3']] },
   { g: 'รายงาน', roles: ['wh', 'view', 'control', 'intake'], items: [['reports', 'รายงานประจำวัน'], ['stockrep', 'คงเหลือรายวัน / รายเดือน'], ['ncp', 'รายงาน NCP / LINE']] },
-  { g: 'ระบบ', roles: [], items: [['admin', 'ผู้ใช้ · ยอดยกมา · ฐานข้อมูล']] }
+  { g: 'ระบบ', roles: ['wh', 'view'], items: [['master', 'Master วัตถุดิบ / NCP'], ['admin', 'ผู้ใช้ · ยอดยกมา · ฐานข้อมูล']] }
 ];
 const repScreen = (sc) => !!REP_KIND[sc] || sc === 'reports';
 const TABS = [['home', 'ภาพรวม'], ['recv', 'รับเข้า'], ['grind', 'บด TC'], ['issue', 'จ่ายออก'], ['stock', 'คงเหลือ / Stock card'], ['count', 'ตรวจนับ'], ['loc', 'Location'], ['docs', 'แบบฟอร์ม']];
@@ -209,7 +211,7 @@ const S = {
   storeF: 'ALL', view: 'sum', card: null, cardRows: null,
   selSlot: 'S-01', sp: { unit: '' }, spLast: null, lf: { zone: 'S', zoneName: '', code: '' }, adminInfo: null,
   docDay: '', docLot: '', docTag: '',
-  pd: { data: null, loading: false, err: '' }, bsel: '', bcard: { bin: '', rows: null }, bs: { item: '', itemText: '', kg: '', reason: '', mode: 'kg', empty: '' }, hl: { bin: '', kg: '' }, sh: { kg: '', ref: '' },
+  pd: { data: null, loading: false, err: '' }, bsel: '', bcard: { bin: '', rows: null }, bs: { item: '', itemText: '', kg: '', reason: '', mode: 'kg', empty: '' }, hl: { bin: '', kg: '' }, sh: { kg: '', ref: '' }, nf: { bin: '', kg: '', note: '' }, mst: { tab: 'rm', q: '', only: '', chg: {}, bulk: '', data: null },
   of: { intake: 'IN2', bin: '', item: '', itemText: '', qty: '', unit: 'PALLET', note: '' }, ox: { doc: '' },
   ik: { point: 'IN2', doc: '', q: '', unit: '', bags: '', cx: { id: '', reason: '' } }
 };
@@ -797,10 +799,13 @@ async function loadBinCard(bin) { S.bcard = { bin, rows: null }; render(); try {
 const pdBins = () => (S.pd.data && S.pd.data.bins) || [];
 const pdOrders = () => (S.pd.data && S.pd.data.orders) || [];
 // ประมาณ กก. จากระยะว่างจากปากถังลงถึงผิววัตถุดิบ (ใช้ขนาดตามไฟล์ Batching_Bin_Size — ความหนาแน่นอ้างอิงของไฟล์)
-function binEst(b, empty) {
-  if (!b.cap || !b.height) return NaN; const e = num(empty); if (!(e >= 0)) return NaN;
-  const body = b.cap - (b.hopper || 0); return Math.round(Math.max(0, Math.min(b.cap, (b.hopper || 0) + body * (1 - Math.min(e, b.height) / b.height))));
+// ไฟล์ Batching_Bin_Size: ปริมาณที่ใส่ได้ที่ density 1000 = ลบ.ม. · กก. = ลบ.ม. × density ของวัตถุดิบ (กก./ลบ.ม.)
+function binM3(b, empty) {
+  if (!b.cap_m3 || !b.height) return NaN; const e = num(empty); if (!(e >= 0)) return NaN; const hp = Number(b.hopper_m3 || 0);
+  return Math.max(0, Math.min(b.cap_m3, hp + (b.cap_m3 - hp) * (1 - Math.min(e, b.height) / b.height)));
 }
+function binEst(b, empty, dens) { const v = binM3(b, empty); return dens > 0 && !isNaN(v) ? Math.round(v * dens) : NaN; }
+const capKg = (b) => b.cap_m3 && b.density > 0 ? b.cap_m3 * b.density : null;
 // พาเลทที่ควรเทก่อน (FIFO ตามวันรับ) ของวัตถุดิบ + ชนิดหน่วยตามใบสั่ง
 function fifoUnits(d, item, unit) {
   return d.live.filter((u) => { const l = d.lots[u.lot]; return l && l.item === item && l.status === 'ready' && u.kg > 0 && (unit === 'BIGBAG' ? u.kind === 'BIGBAG' : u.kind === 'PALLET'); })
@@ -809,13 +814,13 @@ function fifoUnits(d, item, unit) {
 const prog = (o) => o.unit === 'BAG' ? Number(o.bags) : Number(o.units);
 const ordLine = (d, o) => `<b>${esc(inm(d, o.item))}</b> → ถัง <b class="mono">${esc(o.bin)}</b> · ${fmt(prog(o))}/${fmt(o.qty)} ${OUNIT[o.unit]} · ${fmt(o.kg)} กก.`;
 function binTile(d, b) {
-  const frac = b.cap ? Math.max(0, Math.min(1, b.bal / b.cap)) : (b.bal > 0 ? 1 : 0); const pct = b.cap ? Math.round(b.bal / b.cap * 100) : null;
-  const neg = b.bal < -0.5; const low = b.cap && b.start && pct < 15; const off = !b.start && b.grp !== 'PILE' && b.grp !== 'LOADOUT';
+  const ck = capKg(b); const frac = ck ? Math.max(0, Math.min(1, b.bal / ck)) : (b.bal > 0 ? 1 : 0); const pct = ck ? Math.round(b.bal / ck * 100) : null;
+  const neg = b.bal < -0.5; const low = ck && b.start && pct < 15; const off = !b.start && b.grp !== 'PILE' && b.grp !== 'LOADOUT';
   const col = neg || (pct !== null && pct > 100) ? 'var(--bad)' : low ? 'var(--warn, #c77700)' : 'var(--blue)';
   return `<button type="button" class="slot ${neg ? 'hold' : ''}" aria-pressed="${S.bsel === b.code}" data-bsel="${esc(b.code)}" style="width:132px;height:92px" aria-label="ถัง ${esc(b.code)} ${fmt(b.bal)} กก.">
     <span class="fill" aria-hidden="true" style="height:${Math.round(frac * 100)}%;background:${col}22;border-top:${frac ? '3px solid ' + col : '0'}"></span>
     <span class="t"><b class="mono" style="font-size:13px">${esc(b.code)}${b.mismatch ? ' ⚠' : ''}</b><span style="font-size:11px;line-height:1.2;max-height:2.4em;overflow:hidden">${esc(b.item ? inm(d, b.item) : off ? 'ยังไม่ตั้งยอด' : 'ว่าง')}</span>
-      <span style="font-size:12px"><b>${fmt(b.bal)}</b> กก.${pct !== null && b.start ? ' · ' + pct + '%' : ''}</span></span></button>`;
+      <span style="font-size:12px"><b>${fmt(b.bal)}</b> กก.${pct !== null && b.start ? ' · ' + pct + '%' : b.item && b.cap_m3 && !b.density ? ' · <span class="err">ไม่มี density</span>' : ''}</span></span></button>`;
 }
 function pdHead(title, lead) {
   const P = S.pd.data; const bt = P && P.batching;
@@ -845,13 +850,15 @@ function viewBins(d) {
 }
 function binPanel(d, b) {
   const bs = S.bs; const ctl = isCtl(); const first = !b.start;
-  const est = bs.mode === 'empty' ? binEst(b, bs.empty) : NaN; const kg = bs.mode === 'empty' ? est : num(bs.kg);
+  const dens = Number((d.items[bs.item] || {}).density || b.density || 0); const vol = bs.mode === 'empty' ? binM3(b, bs.empty) : NaN;
+  const est = bs.mode === 'empty' ? binEst(b, bs.empty, dens) : NaN; const kg = bs.mode === 'empty' ? est : num(bs.kg); const ck = capKg(b);
   const it = d.items[bs.item]; const okSet = ctl && kg >= 0 && (first || bs.reason.trim().length >= 3) && (it || kg === 0 || b.item) && !S.busy;
   const tgt = pdBins().filter((x) => ['B1', 'B2', 'HAND'].includes(x.grp));
   return `<div class="fc"><h2 style="margin:0">ถัง ${esc(b.code)}</h2><span class="muted smt">${esc(b.name || '')}</span></div>
     <div class="kv smt" style="display:grid;grid-template-columns:auto 1fr;gap:4px 12px">
       <span class="muted">วัตถุดิบ</span><b>${b.item ? esc(b.item) + ' · ' + esc(inm(d, b.item)) : '–'}</b>
-      <span class="muted">คงเหลือ</span><b>${fmt(b.bal)} กก.${b.cap ? ` จากความจุ ${fmt(b.cap)} กก. (${Math.round(b.bal / b.cap * 100)}%)` : ''}</b>
+      <span class="muted">คงเหลือ</span><b>${fmt(b.bal)} กก.${ck ? ` จากความจุ ${fmt(ck)} กก. (${Math.round(b.bal / ck * 100)}%)` : ''}</b>
+      ${b.cap_m3 ? `<span class="muted">ขนาดถัง</span><span>${fmt(b.cap_m3)} ลบ.ม. (hopper ${fmt(b.hopper_m3)}) · สูง ${fmt(b.height)} ม. · density ${b.density ? fmt(b.density) + ' กก./ลบ.ม.' : b.item ? '<span class="err">ยังไม่ตั้ง — ตั้งที่หน้า Master</span>' : '–'}</span>` : ''}
       <span class="muted">วันนี้</span><span>เทเข้า ${fmt(b.in_d)} · ใช้ ${fmt(b.use_d)}${Number(b.out_d) ? ' · ออก ' + fmt(b.out_d) : ''} กก.</span>
       <span class="muted">ตั้งยอดล่าสุด</span><span>${dtm(b.last_set)}${b.start ? ' · เริ่มตัดยอดใช้ ' + dtm(b.start) : ' · <b>ยังไม่ตั้งยอดตั้งต้น</b>'}</span>
       <span class="muted">ใช้ล่าสุด</span><span>${dtm(b.last_use)}</span></div>
@@ -860,15 +867,21 @@ function binPanel(d, b) {
       ${itemPicker('bs', 'วัตถุดิบในถัง', bs.itemText, it)}
       <div class="chips" role="group" aria-label="วิธีใส่ยอด"><button type="button" class="tg" aria-pressed="${bs.mode !== 'empty'}" data-set="bs.mode" data-val="kg">ใส่ กก.</button>${b.height ? `<button type="button" class="tg" aria-pressed="${bs.mode === 'empty'}" data-set="bs.mode" data-val="empty">วัดระยะว่างจากปากถัง</button>` : ''}</div>
       ${bs.mode === 'empty' ? `<label class="fld">ระยะว่างจากปากถังถึงผิววัตถุดิบ (ม.) · สูง ${fmt(b.height)} ม. ไม่รวม hopper<input data-bind="bs.empty" value="${esc(bs.empty)}" inputmode="decimal"></label>
-        <span class="smt">≈ <b>${isNaN(est) ? '–' : fmt(est)}</b> กก. (ประมาณจากขนาดถังในไฟล์ · hopper ${fmt(b.hopper)} กก.)</span>`
+        <span class="smt">${isNaN(vol) ? '' : `≈ ${fmt(Math.round(vol * 100) / 100)} ลบ.ม. × density ${dens ? fmt(dens) : '?'} = `}<b>${isNaN(est) ? '–' : fmt(est)}</b> กก.${dens ? '' : ' <span class="err">— วัตถุดิบนี้ยังไม่มี density (ตั้งที่หน้า Master)</span>'}</span>`
       : `<label class="fld">ยอดคงเหลือจริง (กก.)<input data-bind="bs.kg" value="${esc(bs.kg)}" inputmode="decimal" placeholder="${fmt(b.bal)}"></label>`}
       ${first ? '' : `<label class="fld">เหตุผล<input data-bind="bs.reason" value="${esc(bs.reason)}" maxlength="120" placeholder="เช่น นับถังประจำวัน / ล้างถังเปลี่ยนวัตถุดิบ"></label>`}
       <span class="smt">${kg >= 0 ? `จะ${first ? 'ตั้ง' : 'ปรับ'}เป็น ${fmt(kg)} กก. (${kg - b.bal >= 0 ? '+' : ''}${fmt(kg - b.bal)})` : ''}</span>
       <div><button type="button" data-bsdo="${esc(b.code)}" ${okSet ? '' : 'disabled'}>${first ? 'ตั้งยอดตั้งต้น' : 'บันทึกปรับยอด'}</button></div></div>` : ''}
+    ${b.ncp && (ctl || S.snap.me.role === 'intake') ? ncpForm(b) : ''}
     ${b.grp === 'PILE' && (ctl || S.snap.me.role === 'intake') ? haulForm(d, b, tgt) : ''}
     ${b.grp === 'LOADOUT' && ctl ? `<div class="note" style="display:flex;flex-direction:column;gap:8px"><b class="smt">รถรับออกไป BFL-PC</b>
       <div class="grid2"><label class="fld">กก. (ว่าง = ทั้งถัง ${fmt(b.bal)})<input data-bind="sh.kg" value="${esc(S.sh.kg)}" inputmode="decimal"></label><label class="fld">อ้างอิง (ใบชั่ง/ใบส่ง)<input data-bind="sh.ref" value="${esc(S.sh.ref)}" maxlength="60"></label></div>
       <div><button type="button" data-shipdo="${esc(b.code)}" ${b.bal > 0 && !S.busy ? '' : 'disabled'}>บันทึกส่งออก</button></div></div>` : ''}`;
+}
+function ncpForm(b) {
+  const n = S.nf; const on = n.bin === b.code; return `<div class="note" style="display:flex;flex-direction:column;gap:8px"><b class="smt">เท NCP เข้าถัง ${esc(b.code)} (ใส่ กก. · ยังไม่ตัดสต็อก NCP)</b>
+    <div class="grid2"><label class="fld">กก. ที่เท<input data-bind="nf.kg" data-nfbin="${esc(b.code)}" value="${on ? esc(n.kg) : ''}" inputmode="decimal"></label><label class="fld">หมายเหตุ (Lot / จำนวนถุง)<input data-bind="nf.note" data-nfbin="${esc(b.code)}" value="${on ? esc(n.note) : ''}" maxlength="120"></label></div>
+    <div><button type="button" data-ncpdo="${esc(b.code)}" ${on && num(n.kg) > 0 && !S.busy ? '' : 'disabled'}>บันทึกเท NCP</button></div></div>`;
 }
 function haulForm(d, b, tgt) {
   const h = S.hl; return `<div class="note" style="display:flex;flex-direction:column;gap:8px"><b class="smt">ลากกอง ${esc(b.code)} ขึ้นถัง (ไม่ผ่านตาชั่ง)</b>
@@ -975,11 +988,42 @@ function viewIntake(d) {
   const cx = S.ik.cx;
   const list = dumps.length ? `<div class="card"><h2 style="margin:0 0 6px">รายการเทล่าสุด · ${IKNAME[k.point]}</h2>${dumps.map((x) => `<div class="lrow smt" style="flex-wrap:wrap;gap:6px;${x.void ? 'text-decoration:line-through;opacity:.6' : ''}"><span style="flex:1 1 220px">${hm(x.at)} <span class="mono">${esc(x.lot)} ${esc(pl(x.p))}</span> → <b>${esc(x.bin)}</b> · ${x.bags ? fmt(x.bags) + ' ถุง · ' : ''}${fmt(x.kg)} กก. · ${esc(x.by)}</span>
       ${x.void ? '<span class="tag bad">ยกเลิก</span>' : cx.id === x.id ? `<span class="chips"><input data-bind="ik.cx.reason" value="${esc(cx.reason)}" placeholder="เหตุผล" maxlength="120" style="width:160px"><button type="button" class="sm" data-ikcxdo="${x.id}" ${cx.reason.trim().length >= 3 && !S.busy ? '' : 'disabled'}>ยืนยันยกเลิก</button><button type="button" class="ghost sm" data-ikcx="">ปิด</button></span>` : `<button type="button" class="ghost sm" data-ikcx="${x.id}">ยกเลิก</button>`}</div>`).join('')}</div>` : '';
-  const pile = k.point === 'IN1' ? pdBins().filter((x) => x.grp === 'PILE') : [];
+  const pile = k.point === 'IN1' ? pdBins().filter((x) => x.grp === 'PILE') : []; const ncpBins = k.point === 'IN1' ? [] : pdBins().filter((x) => x.ncp);
   return `${head}<div class="chips" role="group" aria-label="จุด Intake">${INTAKES.map(([id, l]) => { const n = pdOrders().filter((x) => x.intake === id && x.status === 'started').length; return `<button type="button" class="tg" aria-pressed="${k.point === id}" data-ikpt="${id}">${l}${n ? ' ●' : ''}</button>`; }).join('')}</div>
     ${body}${queue.length && o ? `<div class="card smt"><b>คิวถัดไป</b>${queue.map((x) => `<div class="lrow" style="display:block">${x.seq}. ${ordLine(d, x)}</div>`).join('')}</div>` : ''}
+    ${ncpBins.length ? `<details class="card"><summary><b>เท NCP เข้าถัง (ใส่ กก.)</b></summary><div class="chips" style="margin:8px 0">${ncpBins.map((x) => `<button type="button" class="tg" aria-pressed="${S.bsel === x.code}" data-bsel="${esc(x.code)}">${esc(x.code)} · ${esc(inm(d, x.item))}</button>`).join('')}</div>${ncpBins.find((x) => x.code === S.bsel) ? ncpForm(ncpBins.find((x) => x.code === S.bsel)) : ''}</details>` : ''}
     ${pile.length ? `<div class="card" style="display:flex;flex-direction:column;gap:8px"><h2 style="margin:0">กอง Intake 1</h2><div class="lane">${pile.map((x) => binTile(d, x)).join('')}</div>${pile.find((x) => x.code === S.bsel) ? haulForm(d, pile.find((x) => x.code === S.bsel), pdBins().filter((x) => ['B1', 'B2', 'HAND'].includes(x.grp))) : '<span class="muted smt">แตะกองเพื่อลากขึ้นถัง</span>'}</div>` : ''}
     ${list}`;
+}
+
+// ===== Master วัตถุดิบ / NCP (density สำหรับถัง) =====
+async function loadMaster() { try { S.mst.data = await rpc('rm_master', { p_token: S.tok }); } catch (e) { S.toast = e.message; S.toastErr = true; } render(); }
+function viewMaster(d) {
+  const M = S.mst; const ctl = isCtl(); const ncp = M.tab === 'ncp'; const use = (M.data || {}).usage || {}; const inbin = (M.data || {}).inbin || {};
+  const all = d.s.items.filter((i) => ncp ? i.category === 'NCP' : i.category !== 'NCP');
+  const q = M.q.trim().toUpperCase().split(/\s+/).filter(Boolean);
+  const rows = all.filter((i) => !q.length || q.every((w) => (i.code + ' ' + i.name).toUpperCase().includes(w)))
+    .filter((i) => M.only === 'bin' ? (use[i.code] || inbin[i.code]) : M.only === 'nod' ? !(i.density > 0) : M.only === 'act' ? i.status === 'Active' : true)
+    .sort((a, b) => (!!(use[b.code] || inbin[b.code]) - !!(use[a.code] || inbin[a.code])) || a.code.localeCompare(b.code));
+  const binNo = all.filter((i) => (use[i.code] || inbin[i.code]) && !(i.density > 0)).length;
+  const nChg = Object.keys(M.chg).length;
+  const cell = (i) => ctl ? `<input data-bind="mst.chg.${esc(i.code)}" data-nore="1" value="${esc(M.chg[i.code] ?? (i.density ?? ''))}" inputmode="decimal" style="width:90px;text-align:right" aria-label="density ${esc(i.code)}">` : (i.density ? fmt(i.density) : '–');
+  const m = (i) => i.meta || {};
+  const body = rows.map((i) => `<tr${i.status !== 'Active' ? ' style="opacity:.55"' : ''}><td class="mono smt">${esc(i.code)}</td><td>${esc(i.name)}</td>
+    ${ncp ? `<td class="smt">${esc(m(i).group || '')}</td><td class="smt">${esc(m(i).color || '')}</td><td class="smt">${m(i).protein_min || m(i).protein_max ? fmt(m(i).protein_min) + '–' + fmt(m(i).protein_max) + '%' : ''}</td>`
+      : `<td>${spill(i.store)}</td><td class="smt">${esc(i.category || '')}</td><td class="smt">${esc(i.unit || '')}</td>`}
+    <td class="smt">${esc([...new Set([...(inbin[i.code] || []), ...(use[i.code] || [])])].join(' '))}</td><td class="num">${cell(i)}</td><td class="smt">${i.status === 'Active' ? '' : 'ไม่ใช้งาน'}</td></tr>`).join('');
+  return `<div><h1>Master วัตถุดิบ / NCP</h1><p class="lead">density (กก./ลบ.ม. = กรัม/ลิตร) ใช้แปลงปริมาตรถังเป็น กก. · ความจุถัง = ลบ.ม. ตามไฟล์ Batching_Bin_Size × density · ชื่อ/หมวด/สถานะมาจาก RM_Master และ NCP Detail (แก้ที่ต้นทาง)</p></div>
+    <div class="chips" role="group" aria-label="ประเภท"><button type="button" class="tg" aria-pressed="${!ncp}" data-msttab="rm">วัตถุดิบ / สารเสริม (${d.s.items.filter((i) => i.category !== 'NCP').length})</button><button type="button" class="tg" aria-pressed="${ncp}" data-msttab="ncp">NCP รีเวิร์ค (${d.s.items.filter((i) => i.category === 'NCP').length})</button>
+      ${ncp && ctl ? `<button type="button" class="ghost sm" data-ncpsync="1" ${S.busy ? 'disabled' : ''}>ดึงรายการ NCP ล่าสุด</button><span class="muted smt">NCP Detail sync ${dtm((M.data || {}).ncp_synced)}</span>` : ''}</div>
+    ${binNo ? `<div class="note smt">รหัสที่ใช้กับถัง (ตั้งในถัง หรือ batch ดึง 30 วัน) แต่ยังไม่มี density: <b>${binNo}</b> รหัส — ถังเหล่านี้คำนวณ % ความจุ และวัดระยะว่างเป็น กก. ไม่ได้</div>` : ''}
+    <div class="card" style="display:flex;flex-direction:column;gap:10px">
+      <div class="chips"><input data-bind="mst.q" value="${esc(M.q)}" placeholder="ค้นหารหัส / ชื่อ" autocomplete="off" style="flex:1 1 220px">
+        <button type="button" class="tg" aria-pressed="${M.only === 'bin'}" data-mstonly="bin">เฉพาะที่ใช้กับถัง</button><button type="button" class="tg" aria-pressed="${M.only === 'nod'}" data-mstonly="nod">ยังไม่มี density</button><button type="button" class="tg" aria-pressed="${M.only === 'act'}" data-mstonly="act">ใช้งานอยู่</button></div>
+      ${ctl ? `<div class="fc" style="flex-wrap:wrap;gap:10px"><span class="muted smt">แก้ในตารางได้หลายแถว แล้วกดบันทึกครั้งเดียว · ช่องว่าง = ล้างค่า · ช่วงที่รับ 50–3,000</span><button type="button" data-mstsave="1" ${S.busy ? 'disabled' : ''}>บันทึก density ที่แก้${nChg ? ' (' + nChg + ')' : ''}</button></div>
+        <details ${M.bulk ? 'open' : ''}><summary class="smt">วางหลายรหัสจาก Excel (รหัส, density ต่อบรรทัด)</summary><div style="display:flex;flex-direction:column;gap:8px;margin-top:8px"><textarea data-bind="mst.bulk" data-nore="1" rows="5" placeholder="01PT004-2000000, 620&#10;04RW003-18NA000, 450" style="font-family:'IBM Plex Mono',monospace;font-size:13px">${esc(M.bulk)}</textarea><div><button type="button" class="ghost sm" data-mstbulk="1">เติมลงตาราง</button></div></div></details>` : '<p class="muted smt" style="margin:0">ดูอย่างเดียว — แก้ density ได้เฉพาะ Control / admin</p>'}
+      <div class="tw"><table><thead><tr><th>รหัส</th><th>ชื่อ</th>${ncp ? '<th>กลุ่ม</th><th>สี</th><th>โปรตีน</th>' : '<th>คลัง</th><th>หมวด</th><th>หน่วย</th>'}<th>ถัง</th><th class="num">density<br><span class="smt">กก./ลบ.ม.</span></th><th></th></tr></thead><tbody>${body || '<tr><td colspan="9" class="muted">ไม่พบรายการ</td></tr>'}</tbody></table></div>
+      <span class="muted smt">${rows.length} รายการ</span></div>`;
 }
 
 // ---------- รายงาน (หน่วยงาน: รายงาน) ----------
@@ -1712,7 +1756,7 @@ function render() {
   const d = D();
   const me = S.snap.me;
   const tabs = TABS.concat(me.role === 'admin' ? [['admin', 'ระบบ']] : []);
-  const screens = { home: viewHome, recv: viewRecv, grind: viewGrind, issue: viewIssue, stock: viewStock, count: viewCount, loc: viewLoc, docs: viewDocs, admin: viewAdmin, reports: viewReports, stockrep: viewStockRep, bins: viewBins, dumpctl: viewDumpCtl, intake: viewIntake };
+  const screens = { home: viewHome, recv: viewRecv, grind: viewGrind, issue: viewIssue, stock: viewStock, count: viewCount, loc: viewLoc, docs: viewDocs, admin: viewAdmin, reports: viewReports, stockrep: viewStockRep, bins: viewBins, dumpctl: viewDumpCtl, intake: viewIntake, master: viewMaster };
   if (S.screen === 'admin' && me.role !== 'admin') S.screen = 'home';
   const dark = document.documentElement.getAttribute('data-theme') === 'dark';
   app.innerHTML = `<header>
@@ -1725,7 +1769,7 @@ function render() {
       <button type="button" data-theme-t="1" title="สลับโหมดสว่าง / มืด" aria-label="สลับโหมดสว่าง / มืด">${dark ? '☀️' : '🌙'}</button>
       <span class="hchip">${esc(me.name)} · ${esc(me.role)}</span>
       <button type="button" data-logout="1">ออก</button></header>
-    <div class="shell"><nav class="side ${S.menuOpen ? 'open' : ''}" aria-label="เมนูตามหน่วยงาน">${MENU.filter((g) => me.role === 'admin' || g.roles.includes(me.role)).map((g) => `<div class="grp"><span class="gh">${g.g}</span>${g.items.map(([id, l, tag]) =>
+    <div class="shell"><nav class="side ${S.menuOpen ? 'open' : ''}" aria-label="เมนูตามหน่วยงาน">${MENU.filter((g) => me.role === 'admin' || g.roles.includes(me.role)).map((g) => `<div class="grp"><span class="gh">${g.g}</span>${g.items.filter(([id]) => id !== 'admin' || me.role === 'admin').map(([id, l, tag]) =>
         id === 'ncp' ? `<button type="button" data-ncp="1" title="เปิดระบบ NCP (แท็บใหม่)">${l}<span class="ext">ระบบ NCP ↗</span></button>`
         : id === 'soon' ? `<button type="button" disabled>${l}<span class="ext">${tag}</span></button>`
         : `<button type="button" data-go="${id}" aria-current="${S.screen === id ? 'page' : 'false'}">${l}</button>`).join('')}</div>`).join('')}</nav>
@@ -1750,7 +1794,7 @@ function printForm(kind) {
 document.addEventListener('click', async (e) => {
   const b = e.target.closest('button'); if (!b) return;
   const ds = b.dataset;
-  if (ds.go) { S.screen = ds.go; S.toast = ''; if (ds.lab) { S.labelLot = ds.lab; S.labelP = ''; } if (ds.store) S.storeF = ds.store; if (ds.go === 'admin') loadAdmin(); S.fx = { doc: '' }; S.menuOpen = false; render(); if (repScreen(ds.go)) loadRep(); if (pdScreen(ds.go)) loadPD(); return; }
+  if (ds.go) { S.screen = ds.go; S.toast = ''; if (ds.lab) { S.labelLot = ds.lab; S.labelP = ''; } if (ds.store) S.storeF = ds.store; if (ds.go === 'admin') loadAdmin(); S.fx = { doc: '' }; S.menuOpen = false; render(); if (repScreen(ds.go)) loadRep(); if (pdScreen(ds.go)) loadPD(); if (ds.go === 'master') loadMaster(); return; }
   if (ds.adjopen !== undefined) { S.adj = { unit: ds.adjopen, kg: '', bags: '', loc: '', reason: '' }; render(); return; }
   if (ds.adjzero) { S.adj.kg = '0'; S.adj.bags = '0'; render(); return; }
   if (ds.adjdo) { const u = S.snap.units.find((x) => x.id === ds.adjdo); if (!u) return; const a = S.adj; const per = u.bags > 0 && u.kg > 0 ? u.kg / u.bags : 0;
@@ -1798,10 +1842,20 @@ document.addEventListener('click', async (e) => {
   if (ds.ipick) { const it = S.snap.items.find((i) => i.code === ds.code); if (it) setItem(ds.ipick, it); render(); return; }
   if (ds.pack) { const o = S[ds.pt]; o.pack = ds.pack; o.cont = ds.cont || ''; if (ds.pt === 'f') S.f.labels = ''; render(); return; }
   if (ds.pdload) { loadPD(); return; }
+  if (ds.ncpdo) { const n = S.nf; S.keepScroll = true; act('rm_bin_ncp_add', { p_bin: ds.ncpdo, p: { kg: num(n.kg), note: n.note } }, (r) => 'เท NCP เข้า ' + r.bin + ' ' + fmt(r.kg) + ' กก. แล้ว', () => { S.nf = { bin: '', kg: '', note: '' }; }); return; }
+  if (ds.msttab) { S.mst.tab = ds.msttab; S.mst.chg = {}; render(); return; }
+  if (ds.mstonly !== undefined) { S.mst.only = S.mst.only === ds.mstonly ? '' : ds.mstonly; render(); return; }
+  if (ds.mstsave) { const items = Object.entries(S.mst.chg).filter(([c, v]) => { const it = D().items[c]; return it && String(v).trim() !== String(it.density ?? ''); }).map(([code, density]) => ({ code, density: String(density).trim() }));
+    if (!items.length) { S.toast = 'ยังไม่มีค่า density ที่แก้'; S.toastErr = true; render(); return; }
+    act('rm_item_set', { p: { items } }, (r) => 'บันทึก density ' + r.updated + ' รหัสแล้ว', () => { S.mst.chg = {}; }); return; }
+  if (ds.mstbulk) { const d = D(); const bad = []; let n = 0; String(S.mst.bulk || '').split(/\n/).map((x) => x.trim()).filter(Boolean).forEach((ln) => { const [c, v] = ln.split(/[,\t;]/).map((x) => (x || '').trim()); const it = d.items[c] || d.items[String(c).toUpperCase()];
+      if (!it || !(num(v) >= 50 && num(v) <= 3000)) bad.push(c || ln); else { S.mst.chg[it.code] = String(num(v)); n++; } });
+    S.toast = 'เติม density ' + n + ' รหัสลงตาราง' + (bad.length ? ' · ไม่พบ/ค่าผิด: ' + bad.slice(0, 8).join(', ') : '') + ' — ตรวจแล้วกดบันทึก'; S.toastErr = bad.length > 0; S.mst.bulk = ''; render(); return; }
+  if (ds.ncpsync) { act('rm_ncp_sync', {}, (r) => 'ดึงรายการ NCP แล้ว · ใหม่ ' + r.new + ' · ปรับ ' + r.updated, null).then(loadMaster); return; }
   if (ds.bsel) { const b = pdBins().find((x) => x.code === ds.bsel); if (!b) return; const it = b.item && S.snap.items.find((i) => i.code === b.item);
     S.bsel = b.code; S.bs = { item: it ? it.code : '', itemText: it ? it.code + ' · ' + it.name : '', kg: '', reason: '', mode: 'kg', empty: '' }; S.hl = { bin: '', kg: '' }; S.sh = { kg: '', ref: '' }; S.keepScroll = true;
     if (S.screen === 'bins') loadBinCard(b.code); else render(); return; }
-  if (ds.bsdo) { const b = pdBins().find((x) => x.code === ds.bsdo); const bs = S.bs; const kg = bs.mode === 'empty' ? binEst(b, bs.empty) : num(bs.kg); S.keepScroll = true;
+  if (ds.bsdo) { const b = pdBins().find((x) => x.code === ds.bsdo); const bs = S.bs; const kg = bs.mode === 'empty' ? binEst(b, bs.empty, Number((D().items[bs.item] || {}).density || b.density || 0)) : num(bs.kg); S.keepScroll = true;
     act('rm_bin_set', { p_bin: ds.bsdo, p: { item: bs.item || null, kg, reason: bs.reason.trim(), method: bs.mode === 'empty' ? { empty_m: num(bs.empty) } : null } }, (r) => (r.first ? 'ตั้งยอดตั้งต้น ' : 'ปรับยอด ') + r.bin + ' เป็น ' + fmt(r.after) + ' กก. แล้ว', () => { S.bs.kg = ''; S.bs.reason = ''; S.bs.empty = ''; }).then(() => loadBinCard(ds.bsdo)); return; }
   if (ds.hauldo) { const h = S.hl; S.keepScroll = true; act('rm_bin_haul', { p_pile: ds.hauldo, p_bin: h.bin, p: { kg: String(h.kg).trim() === '' ? null : num(h.kg) } }, (r) => 'ลาก ' + r.pile + ' ขึ้น ' + r.bin + ' ' + fmt(r.kg) + ' กก. แล้ว', () => { S.hl = { bin: '', kg: '' }; }); return; }
   if (ds.shipdo) { const h = S.sh; S.keepScroll = true; act('rm_bin_ship', { p_bin: ds.shipdo, p: { kg: String(h.kg).trim() === '' ? null : num(h.kg), ref: h.ref } }, (r) => 'บันทึกส่งออก ' + r.bin + ' ' + fmt(r.kg) + ' กก. แล้ว', () => { S.sh = { kg: '', ref: '' }; }); return; }
@@ -1891,12 +1945,13 @@ document.addEventListener('click', async (e) => {
 function applyField(el) {
   const ds = el.dataset;
   if (ds.bind) {
-    if (ds.ikey) { const k = ds.ikey; S[k].itemText = el.value; setItem(k, itemResolve(el.value)); }
+    if (ds.ikey) { const k = ds.ikey; S[k].itemText = el.value; setItem(k, itemResolve(el.value, k)); }
     else setPath(ds.bind, el.value);
     if (ds.bind === 'labelLot') { S.labelP = ''; S.cancel = ''; S.pf = { unit: '', bags: '', reason: '' }; S.le = { lot: '' }; S.rw = { net: '', reason: '' }; S.holdReason = ''; }
     if (ds.bind === 'iItem') S.iPick = {};
     if (ds.bind === 'of.bin' && !S.of.item) { const b = pdBins().find((x) => x.code === el.value); const it = b && b.item && S.snap.items.find((i) => i.code === b.item); if (it) setItem('of', it); }
     if (ds.bind === 'ik.q') { S.ik.unit = ''; S.ik.bags = ''; }
+    if (ds.nfbin && S.nf.bin !== ds.nfbin) { const v = el.value; S.nf = { bin: ds.nfbin, kg: '', note: '' }; setPath(ds.bind, v); }
     if (ds.bind === 'rep.day') { S.rep.data = null; S.fx = { doc: '' }; loadRep(); }
     return true;
   }
@@ -1916,6 +1971,7 @@ const isTyping = (el) => (el.tagName === 'INPUT' && el.type !== 'checkbox') || e
 
 document.addEventListener('input', (e) => {
   const el = e.target;
+  if (el.dataset && el.dataset.nore) { setPath(el.dataset.bind, el.value); return; }
   if (isTyping(el) && applyField(el)) renderKeep(el);
 });
 
@@ -1935,7 +1991,7 @@ document.addEventListener('keydown', (e) => {
   if (e.key !== 'Enter' || !el.dataset || !el.dataset.ikey) return;
   const k = el.dataset.ikey; e.preventDefault();
   if (S[k].item) return;
-  const m = itemMatches(el.value); if (m.length) { setItem(k, m[0]); renderKeep(el); }
+  const m = itemMatches(el.value, k); if (m.length) { setItem(k, m[0]); renderKeep(el); }
 });
 
 document.getElementById('camx').addEventListener('click', () => camStop());
