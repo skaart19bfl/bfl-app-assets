@@ -118,6 +118,19 @@ tr.cut td{background:var(--blue-weak)}
 .btile .bn{font-size:12px;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .btile .bi{font:11px 'IBM Plex Mono',monospace;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .btile .bk{font-size:12px;margin-top:auto}
+.scada{display:flex;flex-wrap:wrap;gap:14px 18px;padding:4px 0 6px;align-items:flex-start}
+.sgrp{display:flex;flex-direction:column;gap:6px;flex:0 1 auto;min-width:0}
+.sgrp>.gh{font-size:12px;font-weight:600;color:var(--muted);border-bottom:2px solid var(--line2);padding-bottom:3px}
+.srow{display:flex;flex-wrap:wrap;gap:4px}
+.sbin{flex:0 0 74px;width:74px;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 3px 8px;border-radius:10px;background:transparent;border:1.5px solid transparent;color:var(--ink);font-weight:400;text-align:center;min-width:0}
+.sbin:hover{background:var(--card);border-color:var(--line2)}
+.sbin[aria-pressed=true]{background:var(--card);border-color:var(--blue);box-shadow:0 0 0 3px var(--blue-weak)}
+.sbin .sc{font:700 13px 'IBM Plex Mono',monospace}
+.sbin svg{display:block}
+.sbin .pill{font-size:11px;font-weight:600;border-radius:99px;padding:2px 7px;white-space:nowrap}
+.sbin .ic{font:600 9.5px/1.2 'IBM Plex Mono',monospace;max-width:70px;word-break:break-all;height:2.4em;overflow:hidden}
+.sbin .nm{font-size:10.5px;line-height:1.2;color:var(--muted);height:3.6em;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;word-break:break-word}
+.sbin .kg{font-size:12px;font-weight:700}
 .modal{position:fixed;inset:0;z-index:60;background:rgba(15,23,42,.5);display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:28px 12px}
 .mbox{background:var(--bg,#f4f6fa);width:100%;max-width:980px;border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
 @media (max-width:700px){.bplan{grid-template-columns:repeat(2,minmax(0,1fr))}.bplan>*{grid-column:auto!important;grid-row:auto!important}.bplan>.sp{display:none}.modal{padding:0}.mbox{border-radius:0;min-height:100%}}
@@ -850,6 +863,53 @@ const BIN_PLAN = [['BI25', 1, 1, 2, 'round'], ['BI26', 2, 1, 2], ['B135', 1, 3, 
   ['B019', 4, 4], ['B020', 5, 4], ['B021', 6, 4], ['B023', 7, 4], ['B018', 4, 5], ['B017', 5, 5], ['B022', 6, 5], ['B024', 7, 5],
   ['B016', 4, 6, 1, 'big'], ['B015', 5, 6, 1, 'big'], ['B014', 6, 6, 1, 'big'], ['B013', 7, 6, 1, 'big'],
   ['BIA1', 5, 7, 1, 'round'], ['BIA2', 6, 7, 1, 'round'], ['BIA3', 7, 7, 1, 'round']];
+// แบบ Packing bin / SCADA: ถังทรงไซโล ช่วง 4 ส่วน + hopper · เรียงเป็นแถวตามกลุ่ม SCADA
+const SCADA_ROWS = [[['Batching scale 2', ['BI25', 'BI26', 'B135', 'B136']], ['Load out → BFL-PC', ['B138', 'B139', 'B140', 'B141']], ['Batching 1 · B001–B012', ['B001', 'B002', 'B003', 'B004', 'B005', 'B006', 'B007', 'B008', 'B009', 'B010', 'B011', 'B012']], ['Batching 1 · B013–B024', ['B013', 'B014', 'B015', 'B016', 'B017', 'B018', 'B019', 'B020', 'B021', 'B022', 'B023', 'B024']]],
+  [['เทมือ BIA', ['BIA1', 'BIA2', 'BIA3']], ['กอง Intake 1', ['IN11', 'IN12', 'IN13', 'IN14']]]];
+function binLevel(b) {
+  const ck = capKg(b); if (!ck) return { f: b.bal > 0 ? null : 0, pct: null };
+  const pct = b.bal / ck * 100; return { f: Math.max(0, Math.min(1, b.bal / ck)), pct };
+}
+function binPill(b, lv) {
+  if (b.bal < -0.5) return ['ติดลบ', '#fde2e1', 'var(--bad)'];
+  if (lv.pct === null) return b.bal > 0 ? [b.item && b.cap_m3 && !b.density ? 'ไม่มี density' : 'มีของ', '#e8eefc', 'var(--blue)'] : [!b.start && ['B1', 'B2', 'HAND'].includes(b.grp) ? 'ยังไม่ตั้งยอด' : 'ว่าง', '#eef0f4', 'var(--muted)'];
+  const p = lv.pct; if (p > 105) return ['เกินความจุ', '#fde2e1', 'var(--bad)'];
+  if (p < 3) return ['ว่าง', '#eef0f4', 'var(--muted)'];
+  return [p <= 25 ? '¼ ถัง' : p <= 50 ? '½ ถัง' : p <= 75 ? '¾ ถัง' : p <= 97 ? 'เกือบเต็ม' : 'เต็ม', p < 15 ? '#ffe8cc' : '#fff1c7', p < 15 ? '#a35200' : '#7a5600'];
+}
+function siloSvg(b, lv) {
+  const W = 60, top = 3, bodyH = 104, hopH = 26, x0 = 4, x1 = W - 4, bot = top + bodyH + hopH; const pile = b.grp === 'PILE';
+  const hf = b.cap_m3 && b.hopper_m3 ? Math.min(0.6, b.hopper_m3 / b.cap_m3) : 0.2;
+  const col = b.bal < -0.5 ? '#e05a4f' : b.ncp ? '#a777c9' : lv.pct !== null && lv.pct < 15 ? '#f0a54a' : '#d9a441';
+  const id = 'sv' + String(b.code).replace(/[^A-Za-z0-9]/g, '');
+  const shape = pile ? `M${x0} ${bot} L${W / 2 - 6} ${top + 40} L${W / 2 + 6} ${top + 40} L${x1} ${bot} Z`
+    : `M${x0} ${top} H${x1} V${top + bodyH} L${W / 2 + 7} ${bot} H${W / 2 - 7} L${x0} ${top + bodyH} Z`;
+  let lvY = bot;
+  if (lv.f === null) lvY = top + (pile ? 40 : 0) + (bot - top) * 0.45;
+  else if (lv.f > 0) lvY = pile ? bot - (bot - top - 40) * lv.f : lv.f <= hf ? bot - hopH * (lv.f / hf) : top + bodyH - bodyH * ((lv.f - hf) / (1 - hf));
+  const lines = pile ? '' : [1, 2, 3].map((k) => `<line x1="${x0}" x2="${x1}" y1="${top + bodyH * k / 4}" y2="${top + bodyH * k / 4}" stroke="#c9d2e3" stroke-dasharray="3 3"/>`).join('') + `<line x1="${x0}" x2="${x1}" y1="${top + bodyH}" y2="${top + bodyH}" stroke="#c9d2e3"/>`;
+  const fill = lv.f === null ? `url(#h${id})` : col;
+  return `<svg width="${W}" height="${bot + 3}" viewBox="0 0 ${W} ${bot + 3}" aria-hidden="true"><defs><clipPath id="c${id}"><path d="${shape}"/></clipPath>
+    <pattern id="h${id}" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="#e8eefc"/><line x1="0" y1="0" x2="0" y2="6" stroke="#9fb3e0" stroke-width="2"/></pattern></defs>
+    <path d="${shape}" fill="#f4f6fa"/><rect x="0" y="${lvY}" width="${W}" height="${bot - lvY + 3}" fill="${fill}" clip-path="url(#c${id})"/>${lines}
+    <path d="${shape}" fill="none" stroke="${b.bal < -0.5 ? 'var(--bad)' : '#3a4a66'}" stroke-width="2" stroke-linejoin="round"/>
+    ${!pile ? `<text x="${W / 2}" y="${top + bodyH + 15}" text-anchor="middle" font-size="8" fill="#6b7590">hopper</text>` : ''}</svg>`;
+}
+function binScada(d, b) {
+  const lv = binLevel(b); const [pt, bg, fg] = binPill(b, lv);
+  return `<button type="button" class="sbin" data-bsel="${esc(b.code)}" aria-pressed="${S.bsel === b.code}" aria-label="ถัง ${esc(b.code)} ${esc(b.item ? inm(d, b.item) : 'ว่าง')} ${fmt(b.bal)} กก.">
+    <span class="sc">${esc(b.code)}${b.mismatch ? ' <span title="batch ดึงรหัสไม่ตรง" style="color:var(--bad)">⚠</span>' : ''}</span>${siloSvg(b, lv)}
+    <span class="pill" style="background:${bg};color:${fg}">${pt}${lv.pct !== null && lv.pct >= 3 && lv.pct <= 105 ? ' ' + Math.round(lv.pct) + '%' : ''}</span>
+    <span class="ic">${b.item ? esc(b.item) : '–'}</span><span class="nm">${b.item ? esc(inm(d, b.item)) : 'ไม่ระบุ'}${b.ncp ? ' · NCP' : ''}</span>
+    <span class="kg">${b.cap_m3 && lv.pct !== null && Math.abs(b.bal) >= 1 ? '≈ ' : ''}${fmt(b.bal)} kg</span></button>`;
+}
+function binBoard(d, bins) {
+  const by = Object.fromEntries(bins.map((b) => [b.code, b])); const used = new Set();
+  const rows = SCADA_ROWS.map((row) => `<div class="scada">${row.map(([label, codes]) => { const bs = codes.map((c) => by[c]).filter(Boolean); bs.forEach((b) => used.add(b.code));
+    return bs.length ? `<div class="sgrp"><span class="gh">${label} · ${fmt(bs.reduce((a, x) => a + Number(x.bal), 0))} kg</span><div class="srow">${bs.map((b) => binScada(d, b)).join('')}</div></div>` : ''; }).join('')}</div>`).join('');
+  const rest = bins.filter((b) => !used.has(b.code));
+  return rows + (rest.length ? `<div class="scada"><div class="sgrp"><span class="gh">อื่น ๆ</span><div class="srow">${rest.map((b) => binScada(d, b)).join('')}</div></div></div>` : '');
+}
 function binPlan(d, bins) {
   const by = Object.fromEntries(bins.map((b) => [b.code, b])); const used = new Set();
   const cells = BIN_PLAN.filter(([c]) => by[c]).map(([c, col, row, span, shape]) => { used.add(c);
@@ -872,9 +932,11 @@ function viewBins(d) {
   const unk = (P.unknown || []).filter((x) => !PD_IGNORE_BINS.includes(x.bin)); // H1, DL, B803 ไม่เกี่ยว (ผู้ใช้ยืนยัน 3 พ.ย.)
   const sumOf = (gs) => fmt(bins.filter((x) => gs.includes(x.grp)).reduce((a, x) => a + Number(x.bal), 0));
   const lane = (g, l) => { const bs = bins.filter((x) => x.grp === g); return bs.length ? `<div style="display:flex;flex-direction:column;gap:8px"><span class="smt" style="font-weight:600">${l} · รวม ${sumOf([g])} กก.</span><div class="blane">${bs.map((x) => binTile(d, x)).join('')}</div></div>` : ''; };
-  const groups = `<div style="display:flex;flex-direction:column;gap:8px"><span class="smt" style="font-weight:600">ผังถัง Batching · ซ้าย BI25 BI26 B135 B136 (scale 2) · ขวา B001–B024 (Batching 1) · ล่าง BIA เทมือ · รวม ${sumOf(['B1', 'B2', 'HAND'])} กก.</span>${binPlan(d, bins)}</div>
-    ${lane('PILE', 'กอง Intake 1 · IN11–IN14')}${lane('LOADOUT', 'Load out → BFL-PC · B138–B141')}
-    <div style="display:flex;flex-wrap:wrap;gap:14px;font-size:12px" class="muted"><span>แถบสี = % ความจุ (ลบ.ม. × density)</span><span style="color:var(--warn, #c77700)">■ ต่ำกว่า 15%</span><span style="color:var(--bad)">■ ติดลบ / เกินความจุ</span><span style="color:#8e44ad">■ NCP</span><span>ลายขีด = ยังไม่ตั้งยอด</span></div>`;
+  const cnt = (fn) => bins.filter((b) => ['B1', 'B2', 'HAND'].includes(b.grp)).filter(fn).length;
+  const groups = `<div style="display:flex;flex-wrap:wrap;gap:6px 18px;align-items:baseline"><b style="font-size:16px">วัตถุดิบในถังรวม ≈ ${sumOf(['B1', 'B2', 'HAND'])} kg</b>
+      <span class="smt">ว่าง ${cnt((b) => b.bal < 1)} · ต่ำกว่า 15% ${cnt((b) => { const l = binLevel(b); return l.pct !== null && l.pct >= 3 && l.pct < 15; })} · เต็ม ${cnt((b) => { const l = binLevel(b); return l.pct !== null && l.pct > 97; })} · ติดลบ ${cnt((b) => b.bal < -0.5)} · ยังไม่ตั้งยอด ${cnt((b) => !b.start)}</span></div>
+    ${binBoard(d, bins)}
+    <div style="display:flex;flex-wrap:wrap;gap:14px;font-size:12px" class="muted"><span>ระดับ = กก. ÷ (ลบ.ม. × density) · ช่วง 1–4 + hopper ตามขนาดถังในไฟล์</span><span style="color:#d9a441">■ ปกติ</span><span style="color:#f0a54a">■ ต่ำกว่า 15%</span><span style="color:#e05a4f">■ ติดลบ</span><span style="color:#a777c9">■ NCP</span><span>ลายขีด = ไม่รู้ระดับ (ไม่มี density / ไม่มีขนาด)</span><span>แตะถังเพื่อดูรายละเอียด</span></div>`;
   const notes = [];
   const mis = bins.filter((x) => x.mismatch); if (mis.length) notes.push(`⚠ batch ดึงวัตถุดิบไม่ตรงกับที่ตั้งไว้ในถัง: ${mis.map((x) => `${esc(x.code)} (ตั้ง ${esc(x.item || '-')} · batch ใช้ ${esc(x.mismatch)})`).join(' · ')}`);
   if (unk.length) notes.push(`batch ที่ bin ไม่อยู่ในระบบ (7 วัน · ไม่ตัดถัง): ${unk.map((x) => `${esc(x.bin)} ${fmt(x.n)} รายการ ${fmt(x.kg)} กก.`).join(' · ')}`);
