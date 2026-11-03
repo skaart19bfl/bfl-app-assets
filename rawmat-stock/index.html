@@ -129,6 +129,7 @@ tr.cut td{background:var(--blue-weak)}
 .mbar{display:flex;flex-wrap:wrap;gap:8px 10px;align-items:center;padding-bottom:10px;border-bottom:1px solid var(--line)}
 .mbar .tg[aria-current=page]{background:var(--blue-weak);color:var(--blue);border-color:var(--blue);font-weight:600}
 header .homeb{background:rgba(255,255,255,.14);color:#fff;border:1px solid rgba(255,255,255,.35)}
+.mg td{background:var(--card2);padding:0!important}.mgb{width:100%;background:none;border:0;color:var(--ink);text-align:left;padding:8px 10px;display:flex;gap:10px;align-items:baseline;font-weight:400;min-height:40px}.mgb:hover{background:var(--blue-weak)}.mgb .muted{margin-left:auto}
 .brt td.num,.brt th.num{white-space:nowrap}.brt tr.gsum td{background:var(--card2);font-weight:600}.brt tr.tot td{font-weight:700;border-top:2px solid var(--line2)}
 .scada{display:flex;flex-wrap:wrap;gap:14px 18px;padding:4px 0 6px;align-items:flex-start}
 .sgrp{display:flex;flex-direction:column;gap:6px;flex:0 1 auto;min-width:0}
@@ -270,7 +271,7 @@ const S = {
   storeF: 'ALL', view: 'sum', card: null, cardRows: null,
   selSlot: 'S-01', sp: { unit: '' }, spLast: null, lf: { zone: 'S', zoneName: '', code: '' }, adminInfo: null,
   docDay: '', docLot: '', docTag: '',
-  pd: { data: null, loading: false, err: '' }, bsel: '', bcard: { bin: '', rows: null }, bs: { item: '', itemText: '', kg: '', reason: '', mode: 'kg', empty: '' }, hl: { bin: '', kg: '' }, sh: { kg: '', ref: '' }, nf: { bin: '', kg: '', note: '' }, mst: { tab: 'rm', q: '', only: '', chg: {}, bulk: '', data: null },
+  pd: { data: null, loading: false, err: '' }, bsel: '', bcard: { bin: '', rows: null }, bs: { item: '', itemText: '', kg: '', reason: '', mode: 'kg', empty: '' }, hl: { bin: '', kg: '' }, sh: { kg: '', ref: '' }, nf: { bin: '', kg: '', note: '' }, mst: { tab: 'rm', q: '', only: '', chg: {}, bulk: '', data: null, open: {} },
   of: { intake: 'IN2', bin: '', item: '', itemText: '', qty: '', unit: 'PALLET', note: '' }, ox: { doc: '' },
   br: { at: '', from: '', day: '', view: 'table', only: '', data: null, loading: false },
   ik: { point: 'IN2', doc: '', q: '', unit: '', bags: '', cx: { id: '', reason: '' } }
@@ -1198,21 +1199,27 @@ function viewMaster(d) {
   const nChg = Object.keys(M.chg).length;
   const cell = (i) => ctl ? `<input data-bind="mst.chg.${esc(i.code)}" data-nore="1" value="${esc(M.chg[i.code] ?? (i.density ?? ''))}" inputmode="decimal" style="width:90px;text-align:right" aria-label="density ${esc(i.code)}">` : (i.density ? fmt(i.density) : '–');
   const m = (i) => i.meta || {};
-  const body = rows.map((i) => `<tr${i.status !== 'Active' ? ' style="opacity:.55"' : ''}><td class="mono smt">${esc(i.code)}</td><td>${esc(i.name)}</td>
+  const row = (i) => `<tr${i.status !== 'Active' ? ' style="opacity:.55"' : ''}><td class="mono smt">${esc(i.code)}</td><td>${esc(i.name)}</td>
     ${ncp ? `<td class="smt">${esc(m(i).group || '')}</td><td class="smt">${esc(m(i).color || '')}</td><td class="smt">${m(i).protein_min || m(i).protein_max ? fmt(m(i).protein_min) + '–' + fmt(m(i).protein_max) + '%' : ''}</td>`
       : `<td>${spill(i.store)}</td><td class="smt">${esc(i.category || '')}</td><td class="smt">${esc(i.unit || '')}</td>`}
-    <td class="smt">${esc([...new Set([...(inbin[i.code] || []), ...(use[i.code] || [])])].join(' '))}</td><td class="num">${cell(i)}</td><td class="smt">${i.status === 'Active' ? '' : 'ไม่ใช้งาน'}</td></tr>`).join('');
+    <td class="smt">${esc([...new Set([...(inbin[i.code] || []), ...(use[i.code] || [])])].join(' '))}</td><td class="num">${cell(i)}</td><td class="smt">${i.status === 'Active' ? '' : 'ไม่ใช้งาน'}</td></tr>`;
+  // กลุ่มตามรหัส 4 ตัวแรก (01PT, 01FA, …) ย่อ/ขยายได้ · ค้นหา/กรองอยู่ = ขยายอัตโนมัติ
+  const gk = (i) => String(i.code).slice(0, 4).toUpperCase(); const groups = {};
+  rows.forEach((i) => (groups[gk(i)] = groups[gk(i)] || []).push(i));
+  const auto = q.length > 0; const keys = Object.keys(groups).sort((a, b) => a.localeCompare(b, 'en', { numeric: true }));
+  const body = keys.map((k) => { const gs = groups[k]; const open = auto || !!M.open[k]; const nod = gs.filter((i) => !(i.density > 0)).length; const nb = gs.filter((i) => use[i.code] || inbin[i.code]).length;
+    return `<tr class="mg"><td colspan="9"><button type="button" class="mgb" data-mstg="${esc(k)}" aria-expanded="${open}"><span aria-hidden="true">${open ? '▾' : '▸'}</span> <b class="mono">${esc(k)}</b> <span>${gs.length} รายการ${nb ? ' · ใช้กับถัง ' + nb : ''}${nod ? ' · ไม่มี density ' + nod : ''}</span><span class="muted smt">${esc(gs[0].category || '')}</span></button></td></tr>${open ? gs.map(row).join('') : ''}`; }).join('');
   return `<div><h1>Master วัตถุดิบ / NCP</h1><p class="lead">density (กก./ลบ.ม. = กรัม/ลิตร) ใช้แปลงปริมาตรถังเป็น กก. · ความจุถัง = ลบ.ม. ตามไฟล์ Batching_Bin_Size × density · ชื่อ/หมวด/สถานะมาจาก RM_Master และ NCP Detail (แก้ที่ต้นทาง)</p></div>
     <div class="chips" role="group" aria-label="ประเภท"><button type="button" class="tg" aria-pressed="${!ncp}" data-msttab="rm">วัตถุดิบ / สารเสริม (${d.s.items.filter((i) => i.category !== 'NCP').length})</button><button type="button" class="tg" aria-pressed="${ncp}" data-msttab="ncp">NCP รีเวิร์ค (${d.s.items.filter((i) => i.category === 'NCP').length})</button>
       ${ncp && ctl ? `<button type="button" class="ghost sm" data-ncpsync="1" ${S.busy ? 'disabled' : ''}>ดึงรายการ NCP ล่าสุด</button><span class="muted smt">NCP Detail sync ${dtm((M.data || {}).ncp_synced)}</span>` : ''}</div>
     ${binNo ? `<div class="note smt">รหัสที่ใช้กับถัง (ตั้งในถัง หรือ batch ดึง 30 วัน) แต่ยังไม่มี density: <b>${binNo}</b> รหัส — ถังเหล่านี้คำนวณ % ความจุ และวัดระยะว่างเป็น กก. ไม่ได้</div>` : ''}
     <div class="card" style="display:flex;flex-direction:column;gap:10px">
       <div class="chips"><input data-bind="mst.q" value="${esc(M.q)}" placeholder="ค้นหารหัส / ชื่อ" autocomplete="off" style="flex:1 1 220px">
-        <button type="button" class="tg" aria-pressed="${M.only === 'bin'}" data-mstonly="bin">เฉพาะที่ใช้กับถัง</button><button type="button" class="tg" aria-pressed="${M.only === 'nod'}" data-mstonly="nod">ยังไม่มี density</button><button type="button" class="tg" aria-pressed="${M.only === 'act'}" data-mstonly="act">ใช้งานอยู่</button></div>
+        <button type="button" class="tg" aria-pressed="${M.only === 'bin'}" data-mstonly="bin">เฉพาะที่ใช้กับถัง</button><button type="button" class="tg" aria-pressed="${M.only === 'nod'}" data-mstonly="nod">ยังไม่มี density</button><button type="button" class="tg" aria-pressed="${M.only === 'act'}" data-mstonly="act">ใช้งานอยู่</button><button type="button" class="ghost sm" data-mstall="1">ขยายทั้งหมด</button><button type="button" class="ghost sm" data-mstall="0">ย่อทั้งหมด</button></div>
       ${ctl ? `<div class="fc" style="flex-wrap:wrap;gap:10px"><span class="muted smt">แก้ในตารางได้หลายแถว แล้วกดบันทึกครั้งเดียว · ช่องว่าง = ล้างค่า · ช่วงที่รับ 50–3,000</span><button type="button" data-mstsave="1" ${S.busy ? 'disabled' : ''}>บันทึก density ที่แก้${nChg ? ' (' + nChg + ')' : ''}</button></div>
         <details ${M.bulk ? 'open' : ''}><summary class="smt">วางหลายรหัสจาก Excel (รหัส, density ต่อบรรทัด)</summary><div style="display:flex;flex-direction:column;gap:8px;margin-top:8px"><textarea data-bind="mst.bulk" data-nore="1" rows="5" placeholder="01PT004-2000000, 620&#10;04RW003-18NA000, 450" style="font-family:'IBM Plex Mono',monospace;font-size:13px">${esc(M.bulk)}</textarea><div><button type="button" class="ghost sm" data-mstbulk="1">เติมลงตาราง</button></div></div></details>` : '<p class="muted smt" style="margin:0">ดูอย่างเดียว — แก้ density ได้เฉพาะ Control / admin</p>'}
       <div class="tw"><table><thead><tr><th>รหัส</th><th>ชื่อ</th>${ncp ? '<th>กลุ่ม</th><th>สี</th><th>โปรตีน</th>' : '<th>คลัง</th><th>หมวด</th><th>หน่วย</th>'}<th>ถัง</th><th class="num">density<br><span class="smt">กก./ลบ.ม.</span></th><th></th></tr></thead><tbody>${body || '<tr><td colspan="9" class="muted">ไม่พบรายการ</td></tr>'}</tbody></table></div>
-      <span class="muted smt">${rows.length} รายการ</span></div>`;
+      <span class="muted smt">${rows.length} รายการ · ${keys.length} กลุ่ม${auto ? ' · กำลังค้นหา = ขยายทุกกลุ่ม' : ''}</span></div>`;
 }
 
 // ---------- รายงาน (หน่วยงาน: รายงาน) ----------
@@ -2031,6 +2038,8 @@ document.addEventListener('click', async (e) => {
   if (ds.bclose) { S.bsel = ''; S.bcard = { bin: '', rows: null }; render(); return; }
   if (ds.pdload) { loadPD(); return; }
   if (ds.ncpdo) { const n = S.nf; S.keepScroll = true; act('rm_bin_ncp_add', { p_bin: ds.ncpdo, p: { kg: num(n.kg), note: n.note } }, (r) => 'เท NCP เข้า ' + r.bin + ' ' + fmt(r.kg) + ' กก. แล้ว', () => { S.nf = { bin: '', kg: '', note: '' }; }); return; }
+  if (ds.mstg) { S.mst.open[ds.mstg] = !S.mst.open[ds.mstg]; render(); return; }
+  if (ds.mstall !== undefined) { const d = D(); const on = ds.mstall === '1'; S.mst.open = {}; if (on) d.s.items.forEach((i) => { S.mst.open[String(i.code).slice(0, 4).toUpperCase()] = true; }); render(); return; }
   if (ds.msttab) { S.mst.tab = ds.msttab; S.mst.chg = {}; render(); return; }
   if (ds.mstonly !== undefined) { S.mst.only = S.mst.only === ds.mstonly ? '' : ds.mstonly; render(); return; }
   if (ds.mstsave) { const items = Object.entries(S.mst.chg).filter(([c, v]) => { const it = D().items[c]; return it && String(v).trim() !== String(it.density ?? ''); }).map(([code, density]) => ({ code, density: String(density).trim() }));
