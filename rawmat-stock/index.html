@@ -425,6 +425,10 @@ td.c{text-align:center}td.n{text-align:right;font-variant-numeric:tabular-nums}t
 .half+.half{border-top:1px dashed #666;padding-top:5mm}
 .pg.lbl{padding:0 12mm}.pg.lbl .lb{height:148mm;padding:9mm 4mm}.pg.lbl .lb+.lb{border-top:1px dashed #666}
 ${LABEL_CSS}
+/* ใบงานที่พิมพ์เป็นขาว-ดำทั้งหมด (ผู้ใช้ 3 พ.ย.) · โลโก้เป็นสีเทา · QR ดำ-ขาวอยู่แล้ว */
+.pg,.pg *{color:#000!important;border-color:#000!important;text-shadow:none!important;box-shadow:none!important}
+.pg *{background-color:transparent!important;background-image:none!important}
+.pg img,.pg svg{filter:grayscale(1) contrast(1.15)}
 </style>`;
 
 function openForm(title, orient, pages) {
