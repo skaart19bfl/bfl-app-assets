@@ -202,7 +202,17 @@ function itemPicker(key, label, text, it) {
   const opts = Object.keys(gs).map((g) => `<optgroup label="${esc(g)} (${gs[g].length})">${gs[g].map((i) => `<option value="${esc(i.code)}" ${it && it.code === i.code ? 'selected' : ''}>${esc(i.code)} · ${esc(i.name)}${i.category === 'NCP' ? ' (NCP)' : ''}</option>`).join('')}</optgroup>`).join('');
   return `<div class="ipick"><div class="fld"><span>${label}</span><div style="display:flex;gap:6px;flex-wrap:wrap">
     <select data-isel="${key}" aria-label="${esc(label)}" style="flex:1 1 260px;min-width:0;width:auto"><option value="">${pool.length ? '— เลือกวัตถุดิบ (' + pool.length + ' รายการ) —' : '— ไม่พบตามคำค้น —'}</option>${opts}</select>
-    <input data-bind="${key}.iq" value="${esc((S[key] || {}).iq || '')}" placeholder="🔍 กรองรายการ" autocomplete="off" aria-label="กรองรายการวัตถุดิบ" style="flex:0 1 150px;min-width:110px;width:auto"></div></div></div>`;
+    <input data-bind="${key}.iq" data-iqk="${key}" value="${esc((S[key] || {}).iq || '')}" placeholder="🔍 วางรหัส / พิมพ์กรอง" autocomplete="off" aria-label="วางรหัสหรือพิมพ์กรองรายการวัตถุดิบ" style="flex:0 1 150px;min-width:110px;width:auto"></div></div></div>`;
+}
+// วางรหัสวัตถุดิบในช่องกรอง → เลือกให้ทันที (ผู้ใช้ 3 พ.ย.) · พิมพ์กรองเหลือรายการเดียว → เลือกให้
+function iqPick(key, v) {
+  const t = String(v || '').toUpperCase().trim(); if (!t) return;
+  const pool = itemPool(key).filter((i) => i.status === 'Active');
+  const m = t.match(/(\d{2}[A-Z]{2}\d{3})-?(\d{6,7})/);
+  let it = m ? pool.find((i) => i.code.toUpperCase() === m[1] + '-' + m[2]) : null;
+  if (it) { setItem(key, it); S[key].iq = ''; return; }
+  const ws = t.split(/\s+/); const hit = pool.filter((i) => ws.every((w) => (i.code + ' ' + i.name).toUpperCase().includes(w)));
+  if (hit.length === 1 && (!S[key].item || S[key].item !== hit[0].code)) setItem(key, hit[0]);
 }
 function setItem(key, it) {
   const o = S[key]; const was = o.item; o.item = it ? it.code : ''; o.itemText = it ? it.code + ' · ' + it.name : o.itemText;
@@ -2255,6 +2265,7 @@ function applyField(el) {
   const ds = el.dataset;
   if (ds.bind) {
     if (ds.ikey) { const k = ds.ikey; S[k].itemText = el.value; setItem(k, itemResolve(el.value, k)); }
+    else if (ds.iqk) { setPath(ds.bind, el.value); iqPick(ds.iqk, el.value); }
     else setPath(ds.bind, el.value);
     if (ds.bind === 'labelLot') { S.labelP = ''; S.cancel = ''; S.pf = { unit: '', bags: '', reason: '' }; S.le = { lot: '' }; S.rw = { net: '', reason: '' }; S.holdReason = ''; }
     if (ds.bind === 'iItem') S.iPick = {};
