@@ -782,6 +782,7 @@ const IKNAME = Object.fromEntries(INTAKES);
 const OUNIT = { PALLET: 'พาเลท', BAG: 'ถุง', BIGBAG: 'Bigbag' };
 const OST = { queue: 'ในคิว', started: 'กำลังเท', done: 'เสร็จ', cancel: 'ยกเลิก' };
 const BTYPE = { OPENING: 'ยอดตั้งต้น', ADJUST: 'ปรับยอด', DUMP: 'เทเข้า', DUMP_VOID: 'ยกเลิกเท', USE: 'ใช้ batching', HAUL_IN: 'ลากจากกอง', HAUL_OUT: 'ลากขึ้นถัง', SHIP: 'ส่ง BFL-PC' };
+const PD_IGNORE_BINS = ['H1', 'DL', 'B803'];
 const pdScreen = (sc) => sc === 'bins' || sc === 'dumpctl' || sc === 'intake';
 const binOK = (ik, g) => ik === 'IN1' ? g === 'PILE' : ik === 'HAND' ? g === 'HAND' : ['B1', 'B2', 'LOADOUT'].includes(g);
 const isCtl = () => ['control', 'admin'].includes(S.snap.me.role);
@@ -828,11 +829,11 @@ function viewBins(d) {
   const P = S.pd.data; const head = pdHead('ยอดในถัง', 'ยอดตั้งต้น + เทเข้า − ใช้ตาม batching (target kg จากหน้าจอ Start Batch) ± ปรับยอด · แตะถังเพื่อดูรายการ / ตั้งยอด');
   if (!P) return head;
   const bins = pdBins(); const b = bins.find((x) => x.code === S.bsel);
-  const unk = (P.unknown || []);
+  const unk = (P.unknown || []).filter((x) => !PD_IGNORE_BINS.includes(x.bin)); // H1, DL, B803 ไม่เกี่ยว (ผู้ใช้ยืนยัน 3 พ.ย.)
   const groups = PD_GRP.map(([g, l]) => { const bs = bins.filter((x) => x.grp === g); return bs.length ? `<div style="display:flex;flex-direction:column;gap:8px"><span class="smt" style="font-weight:600">${l} · รวม ${fmt(bs.reduce((a, x) => a + Number(x.bal), 0))} กก.</span><div class="lane">${bs.map((x) => binTile(d, x)).join('')}</div></div>` : ''; }).join('');
   const notes = [];
   const mis = bins.filter((x) => x.mismatch); if (mis.length) notes.push(`⚠ batch ดึงวัตถุดิบไม่ตรงกับที่ตั้งไว้ในถัง: ${mis.map((x) => `${esc(x.code)} (ตั้ง ${esc(x.item || '-')} · batch ใช้ ${esc(x.mismatch)})`).join(' · ')}`);
-  if (unk.length) notes.push(`batch ที่ bin ไม่อยู่ในระบบ (7 วัน · ไม่ตัดถัง): ${unk.map((x) => `${esc(x.bin)} ${fmt(x.n)} รายการ ${fmt(x.kg)} กก.${x.bin === 'H1' ? ' (ชุดสารเสริมเทมือ)' : ''}`).join(' · ')}`);
+  if (unk.length) notes.push(`batch ที่ bin ไม่อยู่ในระบบ (7 วัน · ไม่ตัดถัง): ${unk.map((x) => `${esc(x.bin)} ${fmt(x.n)} รายการ ${fmt(x.kg)} กก.`).join(' · ')}`);
   const neg = bins.filter((x) => x.bal < -0.5); if (neg.length) notes.push(`ยอดติดลบ (ใช้มากกว่าที่เท) — ควรนับถังแล้วปรับยอด: ${neg.map((x) => esc(x.code)).join(', ')}`);
   const nostart = bins.filter((x) => !x.start && ['B1', 'B2', 'HAND'].includes(x.grp)).length;
   if (nostart) notes.push(`ถังที่ยังไม่ตั้งยอด ${nostart} ถัง — ยังไม่ตัดยอดใช้จาก batch จนกว่าจะตั้งยอดตั้งต้น`);
