@@ -202,12 +202,12 @@ const S = {
   tok: sessionStorage.getItem('rm_tok') || '', snap: null, screen: 'home', toast: '', toastErr: false, busy: false,
   f: { source: 'purchase', plant: 'BFL-PC', tdoc: '', slot: '', item: '', itemText: '', pack: 'BAG', cont: '', supKg: '', sup: '', supText: '', plate: '', exp: '', ticket: '', weighIn: '', delivery: '', po: '', province: '', qci: '', qcin: '', per: '', labels: '', bigbags: '', location: 'S-01', vehN: '1', vehU: 'คัน', method: '', tStart: '', tEnd: '', note: '' },
   net: {}, ud: {}, wo: {}, rt: { plant: 'BFL-PC', key: '', tdoc: '', pack: 'BAG', n: '', per: '', last: '', big: '', net: '', loc: 'S-01', note: '' }, rtc: { doc: '', reason: '' }, lotTab: 'label', le: { lot: '' }, holdReason: '', rw: { net: '', reason: '' },
-  ob: { item: '', itemText: '', lot: '', store: 'RM', pack: 'BAG', cont: '', recv: '', exp: '', sup: '', loc: 'S-01', n: '', bags: '', kgb: '', lastBags: '', total: '', lines: '' }, labelLot: '', labelP: '', lsel: { lot: '', ps: {} }, pf: { unit: '', bags: '', reason: '' }, cancel: '', cxReason: '', docPs: '',
+  ob: { item: '', itemText: '', lot: '', store: 'RM', pack: 'BAG', cont: '', recv: '', exp: '', sup: '', loc: 'S-01', n: '', bags: '', kgb: '', lastBags: '', total: '', lines: '', tb: '', tkg: '' }, labelLot: '', labelP: '', lsel: { lot: '', ps: {} }, pf: { unit: '', bags: '', reason: '' }, cancel: '', cxReason: '', docPs: '',
   rep: { day: '', data: null, loading: false }, fx: { doc: '' }, gLast: '', adj: { unit: '' }, gW: [], mm: {}, mmTo: '', scan: { open: false, q: '', to: '' }, sr: { mode: 'day', day: '', month: '', from: '', to: '', data: null, loading: false }, users: null, uf: { mode: 'new', username: '', name: '', role: 'wh', active: true, password: '' }, upw: { user: '', pw: '' },
   gSel: {}, gDest: 'PD', gCount: '1', gKg: '', gPd: PD_DESTS[0], gLoc: '',
   iType: 'fat', iItem: '', iStore: '', iKg: '', iRef: '', iPick: {},
   storeF: 'ALL', view: 'sum', card: null, cardRows: null,
-  selSlot: 'S-01', lf: { zone: 'S', zoneName: '', code: '' }, adminInfo: null,
+  selSlot: 'S-01', sp: { unit: '' }, spLast: null, lf: { zone: 'S', zoneName: '', code: '' }, adminInfo: null,
   docDay: '', docLot: '', docTag: ''
 };
 
@@ -531,7 +531,7 @@ function fxPanel(d, x, cols) {
       <div class="grid4"><label class="fld">${(GRIND_DESTS.find((g) => g[0] === f.dest) || [])[2] || 'จำนวน'}<input data-bind="fx.count" value="${esc(f.count)}" inputmode="numeric"></label>
         ${f.dest === 'BIGBAG' ? '' : `<label class="fld">น้ำหนักที่ได้ (กก.)<input data-bind="fx.out" value="${esc(f.out)}" inputmode="decimal"></label>`}
         ${f.dest === 'PD' ? `<label class="fld">ลงที่ PD<select data-bind="fx.pd">${PD_DESTS.map((p) => `<option ${f.pd === p ? 'selected' : ''}>${p}</option>`).join('')}</select></label>` : ''}
-        ${f.dest === 'BIGBAG' ? `<label class="fld">ช่องเก็บ<select data-bind="fx.loc"><option value="">— ไม่ระบุ —</option>${d.slots.map((c) => `<option ${f.loc === c ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select></label>` : ''}</div>
+        ${f.dest === 'BIGBAG' ? `<label class="fld">ช่องเก็บ<select data-bind="fx.loc"><option value="">— ไม่ระบุ —</option>${locOpts(d, f.loc)}</select></label>` : ''}</div>
       ${f.dest === 'BIGBAG' ? `<div class="grid4">${Array.from({ length: Math.min(30, Math.max(0, int(f.count))) }, (_, i) => `<label class="fld">G ใบที่ ${i + 1} (กก.)<input data-bind="fx.w.${i}" value="${esc((f.w || [])[i] ?? '')}" inputmode="decimal"></label>`).join('')}</div>` : ''}
       <div class="grid2">${rsn}<span></span></div>
       <div class="chips"><button type="button" data-fxdo="edit" ${ok && int(f.count) > 0 && (f.dest === 'BIGBAG' ? Array.from({ length: int(f.count) }, (_, i) => num((f.w || [])[i])).every((w) => w > 0) : num(f.out) > 0) ? '' : 'disabled'}>บันทึกการแก้ไข</button><button type="button" class="ghost" data-fxopen="">ปิด</button></div>`;
@@ -721,7 +721,7 @@ function viewScan(d) {
       <span class="muted">รับ ${dmy(all.recv_day)} · ${esc(all.supplier || '')}${all.exp ? ' · หมดอายุ ' : ''}${all.exp ? expTag(all.exp) : ''}</span></div>
       ${us.length ? us.map((u) => { const c = d.s.counted[u.id];
         return `<div class="lrow" style="flex-wrap:wrap;gap:8px"><span style="flex:1 1 220px;min-width:0"><b class="mono">${esc(pl(u.p))}${u.scrap ? ' (ท้าย)' : ''}</b> ${spill(u.store)} · ช่อง <b>${esc(u.loc || '-')}</b><span class="muted" style="display:block">${u.bags > 0 ? fmt(u.bags) + ' ' + (u.kind === 'BIGBAG' ? 'ใบ' : pcs(all)) + ' · ' : ''}${u.kg === null ? 'รอชั่ง' : fmt(u.kg) + ' กก.'}</span></span>
-          <span class="chips"><select data-bind="scan.to" aria-label="ย้ายไปช่อง">${d.slots.map((c2) => `<option ${(sc.to || u.loc) === c2 ? 'selected' : ''}>${esc(c2)}</option>`).join('')}</select>
+          <span class="chips"><select data-bind="scan.to" aria-label="ย้ายไปช่อง">${locOpts(d, (sc.to || u.loc))}</select>
             <button type="button" class="sm" data-scanmove="${u.id}" ${(sc.to || u.loc) === u.loc ? 'disabled' : ''}>ย้าย</button>
             <button type="button" class="ghost sm" data-mmadd="${u.id}" aria-pressed="${!!S.mm[u.id]}">${S.mm[u.id] ? '✓ ในรายการย้าย' : '+ รายการย้าย'}</button>
             <button type="button" class="tg" aria-pressed="${c === 'ok'}" data-count="${u.id}" data-res="ok">นับตรง</button><button type="button" class="tg" aria-pressed="${c === 'diff'}" data-count="${u.id}" data-res="diff">ไม่ตรง</button>
@@ -896,7 +896,7 @@ function viewRecv(d) {
   const manual = f.sup === '__manual' || sups.length === 0;
   const supOpts = sups.map((x) => `<option value="${esc(x)}" ${f.sup === x ? 'selected' : ''}>${esc(x)} · มี PO ค้าง</option>`).join('') + `<option value="__manual" ${manual ? 'selected' : ''}>ไม่มีในรายการ ใส่ชื่อเอง</option>`;
   const pos = it ? [...new Set(d.s.suppliers.filter((x) => x.item === it.code && (manual || x.supplier === f.sup)).map((x) => x.po).filter(Boolean))] : [];
-  const locOpts = d.slots.map((c) => `<option ${f.location === c ? 'selected' : ''}>${esc(c)}</option>`).join('');
+  const recvLocs = locOpts(d, f.location);
   const packChips = packChipsOf(f, 'f'); const w = CONT[f.cont] || 'ถุง';
   const qcChips = [['pass', 'ผ่าน'], ['cond', 'ผ่านโดยมีเงื่อนไข'], ['fail', 'ไม่ผ่าน']].map(([id, l]) => `<button type="button" class="tg" aria-pressed="${f.qci === id}" data-set="f.qci" data-val="${id}">${l}</button>`).join('');
   const sugg = suggestLabels(it); const mx = vehMax(it, f.vehU) * Math.max(1, int(f.vehN));
@@ -965,7 +965,7 @@ ${f.source === 'transfer' ? `      <div class="sect">รับโอน · ไ�
         <label class="fld">${f.plant === 'PD' ? 'Lot ผลิต (ทวนสอบ)' : 'Lot ต้นทาง (ทวนสอบ)'}<input data-bind="f.slot" value="${esc(f.slot)}" maxlength="40" autocomplete="off"></label>
         <label class="fld">ทะเบียนรถ<input data-bind="f.plate" value="${esc(f.plate)}" maxlength="20" autocomplete="off"></label>
         <label class="fld">วันหมดอายุ (ถ้ามี)<input data-bind="f.exp" value="${esc(f.exp)}" maxlength="20" placeholder="วว/ดด/ปป หรือ ดด/ปปปป">${expHint(f.exp)}</label>
-        <label class="fld">ช่องพักของ<select data-bind="f.location">${locOpts}</select></label>
+        <label class="fld">ช่องพักของ<select data-bind="f.location">${recvLocs}</select></label>
       </div>
 ` : `      <div class="sect">ตาชั่ง</div>
       <div class="grid2">
@@ -980,7 +980,7 @@ ${f.source === 'transfer' ? `      <div class="sect">รับโอน · ไ�
         <label class="fld">ทะเบียนรถ<input data-bind="f.plate" value="${esc(f.plate)}" maxlength="20" autocomplete="off"></label>
         <label class="fld">จังหวัด<input list="dl-prov" data-bind="f.province" value="${esc(f.province)}" maxlength="40" autocomplete="off"></label>
         <label class="fld">วันหมดอายุ (ถ้ามี)<input data-bind="f.exp" value="${esc(f.exp)}" maxlength="20" placeholder="วว/ดด/ปป หรือ ดด/ปปปป">${expHint(f.exp)}</label>
-        <label class="fld">ช่องพักของ<select data-bind="f.location">${locOpts}</select></label>
+        <label class="fld">ช่องพักของ<select data-bind="f.location">${recvLocs}</select></label>
       </div>
       ${pos.length ? `<div class="chips">PO ค้าง ${pos.slice(0, 4).map((p) => `<button type="button" class="tg" aria-pressed="${f.po === p}" data-set="f.po" data-val="${esc(p)}">${esc(p)}</button>`).join('')}</div>` : ''}
       <div class="sect">QC ผลตรวจสอบเบื้องต้น (ต้องผ่านก่อนลงของ)</div>
@@ -1046,7 +1046,7 @@ function viewReturnForm(d) {
     ${sel ? `<p class="smt" style="margin:-6px 0 0">คืนได้อีกประมาณ <b>${fmt(sel.left)}</b> กก. · เข้าคลัง ${spill(sel.store)} · พาเลทใหม่ต่อเลขเดิมของ Lot</p>` : ''}
     <div class="grid2">
       <label class="fld">เลขที่ใบโอนคืน<input data-bind="rt.tdoc" value="${esc(r.tdoc)}" maxlength="40" autocomplete="off"></label>
-      <label class="fld">ช่องเก็บ<select data-bind="rt.loc">${d.slots.map((c) => `<option ${r.loc === c ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select></label>
+      <label class="fld">ช่องเก็บ<select data-bind="rt.loc">${locOpts(d, r.loc)}</select></label>
     </div>
     <div class="chips">บรรจุ ${packs}</div>
     ${r.pack === 'BAG' ? `<div class="grid3"><label class="fld">พาเลทเต็ม<input data-bind="rt.n" value="${esc(r.n)}" inputmode="numeric"></label>
@@ -1161,7 +1161,7 @@ function viewLotInfo(d, lot) {
       ${inp('province', 'จังหวัด', 'maxlength="40" list="dl-prov"')}
       <label class="fld">${tr ? 'รถเข้า' : 'ชั่งเข้า'}<input type="datetime-local" data-bind="le.win" value="${esc(le.win)}"></label>
       ${pre ? '<span></span>' : `<label class="fld">${tr ? 'บันทึกน้ำหนัก' : 'ชั่งออก'}<input type="datetime-local" data-bind="le.wout" value="${esc(le.wout)}"></label>`}
-      ${pre ? `<label class="fld">ช่องพักของ<select data-bind="le.loc">${d.slots.map((c) => `<option ${le.loc === c ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select></label>` : ''}
+      ${pre ? `<label class="fld">ช่องพักของ<select data-bind="le.loc">${locOpts(d, le.loc)}</select></label>` : ''}
       ${lot.status === 'unload' ? `${inp('per', 'ถุงต่อพาเลท', 'inputmode="numeric"')}${inp('labels', 'จำนวนป้ายที่พิมพ์', 'inputmode="numeric"')}` : ''}
       ${inp('vehicle', 'จำนวนรถ (เช่น 1 พ่วง)', 'maxlength="30"')}
       ${inp('method', 'วิธีการลง', 'maxlength="60" list="dl-method"')}
@@ -1212,7 +1212,7 @@ function viewGrind(d) {
       <label class="fld">${dest[2]}<input data-bind="gCount" value="${esc(S.gCount)}" inputmode="numeric"></label>
       ${S.gDest === 'BIGBAG' ? `<div class="fld">น้ำหนักรวม (ชั่งทีละใบ)<b style="color:var(--ink);font-size:16px">${wOk ? fmt(wSum) + ' กก.' : '–'}</b></div>` : `<label class="fld">น้ำหนักรวมที่ได้ (กก.)<input data-bind="gKg" value="${esc(S.gKg)}" placeholder="${fmt(inKg)}" inputmode="decimal"></label>`}
       ${S.gDest === 'PD' ? `<label class="fld">ลงที่ PD<select data-bind="gPd">${PD_DESTS.map((p) => `<option ${S.gPd === p ? 'selected' : ''}>${p}</option>`).join('')}</select></label>` : ''}
-      ${S.gDest === 'BIGBAG' ? `<label class="fld">ช่องเก็บ<select data-bind="gLoc"><option value="">— ยังไม่ระบุ —</option>${d.slots.map((c) => `<option ${S.gLoc === c ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select></label>` : ''}
+      ${S.gDest === 'BIGBAG' ? `<label class="fld">ช่องเก็บ<select data-bind="gLoc"><option value="">— ยังไม่ระบุ —</option>${locOpts(d, S.gLoc)}</select></label>` : ''}
     </div>
     ${nW ? `<div class="sect">ชั่ง Bigbag ทีละใบ (กก.)</div><div class="grid4">${ws.map((w, i) => `<label class="fld">G ใบที่ ${i + 1}<input data-bind="gW.${i}" value="${esc(S.gW[i] || '')}" inputmode="decimal"></label>`).join('')}</div>` : ''}
     <div class="note" style="display:grid;grid-template-columns:1fr auto;gap:4px 12px"><span>เข้าบด (${sel.length} รายการ)</span><span class="num">${fmt(inKg)} กก.</span><span>ออกจากบด</span><span class="num">${fmt(out)} กก.</span><span class="muted">ส่วนต่าง (ไม่คิด loss)</span><span class="num muted">${fmt(inKg - out)} กก.</span></div>
@@ -1309,7 +1309,7 @@ function adjPanel(d, u) {
     <b>ปรับยอด ${esc(tag(u))} · ตามระบบ ${u.bags > 0 ? fmt(u.bags) + ' ' + (u.kind === 'BIGBAG' ? 'ใบ' : 'ถุง') + ' · ' : ''}${fmt(u.kg)} กก. · ช่อง ${esc(u.loc || '-')}</b>
     <div class="grid4">${u.bags > 0 ? `<label class="fld">จำนวนที่นับได้ (${u.kind === 'BIGBAG' ? 'ใบ' : 'ถุง'})<input data-bind="adj.bags" value="${esc(a.bags)}" inputmode="numeric" placeholder="${fmt(u.bags)}"></label>` : ''}
       <label class="fld">น้ำหนักที่นับได้ (กก.)<input data-bind="adj.kg" value="${esc(a.kg)}" inputmode="decimal" placeholder="${isNaN(kg) ? fmt(u.kg) : fmt(kg)}"></label>
-      <label class="fld">ช่องที่พบ<select data-bind="adj.loc">${d.slots.map((c) => `<option ${(a.loc || u.loc) === c ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select></label>
+      <label class="fld">ช่องที่พบ<select data-bind="adj.loc">${locOpts(d, (a.loc || u.loc))}</select></label>
       <div class="fld">ไม่พบของ<button type="button" class="ghost sm" data-adjzero="1">ตั้งเป็น 0</button></div></div>
     <div class="grid2"><label class="fld">เหตุผล (ต้องใส่)<input data-bind="adj.reason" value="${esc(a.reason)}" maxlength="200" autocomplete="off" placeholder="เช่น นับได้ 39 ถุง ถุงขาด 1"></label><span></span></div>
     <div class="fc"><span class="smt">${dk === null ? '<span class="muted">ใส่จำนวนหรือน้ำหนักที่นับได้</span>' : `หลังปรับ <b>${fmt(kg)}</b> กก. · ส่วนต่าง <b class="${dk < 0 ? 'err' : ''}">${dk > 0 ? '+' : ''}${fmt(dk)}</b> กก.${kg === 0 ? ' · พาเลทนี้จะหมดยอด' : ''}`}</span>
@@ -1332,11 +1332,32 @@ function viewCount(d) {
     ${viewRep(d, 'count')}`;
 }
 
+// ตัวเลือกช่องเก็บ จัดกลุ่มตามโซน เรียงเลขแบบธรรมชาติ (D2 ก่อน D10)
+const natCmp = (a, b) => (/\d$/.test(a) ? 0 : 1) - (/\d$/.test(b) ? 0 : 1) || a.localeCompare(b, 'en', { numeric: true });
+function locOpts(d, sel) {
+  return d.zones.map((z) => z.slots.length ? `<optgroup label="${esc(z.name)}">${z.slots.slice().sort(natCmp).map((c) => `<option ${sel === c ? 'selected' : ''}>${esc(c)}</option>`).join('')}</optgroup>` : '').join('');
+}
+// แบ่งพาเลท (ยอดยกมาที่ลงรวมทั้ง Lot / พาเลทใหญ่) และรวมพาเลท ใน Lot เดียวกัน
+function spPanel(d, u) {
+  const sp = S.sp; const per = int(sp.per), n = int(sp.n); const left = u.bags - per * n; const ok = per >= 1 && n >= 1 && left >= 1 && !S.busy;
+  const others = d.live.filter((x) => x.id !== u.id && x.lot === u.lot && x.store === u.store && x.kind === 'PALLET' && x.kg > 0).sort((a, b) => pSort(a.p) - pSort(b.p));
+  return `<div class="note" style="display:flex;flex-direction:column;gap:10px">
+    ${u.bags >= 2 ? `<b class="smt">แบ่งเป็นพาเลทใหม่</b>
+    <div class="grid4"><label class="fld">ถุง/พาเลทใหม่<input data-bind="sp.per" value="${esc(sp.per)}" inputmode="numeric"></label>
+      <label class="fld">จำนวนพาเลทใหม่<input data-bind="sp.n" value="${esc(sp.n)}" inputmode="numeric"></label>
+      <label class="fld">ช่องเก็บพาเลทใหม่<select data-bind="sp.loc">${locOpts(d, sp.loc || u.loc)}</select></label></div>
+    <div class="chips"><button type="button" class="ghost sm" data-spmax="${u.id}" ${per >= 1 ? '' : 'disabled'}>แบ่งเต็มเท่าที่ได้</button>
+      <button type="button" data-spdo="${u.id}" ${ok ? '' : 'disabled'}>แบ่งพาเลท</button></div>
+    <span class="smt">${per >= 1 && n >= 1 ? (left >= 1 ? `ได้พาเลทใหม่ ${n} พาเลท × ${per} ถุง (≈ ${fmt(u.kg * per / u.bags)} กก./พาเลท) · พาเลท ${esc(u.p)} เหลือ ${left} ถุง ≈ ${fmt(u.kg - Math.round(u.kg * per / u.bags * 100) / 100 * n)} กก.` : `<span class="err">ต้องเหลือในพาเลท ${esc(u.p)} อย่างน้อย 1 ถุง (มี ${fmt(u.bags)} ถุง)</span>`) : 'ใส่ถุงต่อพาเลทและจำนวนพาเลท · น้ำหนักเฉลี่ยตามถุง'}</span>` : ''}
+    ${others.length ? `<b class="smt">รวมพาเลทนี้เข้ากับพาเลทอื่นใน Lot เดียวกัน</b>
+    <div class="chips"><select data-bind="sp.into" aria-label="รวมเข้าพาเลท"><option value="">— เลือกพาเลทปลายทาง —</option>${others.map((x) => `<option value="${x.id}" ${sp.into === x.id ? 'selected' : ''}>พาเลท ${esc(x.p)} @${esc(x.loc || '-')} · ${fmt(x.bags)} ถุง</option>`).join('')}</select>
+      <button type="button" class="ghost" data-mgdo="${u.id}" ${sp.into && !S.busy ? '' : 'disabled'}>รวมเข้าไป</button></div>` : ''}</div>`;
+}
 function viewLoc(d) {
   const map = d.zones.map((z) => `<div style="display:flex;flex-direction:column;gap:8px"><span class="smt" style="font-weight:600">${esc(z.name)}</span><div class="lane">
     ${z.slots.map((code) => { const us = d.live.filter((u) => u.loc === code); const kg = sum(us); const tank = code.startsWith('TANK');
-      const frac = tank ? Math.min(1, kg / 15000) : Math.min(1, us.length / 4); const st = us[0] ? STORES.find((s) => s.id === us[0].store) : null;
-      const hold = us.some((u) => d.stOf(u) === 'hold'); const lab = us.length ? (tank ? fmt(kg) + ' กก.' : us.length + ' หน่วย') : 'ว่าง';
+      const cap = (d.s.locations.find((l) => l.code === code) || {}).cap || 4; const frac = tank ? Math.min(1, kg / 15000) : Math.min(1, us.length / cap); const st = us[0] ? STORES.find((s) => s.id === us[0].store) : null;
+      const hold = us.some((u) => d.stOf(u) === 'hold'); const lab = us.length ? (tank ? fmt(kg) + ' กก.' : us.length + (cap ? '/' + cap : '') + ' หน่วย') : 'ว่าง';
       return `<button type="button" class="slot ${hold ? 'hold' : ''}" aria-pressed="${S.selSlot === code}" data-slot="${esc(code)}" aria-label="ช่อง ${esc(code)} ${lab}" style="${tank ? 'width:124px' : ''}">
         <span class="fill" aria-hidden="true" style="height:${Math.round(frac * 100)}%;background:${st ? st.color + '2e' : 'transparent'};border-top:${st && frac ? '3px solid ' + st.color : '0'}"></span>
         <span class="t"><b class="mono" style="font-size:13px">${esc(code)}</b><span style="font-size:12px">${lab}</span></span></button>`; }).join('') || '<span class="muted smt">ยังไม่มีช่อง</span>'}</div></div>`).join('');
@@ -1346,19 +1367,22 @@ function viewLoc(d) {
   const panel = inSlot.map((u) => `<div style="padding:10px 0;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:6px">
       <div style="display:flex;justify-content:space-between;gap:10px"><label style="display:flex;gap:8px;align-items:center;cursor:pointer"><input type="checkbox" data-mmsel="${u.id}" ${S.mm[u.id] ? 'checked' : ''} aria-label="เลือกย้าย ${esc(tag(u))}"><b class="mono" style="font-weight:600">${esc(tag(u))}</b></label>${pill(d.stOf(u))}</div>
       <span class="muted smt">${esc(d.itemOf(u).name)} (${u.store}) · ${u.kg === null ? fmt(u.bags) + ' ถุง รอชั่ง' : (u.bags > 0 ? fmt(u.bags) + ' ถุง · ' : '') + fmt(u.kg) + ' กก.'}</span>
-      <label class="muted smt" style="display:flex;align-items:center;gap:8px">ย้ายไปช่อง <select data-move="${u.id}">${d.slots.map((c) => `<option ${c === u.loc ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select></label></div>`).join('') || '<p class="muted smt">ช่องนี้ว่าง</p>';
+      <label class="muted smt" style="display:flex;align-items:center;gap:8px">ย้ายไปช่อง <select data-move="${u.id}">${locOpts(d, u.loc)}</select></label>
+      ${u.kind === 'PALLET' && u.kg > 0 ? `<div><button type="button" class="ghost sm" data-spopen="${u.id}" aria-expanded="${S.sp.unit === u.id}">แบ่ง / รวมพาเลท</button></div>${S.sp.unit === u.id ? spPanel(d, u) : ''}` : ''}</div>`).join('') || '<p class="muted smt">ช่องนี้ว่าง</p>';
   const lf = S.lf;
-  const tableRows = d.s.locations.map((l) => { const us = d.live.filter((u) => u.loc === l.code); const names = [...new Set(us.map((u) => d.itemOf(u).name))];
+  const tableRows = d.s.locations.filter((l) => lf.zone === '__NEW' || l.zone === lf.zone).map((l) => { const us = d.live.filter((u) => u.loc === l.code); const names = [...new Set(us.map((u) => d.itemOf(u).name))];
     return `<tr><td class="mono">${esc(l.code)}</td><td>${esc((d.zones.find((z) => z.id === l.zone) || {}).name)}</td><td>${us.length ? us.length + ' หน่วย · ' + esc(names.join(', ')) : 'ว่าง'}</td><td class="num">${us.length ? fmt(sum(us)) : '–'}</td>
       <td><button type="button" class="ghost sm" data-locdel="${esc(l.code)}" ${us.length ? 'disabled title="ย้ายของออกก่อน"' : ''}>ลบ</button></td></tr>`; }).join('');
-  return `<div><h1>Location</h1><p class="lead">สีตามคลัง ความสูงแถบตามความเต็มของช่อง · แตะช่องเพื่อดูและย้าย · ติ๊กหลายพาเลท (หรือทั้ง Lot) แล้วย้ายพร้อมกัน · สแกน QR ที่ปุ่ม 📷 สแกน</p></div>
+  const spl = S.spLast;
+  return `${spl ? `<div class="note" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between"><span>แบ่งแล้ว Lot ${esc(spl.lot)} · พาเลทใหม่ ${esc(spl.ps[0])}${spl.ps.length > 1 ? '–' + esc(spl.ps[spl.ps.length - 1]) : ''} (${spl.ps.length} ใบ)</span>
+    <span class="chips"><button type="button" data-plabel="${esc(spl.lot)}" data-ps="${esc(spl.ps.join(','))}">พิมพ์ป้ายพาเลทใหม่</button><button type="button" class="ghost sm" data-splastx="1">ปิด</button></span></div>` : ''}<div><h1>Location</h1><p class="lead">สีตามคลัง ความสูงแถบตามความเต็มของช่อง · แตะช่องเพื่อดูและย้าย · ติ๊กหลายพาเลท (หรือทั้ง Lot) แล้วย้ายพร้อมกัน · สแกน QR ที่ปุ่ม 📷 สแกน</p></div>
     ${mmIds.length ? `<div class="note" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;border-color:var(--blue)"><span><b>รายการย้าย ${mmIds.length} พาเลท</b> · ${fmt(sum(mmUnits))} กก.<span class="muted smt" style="display:block">${esc(mmUnits.slice(0, 8).map((u) => tag(u) + ' @' + (u.loc || '-')).join(', '))}${mmUnits.length > 8 ? ' …' : ''}</span></span>
-      <span class="chips">ย้ายไปช่อง <select data-bind="mmTo">${d.slots.map((c) => `<option ${(S.mmTo || d.slots[0]) === c ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select><button type="button" data-mmdo="1" ${S.busy ? 'disabled' : ''}>ย้ายทั้งหมด</button><button type="button" class="ghost" data-mmclear="1">ล้างรายการ</button></span></div>` : ''}
+      <span class="chips">ย้ายไปช่อง <select data-bind="mmTo">${locOpts(d, (S.mmTo || d.slots[0]))}</select><button type="button" data-mmdo="1" ${S.busy ? 'disabled' : ''}>ย้ายทั้งหมด</button><button type="button" class="ghost" data-mmclear="1">ล้างรายการ</button></span></div>` : ''}
     <div class="row"><div class="map" style="flex:2 1 520px;min-width:0">${map}
       <div style="display:flex;flex-wrap:wrap;gap:14px;font-size:12px">${STORES.map((s) => `<span style="display:flex;align-items:center;gap:6px"><span aria-hidden="true" style="width:14px;height:14px;border-radius:3px;background:${s.color}2e;border-top:3px solid ${s.color}"></span>${s.id} ${s.full}</span>`).join('')}
       <span style="display:flex;align-items:center;gap:6px"><span aria-hidden="true" style="width:14px;height:14px;border:2px solid var(--bad);border-radius:3px"></span>มี Hold</span></div></div>
     <div class="card" style="flex:1 1 300px;min-width:0"><h2>ช่อง ${esc(S.selSlot)}</h2>${inSlot.length ? `<div class="chips"><button type="button" class="ghost sm" data-mmslot="${esc(S.selSlot)}">เลือกทั้งช่อง</button>${lotsIn.map((l) => `<button type="button" class="ghost sm" data-mmlot="${esc(l)}">เลือกทั้ง Lot ${esc(l)}</button>`).join('')}</div>` : ''}${panel}</div></div>
-    <div class="card" style="display:flex;flex-direction:column;gap:14px"><h2 style="margin:0">ช่องเก็บทั้งหมด (${d.s.locations.length} ช่อง)</h2>
+    <div class="card" style="display:flex;flex-direction:column;gap:14px"><h2 style="margin:0">ช่องเก็บทั้งหมด (${d.s.locations.length} ช่อง) <span class="muted smt" style="font-weight:400">· ตารางแสดงเฉพาะโซนที่เลือก</span></h2>
       <form data-form="locadd" class="note" style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end">
         <label class="fld" style="flex:1 1 200px">โซน<select data-bind="lf.zone">${d.zones.map((z) => `<option value="${esc(z.id)}" ${lf.zone === z.id ? 'selected' : ''}>${esc(z.name)}</option>`).join('')}<option value="__NEW" ${lf.zone === '__NEW' ? 'selected' : ''}>+ เพิ่มโซนใหม่</option></select></label>
         ${lf.zone === '__NEW' ? `<label class="fld" style="flex:1 1 180px">ชื่อโซนใหม่<input data-bind="lf.zoneName" value="${esc(lf.zoneName)}" maxlength="60"></label>` : ''}
@@ -1434,7 +1458,7 @@ function viewOpening(d) {
       <label class="fld">วันที่รับเข้า<input type="date" data-bind="ob.recv" value="${esc(o.recv)}"></label>
       <label class="fld">วันหมดอายุ (ถ้ามี)<input data-bind="ob.exp" value="${esc(o.exp)}" maxlength="20"></label>
       <label class="fld">ผู้ส่ง (ถ้ามี)<input data-bind="ob.sup" value="${esc(o.sup)}" maxlength="120" autocomplete="off"></label>
-      <label class="fld">ช่องเก็บ (ทั้ง Lot)<select data-bind="ob.loc"><option value="">— ไม่ระบุ —</option>${d.slots.map((c) => `<option ${o.loc === c ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select></label>
+      <label class="fld">ช่องเก็บ (ทั้ง Lot)<select data-bind="ob.loc"><option value="">— ไม่ระบุ —</option>${locOpts(d, o.loc)}</select></label>
     </div>
     <div class="chips">คลัง ${stores}</div><div class="chips">บรรจุ ${packs}</div>
     <div class="note" style="display:flex;flex-direction:column;gap:8px"><b class="smt">ช่วยสร้างรายการ</b>
@@ -1443,7 +1467,11 @@ function viewOpening(d) {
         ${o.pack === 'BAG' ? `<label class="fld">${ow}/พาเลท<input data-bind="ob.bags" value="${esc(o.bags)}" inputmode="numeric"></label>` : ''}
         <label class="fld">กก./${o.pack === 'BIGBAG' ? 'ใบ' : ow}<input data-bind="ob.kgb" value="${esc(o.kgb)}" inputmode="decimal"></label>
         ${o.pack === 'BAG' ? `<label class="fld">${ow}พาเลทท้าย<input data-bind="ob.lastBags" value="${esc(o.lastBags)}" inputmode="numeric" placeholder="0"></label>` : ''}</div>`}
-      <div><button type="button" class="ghost sm" data-obgen="1">สร้างรายการด้านล่าง</button></div></div>
+      <div><button type="button" class="ghost sm" data-obgen="1">สร้างรายการด้านล่าง</button></div>
+      ${o.pack === 'BAG' ? `<div style="border-top:1px dashed var(--line);padding-top:8px;display:flex;flex-direction:column;gap:8px"><b class="smt">ไม่รู้จำนวนพาเลท → ลงรวมทั้ง Lot เป็นพาเลทเดียว</b>
+        <div class="grid4"><label class="fld">${ow}รวม<input data-bind="ob.tb" value="${esc(o.tb)}" inputmode="numeric"></label><label class="fld">กก. รวม<input data-bind="ob.tkg" value="${esc(o.tkg)}" inputmode="decimal"></label></div>
+        <div><button type="button" class="ghost sm" data-obone="1" ${int(o.tb) > 0 && num(o.tkg) > 0 ? '' : 'disabled'}>ลงรวมทั้ง Lot</button></div>
+        <span class="muted smt">ลงเป็นพาเลท 1 ที่ช่องเก็บด้านบน · ภายหลังไปหน้า Location แตะช่อง → "แบ่ง / รวมพาเลท" ใส่ถุงต่อพาเลท ระบบออกเลขพาเลทใหม่และป้ายให้ (ทำตอนจัดเข้าช่องหรือตอนนับครั้งแรก)</span></div>` : ''}</div>
     <label class="fld">รายการพาเลท (1 บรรทัด = เลขพาเลท, ถุง, กก. [, ช่อง]) · แก้ได้ เช่น พาเลทที่ใช้ไปบางส่วน<textarea data-bind="ob.lines" rows="6" style="font-family:'IBM Plex Mono',monospace;font-size:13px" placeholder="1,40,2000&#10;2,40,2000&#10;3,13,650,C-01">${esc(o.lines)}</textarea></label>
     <div class="fc"><span class="smt">${ls.length} หน่วย · ${fmt(kg)} กก.${bad.length ? ` · <span class="err">บรรทัดผิด ${bad.length} (เลขพาเลท/กก.)</span>` : ''}</span>
       <button type="button" data-obsave="1" ${ok ? '' : 'disabled'}>บันทึกยอดยกมา</button></div></div>`;
@@ -1555,7 +1583,7 @@ document.addEventListener('click', async (e) => {
   if (ds.logout) { logout(); return; }
   if (ds.labelp) { S.labelP = ds.labelp; render(); return; }
   if (ds.pf) { printForm(ds.pf); return; }
-  if (ds.plabel) { const ps = ds.sel ? Object.keys(S.lsel.ps).filter((k) => S.lsel.ps[k]) : ds.range !== undefined ? parsePs(S.docPs) : null; printLabels(D(), ds.plabel, ps, int(ds.from)); return; }
+  if (ds.plabel) { const ps = ds.ps ? ds.ps.split(',') : ds.sel ? Object.keys(S.lsel.ps).filter((k) => S.lsel.ps[k]) : ds.range !== undefined ? parsePs(S.docPs) : null; printLabels(D(), ds.plabel, ps, int(ds.from)); return; }
   if (ds.lsel !== undefined) { S.lsel.ps[ds.lsel] = !S.lsel.ps[ds.lsel]; if (S.labelP !== ds.lsel) S.pf = { unit: '', bags: '', reason: '' }; S.labelP = ds.lsel; render(); return; }
   if (ds.lselall) { const d = D(); const lot = d.lots[S.lsel.lot]; if (lot) labelUnits(d, lot).forEach((u) => { S.lsel.ps[u.p] = true; }); render(); return; }
   if (ds.lselnone) { S.lsel.ps = {}; render(); return; }
@@ -1585,7 +1613,16 @@ document.addEventListener('click', async (e) => {
   if (ds.lesave) { const l = D().lots[S.le.lot]; if (!l) return; const p = leDiff(l);
     act('rm_lot_edit', { p_lot: l.lot, p }, 'บันทึกการแก้ไข ' + l.lot + ' แล้ว (' + Object.keys(p).length + ' รายการ)', () => { S.le = { lot: '' }; }); return; }
   if (ds.reweigh) { act('rm_lot_reweigh', { p_lot: ds.reweigh, p_net: num(S.rw.net), p_reason: S.rw.reason.trim() }, (r) => 'แก้น้ำหนัก ' + r.lot + ' เป็น ' + fmt(r.net) + ' กก. แล้ว' + (r.avg ? ' · ' + fmt(r.avg) + ' กก./ถุง' : ''), () => { S.rw = { net: '', reason: '' }; }); return; }
+  if (ds.spopen) { const u = D().live.find((x) => x.id === ds.spopen); const l = u && D().lots[u.lot];
+    S.sp = S.sp.unit === ds.spopen ? { unit: '' } : { unit: ds.spopen, per: String((l && l.per) || 40), n: '', loc: '', into: '' }; S.keepScroll = true; render(); return; }
+  if (ds.spmax) { const u = D().live.find((x) => x.id === ds.spmax); const per = int(S.sp.per); if (u && per >= 1) S.sp.n = String(Math.max(0, Math.floor((u.bags - 1) / per))); S.keepScroll = true; render(); return; }
+  if (ds.splastx) { S.spLast = null; render(); return; }
+  if (ds.spdo) { const sp = S.sp; S.keepScroll = true;
+    act('rm_unit_split', { p_unit: ds.spdo, p: { per: int(sp.per), count: int(sp.n), location: sp.loc || null } }, (r) => 'แบ่งพาเลท ' + r.from + ' ของ ' + r.lot + ' เป็นพาเลทใหม่ ' + r.ps.length + ' ใบ · เหลือ ' + fmt(r.left_bags) + ' ถุง', (r) => { S.spLast = { lot: r.lot, ps: r.ps }; S.sp = { unit: '' }; }); return; }
+  if (ds.mgdo) { S.keepScroll = true;
+    act('rm_unit_merge', { p_from: ds.mgdo, p_into: S.sp.into }, (r) => 'รวมพาเลท ' + r.from + ' เข้าพาเลท ' + r.into + ' แล้ว · ' + fmt(r.bags) + ' ถุง', () => { S.sp = { unit: '' }; }); return; }
   if (ds.obgen) { S.ob.lines = obGen(); render(); return; }
+  if (ds.obone) { S.ob.lines = `1,${int(S.ob.tb)},${num(S.ob.tkg)}`; render(); return; }
   if (ds.obsave) { const o = S.ob;
     const p = { item: o.item, lot: o.lot.trim().toUpperCase(), store: o.store, pack: o.pack, cont: o.cont || undefined, recv_day: o.recv, exp: o.exp, supplier: o.sup, location: o.loc,
       units: obLines(o.lines).map((x) => ({ p: x.p, bags: x.bags, kg: x.kg, loc: x.loc || undefined, scrap: o.pack === 'BAG' && x.bags > 0 && x.bags < Math.max(...obLines(o.lines).map((y) => y.bags)) })) };
