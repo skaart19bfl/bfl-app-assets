@@ -190,8 +190,8 @@ const METHODS = ['รถโฟล์คลิฟท์', 'แรงงานค�
 const NCP_URL = 'https://script.google.com/macros/s/AKfycbwL2RlhYt3DsouOa2juTE48-fqirdLNOfVt3lrVtcEnj5B0LWju3UjvnjtYwX4uQIH2/exec';
 const MENU = [
   { g: 'WH คลังสินค้า', roles: ['wh', 'view'], items: [['home', 'งานวันนี้'], ['recv', 'รับเข้า วัตถุดิบ'], ['ncp', 'ตรวจรับ NCP'], ['grind', 'บด TC'], ['issue', 'จ่ายออก / ส่ง BFL-PC'], ['count', 'ตรวจนับ'], ['loc', 'Location'], ['stock', 'คงเหลือ / Stock card'], ['docs', 'ป้าย / แบบฟอร์ม']] },
-  { g: 'PD ฝ่ายผลิต', roles: ['intake', 'control', 'wh'], items: [['ncp', 'เบิก / ใช้ผลิต NCP'], ['soon', 'Intake เท · ยอดในถัง', 'เฟส 2']] },
-  { g: 'Control', roles: ['control'], items: [['ncp', 'บอร์ด NCP'], ['soon', 'งานเท / Plan batch', 'เฟส 2–3']] },
+  { g: 'PD ฝ่ายผลิต', roles: ['intake', 'control', 'wh'], items: [['intake', 'Intake สแกนเท'], ['bins', 'ยอดในถัง'], ['ncp', 'เบิก / ใช้ผลิต NCP']] },
+  { g: 'Control', roles: ['control'], items: [['dumpctl', 'ใบสั่งเท'], ['bins', 'ยอดในถัง / นับถัง'], ['ncp', 'บอร์ด NCP'], ['soon', 'Plan batch', 'เฟส 3']] },
   { g: 'รายงาน', roles: ['wh', 'view', 'control', 'intake'], items: [['reports', 'รายงานประจำวัน'], ['stockrep', 'คงเหลือรายวัน / รายเดือน'], ['ncp', 'รายงาน NCP / LINE']] },
   { g: 'ระบบ', roles: [], items: [['admin', 'ผู้ใช้ · ยอดยกมา · ฐานข้อมูล']] }
 ];
@@ -208,7 +208,10 @@ const S = {
   iType: 'fat', iItem: '', iStore: '', iKg: '', iRef: '', iPick: {},
   storeF: 'ALL', view: 'sum', card: null, cardRows: null,
   selSlot: 'S-01', sp: { unit: '' }, spLast: null, lf: { zone: 'S', zoneName: '', code: '' }, adminInfo: null,
-  docDay: '', docLot: '', docTag: ''
+  docDay: '', docLot: '', docTag: '',
+  pd: { data: null, loading: false, err: '' }, bsel: '', bcard: { bin: '', rows: null }, bs: { item: '', itemText: '', kg: '', reason: '', mode: 'kg', empty: '' }, hl: { bin: '', kg: '' }, sh: { kg: '', ref: '' },
+  of: { intake: 'IN2', bin: '', item: '', itemText: '', qty: '', unit: 'PALLET', note: '' }, ox: { doc: '' },
+  ik: { point: 'IN2', doc: '', q: '', unit: '', bags: '', cx: { id: '', reason: '' } }
 };
 
 const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -225,6 +228,7 @@ const store = (k, v) => { try { if (v === undefined) return localStorage.getItem
 
 function setTheme(t) { document.documentElement.setAttribute('data-theme', t); store('ncp_theme', t); }
 setTheme(store('ncp_theme') === 'dark' ? 'dark' : 'light');
+if (['IN1', 'IN2', 'IN3', 'HAND'].includes(store('rm_ik_point'))) S.ik.point = store('rm_ik_point');
 
 async function rpc(fn, args) {
   const res = await fetch(SB_URL + '/rest/v1/rpc/' + fn, { method: 'POST', headers: { apikey: SB_KEY, 'Content-Type': 'application/json' }, body: JSON.stringify(args) });
@@ -244,17 +248,18 @@ async function act(fn, args, okMsg, after) {
     const r = await rpc(fn, Object.assign({ p_token: S.tok }, args));
     if (after) after(r);
     S.toast = typeof okMsg === 'function' ? okMsg(r) : okMsg; S.toastErr = false;
-    await load(); if (repScreen(S.screen) && S.rep.data) await fetchRep();
+    await load(); if (repScreen(S.screen) && S.rep.data) await fetchRep(); if (pdScreen(S.screen)) await loadPD(true);
   } catch (e) { S.toast = e.message; S.toastErr = true; }
   S.busy = false; render(); if (S.keepScroll) { S.keepScroll = false; return; } window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-async function load() { S.snap = await rpc('rm_snapshot', { p_token: S.tok }); if (!S.docDay) S.docDay = S.snap.biz_day; }
+async function load() { S.snap = await rpc('rm_snapshot', { p_token: S.tok }); if (!S.docDay) S.docDay = S.snap.biz_day;
+  if (!S.roleInit) { S.roleInit = true; const r = S.snap.me.role; if (r === 'intake') S.screen = 'intake'; else if (r === 'control') S.screen = 'dumpctl'; if (pdScreen(S.screen)) loadPD(); } }
 
 function logout(silent) {
   if (typeof camStop === 'function' && camStream) camStop();
   if (S.tok && !silent) rpc('rm_logout', { p_token: S.tok }).catch(() => {});
-  S.tok = ''; S.snap = null; sessionStorage.removeItem('rm_tok'); render();
+  S.tok = ''; S.snap = null; S.roleInit = false; S.pd.data = null; sessionStorage.removeItem('rm_tok'); render();
 }
 
 // ---------- derived data ----------
@@ -501,8 +506,8 @@ function parsePs(txt) {
 // =====================================================================
 // รายงานประจำวัน (ทุกส่วน) + แก้ไข / ยกเลิก
 // =====================================================================
-const REP_KIND = { recv: 'รับเข้า', grind: 'บด TC', issue: 'จ่ายออก', loc: 'ย้ายช่อง', count: 'ตรวจนับ' };
-const REP_TYPES = { recv: ['RC', 'RT', 'OB'], grind: ['GR'], issue: ['IS', 'SX', 'TR'] };
+const REP_KIND = { recv: 'รับเข้า', grind: 'บด TC', issue: 'จ่ายออก', dump: 'เทเข้าถัง (PD)', loc: 'ย้ายช่อง', count: 'ตรวจนับ' };
+const REP_TYPES = { recv: ['RC', 'RT', 'OB'], grind: ['GR'], issue: ['IS', 'SX', 'TR'], dump: ['DO'] };
 const ITYPE = Object.fromEntries(ISSUE_TYPES);
 const GDEST = { BIGBAG: 'Bigbag → RM-G', PD: 'ส่ง PD', PC: 'ส่ง BFL-PC' };
 const lsum = (doc, types, k) => doc.lines.filter((x) => types.includes(x.type)).reduce((a, x) => a + Number(x[k] || 0), 0);
@@ -571,6 +576,14 @@ function repRows(d, kind) {
       const m = x.meta || {}; const v = x.status === 'void'; const ls = x.lines.filter((y) => ['ISSUE', 'ISSUE_EXT', 'TRANSFER'].includes(y.type)); const kg = lsum(x, ['ISSUE', 'ISSUE_EXT', 'TRANSFER'], 'out');
       return { v, doc: x, cells: [hm(x.at), esc(x.doc) + ' ' + voidTag(x), esc(ITYPE[m.type] || m.type || ''), esc(iname(m.item)), spill(m.store || ''), `<span class="mono smt">${esc(lotPs(ls))}</span>`, fmt(kg), esc(m.ref || ''), v ? '' : fix ? fxBtns(x, true) : ''],
         print: [hm(x.at), esc(x.doc), esc(ITYPE[m.type] || ''), esc(iname(m.item)), esc(m.store || ''), esc(lotPs(ls)), v ? '' : fkg(kg), esc([m.ref, v ? 'ยกเลิก ' + (m.void_reason || '') : '', m.edit_of ? 'แก้จาก ' + m.edit_of : ''].filter(Boolean).join(' · '))], kg: v ? 0 : kg }; }) };
+  }
+  if (kind === 'dump') {
+    return { cols: ['เวลา', 'ใบสั่ง', 'จุด → ถัง', 'วัตถุดิบ', 'Lot · พาเลท', 'ถุง', 'กก.', 'หมายเหตุ'], rows: docs.map((x) => {
+      const m = x.meta || {}; const v = x.status === 'void'; const ds = x.lines.filter((y) => y.type === 'DUMP'); const nv = x.lines.filter((y) => y.type === 'DUMP_VOID').length;
+      const kg = lsum(x, ['DUMP'], 'out') - lsum(x, ['DUMP_VOID'], 'in'); const bags = lsum(x, ['DUMP'], 'bags') - lsum(x, ['DUMP_VOID'], 'bags');
+      const note = [v ? 'ยกเลิก ' + (m.void_reason || '') : '', nv ? 'ยกเลิกเท ' + nv + ' รายการ' : '', m.qty ? 'สั่ง ' + fmt(m.qty) + ' ' + (OUNIT[m.unit] || '') : ''].filter(Boolean).join(' · ');
+      return { v, doc: x, cells: [hm(x.at), esc(x.doc) + ' ' + voidTag(x), esc((IKNAME[m.intake] || m.intake || '') + ' → ' + (m.bin || '')), esc(iname(m.item)), `<span class="mono smt">${esc(lotPs(ds))}</span>`, bags ? fmt(bags) : '', fmt(kg), esc(note)],
+        print: [hm(x.at), esc(x.doc), esc((IKNAME[m.intake] || m.intake || '') + ' → ' + (m.bin || '')), esc(iname(m.item)), esc(lotPs(ds)), bags ? fmt(bags) : '', v ? '' : fkg(kg), esc(note)], kg: v ? 0 : kg }; }) };
   }
   if (kind === 'loc') {
     return { cols: ['เวลา', 'Lot · พาเลท', 'วัตถุดิบ', 'คลัง', 'จาก', 'ไป', 'โดย', ''], rows: (R.locs || []).map((x) => {
@@ -684,7 +697,7 @@ function printSR(d) {
 }
 
 // ---------- ผู้ใช้ (admin) ----------
-const ROLES = [['wh', 'คลัง (WH)'], ['view', 'ดูอย่างเดียว'], ['admin', 'admin'], ['control', 'Control (เฟส 2)'], ['intake', 'Intake (เฟส 2)']];
+const ROLES = [['wh', 'คลัง (WH)'], ['view', 'ดูอย่างเดียว'], ['admin', 'admin'], ['control', 'Control'], ['intake', 'Intake']];
 const roleName = (r) => (ROLES.find((x) => x[0] === r) || [r, r])[1];
 function viewUsers(d) {
   const us = Array.isArray(S.users) ? S.users : S.users === null ? null : []; const f = S.uf; const me = d.s.me.username; const isNew = f.mode === 'new';
@@ -756,10 +769,216 @@ async function camStart() {
       if (det) { const r = await det.detect(v); if (r.length) text = r[0].rawValue; }
       else if (v.videoWidth) { cv.width = v.videoWidth; cv.height = v.videoHeight; cx.drawImage(v, 0, 0); const img = cx.getImageData(0, 0, cv.width, cv.height); const r = window.jsQR(img.data, img.width, img.height); if (r) text = r.data; }
     } catch (e) { /* ข้ามเฟรม */ }
-    if (text && scanParse(text)) { camStop(); S.scan.q = text; S.scan.to = ''; S.scan.open = true; render(); return; }
+    if (text && scanParse(text)) { camStop(); if (S.screen === 'intake') { S.ik.q = text; S.ik.unit = ''; S.ik.bags = ''; render(); return; } S.scan.q = text; S.scan.to = ''; S.scan.open = true; render(); return; }
     camTimer = setTimeout(tick, 250);
   };
   tick();
+}
+
+// ---------- เฟส PD: ยอดในถัง · ใบสั่งเท (Control) · Intake สแกนเท ----------
+const PD_GRP = [['B1', 'Batching 1 · B001–B024'], ['B2', 'Batching scale 2 · BI25 BI26 B135 B136'], ['HAND', 'เทมือ · BIA1–BIA3'], ['PILE', 'กอง Intake 1 · IN11–IN14'], ['LOADOUT', 'Load out → BFL-PC · B138–B141']];
+const INTAKES = [['IN2', 'Intake 2'], ['IN3', 'Intake 3'], ['IN1', 'Intake 1 (กอง)'], ['HAND', 'เทมือ BIA']];
+const IKNAME = Object.fromEntries(INTAKES);
+const OUNIT = { PALLET: 'พาเลท', BAG: 'ถุง', BIGBAG: 'Bigbag' };
+const OST = { queue: 'ในคิว', started: 'กำลังเท', done: 'เสร็จ', cancel: 'ยกเลิก' };
+const BTYPE = { OPENING: 'ยอดตั้งต้น', ADJUST: 'ปรับยอด', DUMP: 'เทเข้า', DUMP_VOID: 'ยกเลิกเท', USE: 'ใช้ batching', HAUL_IN: 'ลากจากกอง', HAUL_OUT: 'ลากขึ้นถัง', SHIP: 'ส่ง BFL-PC' };
+const pdScreen = (sc) => sc === 'bins' || sc === 'dumpctl' || sc === 'intake';
+const binOK = (ik, g) => ik === 'IN1' ? g === 'PILE' : ik === 'HAND' ? g === 'HAND' : ['B1', 'B2', 'LOADOUT'].includes(g);
+const isCtl = () => ['control', 'admin'].includes(S.snap.me.role);
+const dtm = (t) => t ? dmy(new Date(t).toLocaleDateString('sv-SE', { timeZone: 'Asia/Bangkok' })) + ' ' + hm(t) : '–';
+const inm = (d, c) => (d.items[c] || {}).name || c || '';
+async function loadPD(silent) {
+  if (S.pd.loading) return; S.pd.loading = true;
+  try { S.pd.data = await rpc('rm_pd_board', { p_token: S.tok }); S.pd.err = ''; } catch (e) { S.pd.err = e.message; }
+  S.pd.loading = false; if (!silent) render();
+}
+async function loadBinCard(bin) { S.bcard = { bin, rows: null }; render(); try { S.bcard.rows = await rpc('rm_bin_card', { p_token: S.tok, p_bin: bin, p_days: 14 }); } catch (e) { S.toast = e.message; S.toastErr = true; } render(); }
+const pdBins = () => (S.pd.data && S.pd.data.bins) || [];
+const pdOrders = () => (S.pd.data && S.pd.data.orders) || [];
+// ประมาณ กก. จากระยะว่างจากปากถังลงถึงผิววัตถุดิบ (ใช้ขนาดตามไฟล์ Batching_Bin_Size — ความหนาแน่นอ้างอิงของไฟล์)
+function binEst(b, empty) {
+  if (!b.cap || !b.height) return NaN; const e = num(empty); if (!(e >= 0)) return NaN;
+  const body = b.cap - (b.hopper || 0); return Math.round(Math.max(0, Math.min(b.cap, (b.hopper || 0) + body * (1 - Math.min(e, b.height) / b.height))));
+}
+// พาเลทที่ควรเทก่อน (FIFO ตามวันรับ) ของวัตถุดิบ + ชนิดหน่วยตามใบสั่ง
+function fifoUnits(d, item, unit) {
+  return d.live.filter((u) => { const l = d.lots[u.lot]; return l && l.item === item && l.status === 'ready' && u.kg > 0 && (unit === 'BIGBAG' ? u.kind === 'BIGBAG' : u.kind === 'PALLET'); })
+    .sort((a, b) => { const la = d.lots[a.lot], lb = d.lots[b.lot]; return String(la.recv_day).localeCompare(String(lb.recv_day)) || a.lot.localeCompare(b.lot) || (String(a.loc || '').startsWith('PD-') ? -1 : 0) - (String(b.loc || '').startsWith('PD-') ? -1 : 0) || pSort(a.p) - pSort(b.p); });
+}
+const prog = (o) => o.unit === 'BAG' ? Number(o.bags) : Number(o.units);
+const ordLine = (d, o) => `<b>${esc(inm(d, o.item))}</b> → ถัง <b class="mono">${esc(o.bin)}</b> · ${fmt(prog(o))}/${fmt(o.qty)} ${OUNIT[o.unit]} · ${fmt(o.kg)} กก.`;
+function binTile(d, b) {
+  const frac = b.cap ? Math.max(0, Math.min(1, b.bal / b.cap)) : (b.bal > 0 ? 1 : 0); const pct = b.cap ? Math.round(b.bal / b.cap * 100) : null;
+  const neg = b.bal < -0.5; const low = b.cap && b.start && pct < 15; const off = !b.start && b.grp !== 'PILE' && b.grp !== 'LOADOUT';
+  const col = neg || (pct !== null && pct > 100) ? 'var(--bad)' : low ? 'var(--warn, #c77700)' : 'var(--blue)';
+  return `<button type="button" class="slot ${neg ? 'hold' : ''}" aria-pressed="${S.bsel === b.code}" data-bsel="${esc(b.code)}" style="width:132px;height:92px" aria-label="ถัง ${esc(b.code)} ${fmt(b.bal)} กก.">
+    <span class="fill" aria-hidden="true" style="height:${Math.round(frac * 100)}%;background:${col}22;border-top:${frac ? '3px solid ' + col : '0'}"></span>
+    <span class="t"><b class="mono" style="font-size:13px">${esc(b.code)}${b.mismatch ? ' ⚠' : ''}</b><span style="font-size:11px;line-height:1.2;max-height:2.4em;overflow:hidden">${esc(b.item ? inm(d, b.item) : off ? 'ยังไม่ตั้งยอด' : 'ว่าง')}</span>
+      <span style="font-size:12px"><b>${fmt(b.bal)}</b> กก.${pct !== null && b.start ? ' · ' + pct + '%' : ''}</span></span></button>`;
+}
+function pdHead(title, lead) {
+  const P = S.pd.data; const bt = P && P.batching;
+  return `<div class="fc" style="flex-wrap:wrap;gap:10px"><div><h1>${title}</h1><p class="lead">${lead}</p></div>
+    <span class="chips"><button type="button" class="ghost sm" data-pdload="1" ${S.pd.loading ? 'disabled' : ''}>⟳ โหลดใหม่</button>${bt ? `<span class="muted smt">batch ล่าสุด ${dtm(bt.last)} · sync ${dtm(bt.synced)} · วันนี้ ${fmt(bt.today)} batch</span>` : ''}</span></div>
+    ${S.pd.err ? `<div class="msg bad">${esc(S.pd.err)}</div>` : ''}${!P ? '<p class="muted">กำลังโหลด…</p>' : ''}`;
+}
+
+// ===== ยอดในถัง =====
+function viewBins(d) {
+  const P = S.pd.data; const head = pdHead('ยอดในถัง', 'ยอดตั้งต้น + เทเข้า − ใช้ตาม batching (target kg จากหน้าจอ Start Batch) ± ปรับยอด · แตะถังเพื่อดูรายการ / ตั้งยอด');
+  if (!P) return head;
+  const bins = pdBins(); const b = bins.find((x) => x.code === S.bsel);
+  const unk = (P.unknown || []);
+  const groups = PD_GRP.map(([g, l]) => { const bs = bins.filter((x) => x.grp === g); return bs.length ? `<div style="display:flex;flex-direction:column;gap:8px"><span class="smt" style="font-weight:600">${l} · รวม ${fmt(bs.reduce((a, x) => a + Number(x.bal), 0))} กก.</span><div class="lane">${bs.map((x) => binTile(d, x)).join('')}</div></div>` : ''; }).join('');
+  const notes = [];
+  const mis = bins.filter((x) => x.mismatch); if (mis.length) notes.push(`⚠ batch ดึงวัตถุดิบไม่ตรงกับที่ตั้งไว้ในถัง: ${mis.map((x) => `${esc(x.code)} (ตั้ง ${esc(x.item || '-')} · batch ใช้ ${esc(x.mismatch)})`).join(' · ')}`);
+  if (unk.length) notes.push(`batch ที่ bin ไม่อยู่ในระบบ (7 วัน · ไม่ตัดถัง): ${unk.map((x) => `${esc(x.bin)} ${fmt(x.n)} รายการ ${fmt(x.kg)} กก.${x.bin === 'H1' ? ' (ชุดสารเสริมเทมือ)' : ''}`).join(' · ')}`);
+  const neg = bins.filter((x) => x.bal < -0.5); if (neg.length) notes.push(`ยอดติดลบ (ใช้มากกว่าที่เท) — ควรนับถังแล้วปรับยอด: ${neg.map((x) => esc(x.code)).join(', ')}`);
+  const nostart = bins.filter((x) => !x.start && ['B1', 'B2', 'HAND'].includes(x.grp)).length;
+  if (nostart) notes.push(`ถังที่ยังไม่ตั้งยอด ${nostart} ถัง — ยังไม่ตัดยอดใช้จาก batch จนกว่าจะตั้งยอดตั้งต้น`);
+  return `${head}
+    ${notes.length ? `<div class="note smt" style="display:flex;flex-direction:column;gap:4px">${notes.map((n) => `<span>${n}</span>`).join('')}</div>` : ''}
+    <div class="row"><div class="map" style="flex:2 1 560px;min-width:0">${groups}</div>
+      <div class="card" style="flex:1 1 320px;min-width:0;display:flex;flex-direction:column;gap:10px">${b ? binPanel(d, b) : '<p class="muted">แตะถังเพื่อดูรายละเอียด</p>'}</div></div>
+    ${b ? binCardView(d, b) : ''}`;
+}
+function binPanel(d, b) {
+  const bs = S.bs; const ctl = isCtl(); const first = !b.start;
+  const est = bs.mode === 'empty' ? binEst(b, bs.empty) : NaN; const kg = bs.mode === 'empty' ? est : num(bs.kg);
+  const it = d.items[bs.item]; const okSet = ctl && kg >= 0 && (first || bs.reason.trim().length >= 3) && (it || kg === 0 || b.item) && !S.busy;
+  const tgt = pdBins().filter((x) => ['B1', 'B2', 'HAND'].includes(x.grp));
+  return `<div class="fc"><h2 style="margin:0">ถัง ${esc(b.code)}</h2><span class="muted smt">${esc(b.name || '')}</span></div>
+    <div class="kv smt" style="display:grid;grid-template-columns:auto 1fr;gap:4px 12px">
+      <span class="muted">วัตถุดิบ</span><b>${b.item ? esc(b.item) + ' · ' + esc(inm(d, b.item)) : '–'}</b>
+      <span class="muted">คงเหลือ</span><b>${fmt(b.bal)} กก.${b.cap ? ` จากความจุ ${fmt(b.cap)} กก. (${Math.round(b.bal / b.cap * 100)}%)` : ''}</b>
+      <span class="muted">วันนี้</span><span>เทเข้า ${fmt(b.in_d)} · ใช้ ${fmt(b.use_d)}${Number(b.out_d) ? ' · ออก ' + fmt(b.out_d) : ''} กก.</span>
+      <span class="muted">ตั้งยอดล่าสุด</span><span>${dtm(b.last_set)}${b.start ? ' · เริ่มตัดยอดใช้ ' + dtm(b.start) : ' · <b>ยังไม่ตั้งยอดตั้งต้น</b>'}</span>
+      <span class="muted">ใช้ล่าสุด</span><span>${dtm(b.last_use)}</span></div>
+    ${b.mismatch ? `<p class="err smt" style="margin:0">batch 3 วันล่าสุดดึง ${esc(b.mismatch)} จากถังนี้ แต่ตั้งไว้เป็น ${esc(b.item || '-')}</p>` : ''}
+    ${ctl && b.grp !== 'LOADOUT' ? `<div class="note" style="display:flex;flex-direction:column;gap:8px"><b class="smt">${first ? 'ตั้งยอดตั้งต้น (เริ่มตัดยอดใช้จาก batch หลังเวลานี้)' : 'นับถัง / ปรับยอด / เปลี่ยนวัตถุดิบ'}</b>
+      ${itemPicker('bs', 'วัตถุดิบในถัง', bs.itemText, it)}
+      <div class="chips" role="group" aria-label="วิธีใส่ยอด"><button type="button" class="tg" aria-pressed="${bs.mode !== 'empty'}" data-set="bs.mode" data-val="kg">ใส่ กก.</button>${b.height ? `<button type="button" class="tg" aria-pressed="${bs.mode === 'empty'}" data-set="bs.mode" data-val="empty">วัดระยะว่างจากปากถัง</button>` : ''}</div>
+      ${bs.mode === 'empty' ? `<label class="fld">ระยะว่างจากปากถังถึงผิววัตถุดิบ (ม.) · สูง ${fmt(b.height)} ม. ไม่รวม hopper<input data-bind="bs.empty" value="${esc(bs.empty)}" inputmode="decimal"></label>
+        <span class="smt">≈ <b>${isNaN(est) ? '–' : fmt(est)}</b> กก. (ประมาณจากขนาดถังในไฟล์ · hopper ${fmt(b.hopper)} กก.)</span>`
+      : `<label class="fld">ยอดคงเหลือจริง (กก.)<input data-bind="bs.kg" value="${esc(bs.kg)}" inputmode="decimal" placeholder="${fmt(b.bal)}"></label>`}
+      ${first ? '' : `<label class="fld">เหตุผล<input data-bind="bs.reason" value="${esc(bs.reason)}" maxlength="120" placeholder="เช่น นับถังประจำวัน / ล้างถังเปลี่ยนวัตถุดิบ"></label>`}
+      <span class="smt">${kg >= 0 ? `จะ${first ? 'ตั้ง' : 'ปรับ'}เป็น ${fmt(kg)} กก. (${kg - b.bal >= 0 ? '+' : ''}${fmt(kg - b.bal)})` : ''}</span>
+      <div><button type="button" data-bsdo="${esc(b.code)}" ${okSet ? '' : 'disabled'}>${first ? 'ตั้งยอดตั้งต้น' : 'บันทึกปรับยอด'}</button></div></div>` : ''}
+    ${b.grp === 'PILE' && (ctl || S.snap.me.role === 'intake') ? haulForm(d, b, tgt) : ''}
+    ${b.grp === 'LOADOUT' && ctl ? `<div class="note" style="display:flex;flex-direction:column;gap:8px"><b class="smt">รถรับออกไป BFL-PC</b>
+      <div class="grid2"><label class="fld">กก. (ว่าง = ทั้งถัง ${fmt(b.bal)})<input data-bind="sh.kg" value="${esc(S.sh.kg)}" inputmode="decimal"></label><label class="fld">อ้างอิง (ใบชั่ง/ใบส่ง)<input data-bind="sh.ref" value="${esc(S.sh.ref)}" maxlength="60"></label></div>
+      <div><button type="button" data-shipdo="${esc(b.code)}" ${b.bal > 0 && !S.busy ? '' : 'disabled'}>บันทึกส่งออก</button></div></div>` : ''}`;
+}
+function haulForm(d, b, tgt) {
+  const h = S.hl; return `<div class="note" style="display:flex;flex-direction:column;gap:8px"><b class="smt">ลากกอง ${esc(b.code)} ขึ้นถัง (ไม่ผ่านตาชั่ง)</b>
+    <div class="grid2"><label class="fld">ถังปลายทาง<select data-bind="hl.bin"><option value="">— เลือกถัง —</option>${tgt.map((x) => `<option value="${esc(x.code)}" ${h.bin === x.code ? 'selected' : ''}>${esc(x.code)} · ${esc(x.item ? inm(d, x.item) : 'ว่าง')}</option>`).join('')}</select></label>
+      <label class="fld">กก. (ว่าง = ทั้งกอง ${fmt(b.bal)})<input data-bind="hl.kg" value="${esc(h.kg)}" inputmode="decimal" placeholder="ทั้งกอง"></label></div>
+    <span class="muted smt">ลากไม่หมดกองให้ใส่ กก. โดยประมาณ · ส่วนต่างไปปรับตอนนับถัง</span>
+    <div><button type="button" data-hauldo="${esc(b.code)}" ${h.bin && b.bal > 0 && !S.busy ? '' : 'disabled'}>บันทึกลากขึ้นถัง</button></div></div>`;
+}
+function binCardView(d, b) {
+  const C = S.bcard; if (C.bin !== b.code) return '';
+  const rows = C.rows || [];
+  const ref = (x) => { const m = x.meta || {}; if (x.type === 'USE') return `Lot ${esc(m.lot || '')} · ${esc(m.formula || '')}${m.job ? ' · Job ' + esc(m.job) : ''}${x.reason !== 'batch' ? ' · ' + esc(x.reason) : ''}`;
+    if (x.lot) return `${esc(x.doc || '')} · <span class="mono">${esc(x.lot)} ${esc(pl(x.p))}</span>${x.bags ? ' · ' + fmt(x.bags) + ' ถุง' : ''}${x.reason ? ' · ' + esc(x.reason) : ''}`;
+    return esc([x.reason, m.to ? '→ ' + m.to : '', m.from ? 'จาก ' + m.from : '', m.method ? '' : ''].filter(Boolean).join(' ')); };
+  return `<div class="card"><div class="fc"><h2 style="margin:0">รายการถัง ${esc(b.code)} · 14 วัน</h2><button type="button" class="ghost sm" data-bcsv="${esc(b.code)}" ${rows.length ? '' : 'disabled'}>Excel</button></div>
+    ${C.rows === null ? '<p class="muted">กำลังโหลด…</p>' : rows.length ? `<div class="tw"><table><thead><tr><th>เวลา</th><th>รายการ</th><th>วัตถุดิบ</th><th class="num">เข้า</th><th class="num">ออก</th><th class="num">คงเหลือ</th><th>อ้างอิง</th><th>โดย</th></tr></thead><tbody>
+      ${rows.map((x) => `<tr><td>${dtm(x.at)}</td><td>${esc(BTYPE[x.type] || x.type)}</td><td class="smt">${esc(inm(d, x.item))}</td><td class="num">${Number(x.in) ? fmt(x.in) : ''}</td><td class="num">${Number(x.out) ? fmt(x.out) : ''}</td><td class="num"><b>${fmt(x.bal)}</b></td><td class="smt">${ref(x)}</td><td class="smt">${esc(x.by || '')}</td></tr>`).join('')}</tbody></table></div>` : '<p class="muted">ยังไม่มีรายการ</p>'}</div>`;
+}
+
+// ===== ใบสั่งเท (Control) =====
+function viewDumpCtl(d) {
+  const head = pdHead('ใบสั่งเท', 'Control ออกใบสั่ง → กดเริ่มเมื่อ start job ใน SCADA → Intake สแกนเทตามใบที่เริ่ม · 1 จุดเริ่มได้ทีละใบ (เทมือ BIA เริ่มทันที) · ครบจำนวนแล้วปิดเอง');
+  if (!S.pd.data) return head;
+  const f = S.of; const bins = pdBins().filter((x) => binOK(f.intake, x.grp)); const b = bins.find((x) => x.code === f.bin); const it = d.items[f.item];
+  const avail = it ? fifoUnits(d, it.code, f.unit) : []; const clash = b && b.item && it && b.item !== it.code && b.bal > 1 && b.grp !== 'LOADOUT';
+  const ok = isCtl() && b && it && num(f.qty) > 0 && !clash && !S.busy;
+  const form = isCtl() ? `<div class="card" style="display:flex;flex-direction:column;gap:12px"><h2 style="margin:0">ออกใบสั่งเท</h2>
+    <div class="chips" role="group" aria-label="จุด Intake">จุด ${INTAKES.map(([id, l]) => `<button type="button" class="tg" aria-pressed="${f.intake === id}" data-ofik="${id}">${l}</button>`).join('')}</div>
+    <div class="grid2"><label class="fld">ถังปลายทาง<select data-bind="of.bin"><option value="">— เลือก —</option>${bins.map((x) => `<option value="${esc(x.code)}" ${f.bin === x.code ? 'selected' : ''}>${esc(x.code)} · ${esc(x.item ? inm(d, x.item) : 'ว่าง')} · ${fmt(x.bal)} กก.</option>`).join('')}</select></label>
+      ${itemPicker('of', 'วัตถุดิบ', f.itemText, it)}</div>
+    ${clash ? `<p class="err smt" style="margin:0">ถัง ${esc(b.code)} มี ${esc(inm(d, b.item))} คงเหลือ ${fmt(b.bal)} กก. — ปรับยอดถังเป็น 0 ที่หน้า "ยอดในถัง" ก่อนเปลี่ยนวัตถุดิบ</p>` : ''}
+    <div class="grid4"><label class="fld">จำนวน<input data-bind="of.qty" value="${esc(f.qty)}" inputmode="decimal"></label>
+      <div class="fld">หน่วย<span class="chips">${Object.entries(OUNIT).map(([k, l]) => `<button type="button" class="tg" aria-pressed="${f.unit === k}" data-set="of.unit" data-val="${k}">${l}</button>`).join('')}</span></div>
+      <label class="fld" style="grid-column:span 2">หมายเหตุ<input data-bind="of.note" value="${esc(f.note)}" maxlength="200"></label></div>
+    ${it ? `<span class="smt">${avail.length ? `พร้อมเทใน WH: ${avail.length} ${f.unit === 'BIGBAG' ? 'Bigbag' : 'พาเลท'} · ${fmt(sum(avail))} กก. · ควรเทก่อน ${esc(avail.slice(0, 3).map((u) => u.lot + ' ' + pl(u.p) + ' @' + (u.loc || '-')).join(', '))}` : `<span class="err">ไม่มี${f.unit === 'BIGBAG' ? ' Bigbag' : 'พาเลท'}พร้อมใช้ของรหัสนี้ใน WH</span>`}</span>` : ''}
+    <div><button type="button" data-ofdo="1" ${ok ? '' : 'disabled'}>ออกใบสั่งเท</button></div></div>` : '<p class="muted">ดูอย่างเดียว — ออกใบสั่งได้เฉพาะ Control</p>';
+  const lanes = INTAKES.map(([ik, l]) => { const os = pdOrders().filter((o) => o.intake === ik); const live = os.filter((o) => o.status === 'started' || o.status === 'queue'); const done = os.filter((o) => o.status === 'done' || o.status === 'cancel');
+    return `<div class="card" style="display:flex;flex-direction:column;gap:8px;flex:1 1 300px;min-width:0"><h2 style="margin:0">${l}</h2>
+      ${live.length ? live.map((o) => orderRow(d, o, true)).join('') : '<p class="muted smt" style="margin:0">ไม่มีใบในคิว</p>'}
+      ${done.length ? `<details><summary class="smt">เสร็จ/ยกเลิก 24 ชม. (${done.length})</summary>${done.map((o) => orderRow(d, o, false)).join('')}</details>` : ''}</div>`; }).join('');
+  return `${head}${form}<div class="row" style="align-items:flex-start">${lanes}</div>`;
+}
+function orderRow(d, o, live) {
+  const ctl = isCtl(); const x = S.ox; const open = x.doc === o.doc;
+  const st = o.status === 'started' ? 'st-ready' : o.status === 'queue' ? 'st-weigh' : o.status === 'cancel' ? 'bad' : 'st-qc';
+  return `<div class="lrow" style="flex-direction:column;align-items:stretch;gap:6px;${o.status === 'started' ? 'border-left:4px solid var(--blue);padding-left:8px' : ''}">
+    <div class="fc" style="gap:8px"><span class="smt"><span class="mono">${esc(o.doc)}</span> <span class="tag ${st}">${OST[o.status]}</span>${o.status === 'queue' ? ' ลำดับ ' + o.seq : ''}</span><span class="muted smt">${hm(o.at)} ${esc(o.by || '')}</span></div>
+    <span class="smt">${ordLine(d, o)}${o.note ? ' · ' + esc(o.note) : ''}${o.reason ? ' · ' + esc(o.reason) : ''}</span>
+    ${live && ctl ? `<div class="chips">${o.status === 'queue' ? `<button type="button" class="sm" data-oact="start" data-doc="${esc(o.doc)}">เริ่ม (start job)</button><button type="button" class="ghost sm" data-oact="up" data-doc="${esc(o.doc)}" aria-label="เลื่อนขึ้น">↑</button><button type="button" class="ghost sm" data-oact="down" data-doc="${esc(o.doc)}" aria-label="เลื่อนลง">↓</button>` : ''}
+      ${o.status === 'started' && prog(o) > 0 ? `<button type="button" class="sm" data-oopen="close" data-doc="${esc(o.doc)}">ปิดใบ</button>` : ''}
+      <button type="button" class="ghost sm" data-oopen="qty" data-doc="${esc(o.doc)}">แก้จำนวน</button>${prog(o) === 0 ? `<button type="button" class="ghost sm" data-oopen="cancel" data-doc="${esc(o.doc)}">ยกเลิก</button>` : ''}</div>` : ''}
+    ${!live && ctl && o.status === 'done' && o.closed_by === 'auto' ? `<div class="chips"><button type="button" class="ghost sm" data-oopen="qty" data-doc="${esc(o.doc)}">เพิ่มจำนวน</button></div>` : ''}
+    ${open ? `<div class="note" style="display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end">${x.act === 'qty' ? `<label class="fld">จำนวนใหม่ (${OUNIT[o.unit]})<input data-bind="ox.qty" value="${esc(x.qty)}" inputmode="decimal"></label>` : `<label class="fld" style="flex:1 1 200px">${x.act === 'cancel' ? 'เหตุผลที่ยกเลิก' : 'หมายเหตุปิดใบ (ถ้ามี)'}<input data-bind="ox.reason" value="${esc(x.reason)}" maxlength="120"></label>`}
+      <button type="button" data-odo="${esc(o.doc)}" ${S.busy || (x.act === 'cancel' && x.reason.trim().length < 3) || (x.act === 'qty' && !(num(x.qty) > 0)) ? 'disabled' : ''}>ยืนยัน</button><button type="button" class="ghost sm" data-oopen="" data-doc="">ปิด</button></div>` : ''}</div>`;
+}
+
+// ===== Intake สแกนเท (มือถือ) =====
+function viewIntake(d) {
+  const k = S.ik; const head = pdHead('Intake สแกนเท', 'เลือกจุดของตัวเอง · สแกนป้ายพาเลท / Bigbag ตามใบที่ Control เริ่มแล้ว · ระบบตัดยอด WH และเพิ่มยอดถังทันที');
+  if (!S.pd.data) return head;
+  const os = pdOrders().filter((o) => o.intake === k.point); const cur = os.find((o) => o.status === 'started') ; const queue = os.filter((o) => o.status === 'queue');
+  const curs = k.point === 'HAND' ? os.filter((o) => o.status === 'started') : cur ? [cur] : [];
+  const o = curs.find((x) => x.doc === k.doc) || curs[0];
+  let body = '';
+  if (!o) body = `<div class="card" style="text-align:center;padding:28px 16px"><b style="font-size:20px">รอ Control กดเริ่มงาน</b><p class="muted">${queue.length ? 'ใบถัดไป: ' + ordLine(d, queue[0]) : 'ยังไม่มีใบสั่งเทของจุดนี้'}</p></div>`;
+  else {
+    const rem = o.qty - prog(o); const sc = scanParse(k.q); const lot = sc && d.lots[sc.lot];
+    const cand = sc ? d.live.filter((u) => u.lot === sc.lot && (!sc.p || u.p === sc.p) && u.kg > 0) : [];
+    const u = cand.find((x) => x.id === k.unit) || (cand.length === 1 ? cand[0] : null);
+    let chk = '';
+    if (k.q.trim() && !sc) chk = '<p class="err smt" style="margin:0">อ่านป้ายไม่ได้ — รูปแบบ WH2611030001|5</p>';
+    else if (sc && !lot) chk = `<p class="err smt" style="margin:0">ไม่พบ Lot ${esc(sc.lot)}</p>`;
+    else if (sc && lot.item !== o.item) chk = `<p class="err" style="margin:0;font-weight:600">✕ วัตถุดิบไม่ตรงใบสั่ง: ป้ายนี้ ${esc(inm(d, lot.item))}</p>`;
+    else if (sc && lot.status !== 'ready') chk = `<p class="err" style="margin:0">✕ Lot ${esc(lot.lot)} ยังไม่พร้อมใช้ (${esc(ST[lot.status] || lot.status)})</p>`;
+    else if (sc && !cand.length) chk = `<p class="err smt" style="margin:0">ไม่พบ${sc.p ? 'พาเลท ' + esc(pl(sc.p)) : 'พาเลท'}ที่มียอดใน Lot นี้</p>`;
+    else if (sc && !u) chk = `<div class="chips">เลือกพาเลท ${cand.map((x) => `<button type="button" class="tg" data-ikunit="${x.id}">${esc(pl(x.p))} · ${fmt(x.kg)} กก.</button>`).join('')}</div>`;
+    let conf = '';
+    if (u && lot && lot.item === o.item && lot.status === 'ready') {
+      const kindOk = o.unit === 'BIGBAG' ? u.kind === 'BIGBAG' : u.kind === 'PALLET';
+      const defB = u.kind === 'PALLET' ? (o.unit === 'BAG' ? Math.min(u.bags, rem) : u.bags) : u.bags; const nb = k.bags === '' ? defB : int(k.bags);
+      const kgv = u.kind === 'PALLET' && u.bags > 0 ? (nb === u.bags ? u.kg : Math.round(u.kg * nb / u.bags * 100) / 100) : u.kg;
+      const okB = u.kind !== 'PALLET' || (nb >= 1 && nb <= u.bags);
+      const fifo = fifoUnits(d, o.item, o.unit); const older = fifo.length && fifo[0].id !== u.id && String(d.lots[fifo[0].lot].recv_day) < String(lot.recv_day) ? fifo[0] : null;
+      conf = `<div class="note" style="display:flex;flex-direction:column;gap:10px;border-color:${kindOk ? 'var(--ok, #2e7d32)' : 'var(--bad)'}">
+        <b style="font-size:17px">${kindOk ? '✓' : '✕'} ${esc(u.lot)} · ${esc(pl(u.p))} ${spill(u.store)}</b>
+        <span class="smt">${esc(inm(d, lot.item))} · รับ ${dmy(lot.recv_day)} · ช่อง ${esc(u.loc || '-')} · ${u.kind === 'PALLET' ? fmt(u.bags) + ' ' + pcs(lot) + ' · ' : ''}${fmt(u.kg)} กก.</span>
+        ${older ? `<span class="smt" style="color:var(--warn, #c77700)">มี Lot เก่ากว่า: ${esc(older.lot)} ${esc(pl(older.p))} @${esc(older.loc || '-')} (รับ ${dmy(d.lots[older.lot].recv_day)})</span>` : ''}
+        ${!kindOk ? `<span class="err">ใบสั่งเป็น ${OUNIT[o.unit]} แต่ป้ายนี้เป็น ${u.kind === 'BIGBAG' ? 'Bigbag' : 'พาเลท'}</span>` : ''}
+        ${kindOk && u.kind === 'PALLET' ? `<label class="fld">จำนวน${pcs(lot)}ที่เท (ทั้งพาเลท ${fmt(u.bags)})<input data-bind="ik.bags" value="${esc(k.bags === '' ? String(defB) : k.bags)}" inputmode="numeric" style="font-size:20px"></label>
+          <span class="smt">≈ ${fmt(kgv)} กก.${okB && nb < u.bags ? ` · เหลือ ${fmt(u.bags - nb)} ${pcs(lot)} ย้ายไปช่องหน้า Intake` : ''}</span>` : ''}
+        <button type="button" data-ikdo="${u.id}" style="font-size:18px;padding:14px" ${kindOk && okB && !S.busy ? '' : 'disabled'}>ยืนยันเท → ${esc(o.bin)}</button></div>`;
+    }
+    const fifo = fifoUnits(d, o.item, o.unit).slice(0, 6);
+    body = `<div class="card" style="display:flex;flex-direction:column;gap:12px;border-color:var(--blue)">
+      ${curs.length > 1 ? `<div class="chips">${curs.map((x) => `<button type="button" class="tg" aria-pressed="${x.doc === o.doc}" data-ikdoc="${esc(x.doc)}">${esc(x.bin)}</button>`).join('')}</div>` : ''}
+      <div><span class="mono smt">${esc(o.doc)}</span><div style="font-size:20px;line-height:1.35"><b>${esc(inm(d, o.item))}</b> → ถัง <b class="mono">${esc(o.bin)}</b></div>
+        <div class="smt">เทแล้ว <b style="font-size:18px">${fmt(prog(o))}</b> / ${fmt(o.qty)} ${OUNIT[o.unit]} · ${fmt(o.kg)} กก. · เหลือ ${fmt(rem)} ${OUNIT[o.unit]}${o.note ? ' · ' + esc(o.note) : ''}</div>
+        <div class="bar" aria-hidden="true" style="height:8px;background:var(--line);border-radius:4px;margin-top:6px"><div style="height:8px;border-radius:4px;background:var(--blue);width:${Math.min(100, Math.round(prog(o) / o.qty * 100))}%"></div></div></div>
+      <div class="chips"><input data-bind="ik.q" id="ikq" value="${esc(k.q)}" placeholder="สแกนป้าย หรือพิมพ์ WH…|5" autocomplete="off" style="flex:1 1 220px;font-size:18px"><button type="button" data-cam="1">📷 กล้อง</button>${k.q ? '<button type="button" class="ghost sm" data-ikclear="1">ล้าง</button>' : ''}</div>
+      ${chk}${conf}
+      ${fifo.length ? `<details ${k.q ? '' : 'open'}><summary class="smt">ควรเทก่อน (FIFO ตามวันรับ)</summary>${fifo.map((x) => `<div class="lrow smt"><span><span class="mono">${esc(x.lot)} ${esc(pl(x.p))}</span> · ช่อง <b>${esc(x.loc || '-')}</b> · ${x.kind === 'PALLET' ? fmt(x.bags) + ' ถุง · ' : ''}${fmt(x.kg)} กก. · รับ ${dmy(d.lots[x.lot].recv_day)}</span><button type="button" class="ghost sm" data-ikpick="${x.id}">เลือก</button></div>`).join('')}</details>` : '<p class="err smt" style="margin:0">ไม่มีของพร้อมใช้ใน WH</p>'}</div>`;
+  }
+  const myDocs = new Set(os.map((x) => x.doc)); const dumps = ((S.pd.data || {}).dumps || []).filter((x) => myDocs.has(x.doc)).slice(0, 15);
+  const cx = S.ik.cx;
+  const list = dumps.length ? `<div class="card"><h2 style="margin:0 0 6px">รายการเทล่าสุด · ${IKNAME[k.point]}</h2>${dumps.map((x) => `<div class="lrow smt" style="flex-wrap:wrap;gap:6px;${x.void ? 'text-decoration:line-through;opacity:.6' : ''}"><span style="flex:1 1 220px">${hm(x.at)} <span class="mono">${esc(x.lot)} ${esc(pl(x.p))}</span> → <b>${esc(x.bin)}</b> · ${x.bags ? fmt(x.bags) + ' ถุง · ' : ''}${fmt(x.kg)} กก. · ${esc(x.by)}</span>
+      ${x.void ? '<span class="tag bad">ยกเลิก</span>' : cx.id === x.id ? `<span class="chips"><input data-bind="ik.cx.reason" value="${esc(cx.reason)}" placeholder="เหตุผล" maxlength="120" style="width:160px"><button type="button" class="sm" data-ikcxdo="${x.id}" ${cx.reason.trim().length >= 3 && !S.busy ? '' : 'disabled'}>ยืนยันยกเลิก</button><button type="button" class="ghost sm" data-ikcx="">ปิด</button></span>` : `<button type="button" class="ghost sm" data-ikcx="${x.id}">ยกเลิก</button>`}</div>`).join('')}</div>` : '';
+  const pile = k.point === 'IN1' ? pdBins().filter((x) => x.grp === 'PILE') : [];
+  return `${head}<div class="chips" role="group" aria-label="จุด Intake">${INTAKES.map(([id, l]) => { const n = pdOrders().filter((x) => x.intake === id && x.status === 'started').length; return `<button type="button" class="tg" aria-pressed="${k.point === id}" data-ikpt="${id}">${l}${n ? ' ●' : ''}</button>`; }).join('')}</div>
+    ${body}${queue.length && o ? `<div class="card smt"><b>คิวถัดไป</b>${queue.map((x) => `<div class="lrow" style="display:block">${x.seq}. ${ordLine(d, x)}</div>`).join('')}</div>` : ''}
+    ${pile.length ? `<div class="card" style="display:flex;flex-direction:column;gap:8px"><h2 style="margin:0">กอง Intake 1</h2><div class="lane">${pile.map((x) => binTile(d, x)).join('')}</div>${pile.find((x) => x.code === S.bsel) ? haulForm(d, pile.find((x) => x.code === S.bsel), pdBins().filter((x) => ['B1', 'B2', 'HAND'].includes(x.grp))) : '<span class="muted smt">แตะกองเพื่อลากขึ้นถัง</span>'}</div>` : ''}
+    ${list}`;
 }
 
 // ---------- รายงาน (หน่วยงาน: รายงาน) ----------
@@ -1492,7 +1711,7 @@ function render() {
   const d = D();
   const me = S.snap.me;
   const tabs = TABS.concat(me.role === 'admin' ? [['admin', 'ระบบ']] : []);
-  const screens = { home: viewHome, recv: viewRecv, grind: viewGrind, issue: viewIssue, stock: viewStock, count: viewCount, loc: viewLoc, docs: viewDocs, admin: viewAdmin, reports: viewReports, stockrep: viewStockRep };
+  const screens = { home: viewHome, recv: viewRecv, grind: viewGrind, issue: viewIssue, stock: viewStock, count: viewCount, loc: viewLoc, docs: viewDocs, admin: viewAdmin, reports: viewReports, stockrep: viewStockRep, bins: viewBins, dumpctl: viewDumpCtl, intake: viewIntake };
   if (S.screen === 'admin' && me.role !== 'admin') S.screen = 'home';
   const dark = document.documentElement.getAttribute('data-theme') === 'dark';
   app.innerHTML = `<header>
@@ -1530,7 +1749,7 @@ function printForm(kind) {
 document.addEventListener('click', async (e) => {
   const b = e.target.closest('button'); if (!b) return;
   const ds = b.dataset;
-  if (ds.go) { S.screen = ds.go; S.toast = ''; if (ds.lab) { S.labelLot = ds.lab; S.labelP = ''; } if (ds.store) S.storeF = ds.store; if (ds.go === 'admin') loadAdmin(); S.fx = { doc: '' }; S.menuOpen = false; render(); if (repScreen(ds.go)) loadRep(); return; }
+  if (ds.go) { S.screen = ds.go; S.toast = ''; if (ds.lab) { S.labelLot = ds.lab; S.labelP = ''; } if (ds.store) S.storeF = ds.store; if (ds.go === 'admin') loadAdmin(); S.fx = { doc: '' }; S.menuOpen = false; render(); if (repScreen(ds.go)) loadRep(); if (pdScreen(ds.go)) loadPD(); return; }
   if (ds.adjopen !== undefined) { S.adj = { unit: ds.adjopen, kg: '', bags: '', loc: '', reason: '' }; render(); return; }
   if (ds.adjzero) { S.adj.kg = '0'; S.adj.bags = '0'; render(); return; }
   if (ds.adjdo) { const u = S.snap.units.find((x) => x.id === ds.adjdo); if (!u) return; const a = S.adj; const per = u.bags > 0 && u.kg > 0 ? u.kg / u.bags : 0;
@@ -1577,8 +1796,33 @@ document.addEventListener('click', async (e) => {
     return; }
   if (ds.ipick) { const it = S.snap.items.find((i) => i.code === ds.code); if (it) setItem(ds.ipick, it); render(); return; }
   if (ds.pack) { const o = S[ds.pt]; o.pack = ds.pack; o.cont = ds.cont || ''; if (ds.pt === 'f') S.f.labels = ''; render(); return; }
+  if (ds.pdload) { loadPD(); return; }
+  if (ds.bsel) { const b = pdBins().find((x) => x.code === ds.bsel); if (!b) return; const it = b.item && S.snap.items.find((i) => i.code === b.item);
+    S.bsel = b.code; S.bs = { item: it ? it.code : '', itemText: it ? it.code + ' · ' + it.name : '', kg: '', reason: '', mode: 'kg', empty: '' }; S.hl = { bin: '', kg: '' }; S.sh = { kg: '', ref: '' }; S.keepScroll = true;
+    if (S.screen === 'bins') loadBinCard(b.code); else render(); return; }
+  if (ds.bsdo) { const b = pdBins().find((x) => x.code === ds.bsdo); const bs = S.bs; const kg = bs.mode === 'empty' ? binEst(b, bs.empty) : num(bs.kg); S.keepScroll = true;
+    act('rm_bin_set', { p_bin: ds.bsdo, p: { item: bs.item || null, kg, reason: bs.reason.trim(), method: bs.mode === 'empty' ? { empty_m: num(bs.empty) } : null } }, (r) => (r.first ? 'ตั้งยอดตั้งต้น ' : 'ปรับยอด ') + r.bin + ' เป็น ' + fmt(r.after) + ' กก. แล้ว', () => { S.bs.kg = ''; S.bs.reason = ''; S.bs.empty = ''; }).then(() => loadBinCard(ds.bsdo)); return; }
+  if (ds.hauldo) { const h = S.hl; S.keepScroll = true; act('rm_bin_haul', { p_pile: ds.hauldo, p_bin: h.bin, p: { kg: String(h.kg).trim() === '' ? null : num(h.kg) } }, (r) => 'ลาก ' + r.pile + ' ขึ้น ' + r.bin + ' ' + fmt(r.kg) + ' กก. แล้ว', () => { S.hl = { bin: '', kg: '' }; }); return; }
+  if (ds.shipdo) { const h = S.sh; S.keepScroll = true; act('rm_bin_ship', { p_bin: ds.shipdo, p: { kg: String(h.kg).trim() === '' ? null : num(h.kg), ref: h.ref } }, (r) => 'บันทึกส่งออก ' + r.bin + ' ' + fmt(r.kg) + ' กก. แล้ว', () => { S.sh = { kg: '', ref: '' }; }); return; }
+  if (ds.bcsv) { const rows = S.bcard.rows || []; const d = D(); dlCSV('ถัง_' + ds.bcsv, ['เวลา', 'รายการ', 'วัตถุดิบ', 'เข้า', 'ออก', 'คงเหลือ', 'อ้างอิง', 'โดย'], rows.map((x) => { const m = x.meta || {};
+    return [dtm(x.at), BTYPE[x.type] || x.type, inm(d, x.item), x.in, x.out, x.bal, x.type === 'USE' ? ['Lot ' + (m.lot || ''), m.formula, m.job].filter(Boolean).join(' ') : [x.doc, x.lot, x.p, x.reason].filter(Boolean).join(' '), x.by]; })); return; }
+  if (ds.ofik) { S.of.intake = ds.ofik; S.of.bin = ''; render(); return; }
+  if (ds.ofdo) { const f = S.of; act('rm_order_create', { p: { intake: f.intake, bin: f.bin, item: f.item, qty: num(f.qty), unit: f.unit, note: f.note } }, (r) => 'ออกใบสั่งเท ' + r.doc + ' แล้ว (ลำดับ ' + r.seq + ')', () => { S.of.qty = ''; S.of.note = ''; }); return; }
+  if (ds.oact) { S.keepScroll = true; act('rm_order_act', { p_doc: ds.doc, p_action: ds.oact, p: {} }, ds.oact === 'start' ? 'เริ่มใบ ' + ds.doc + ' แล้ว — Intake เทได้' : 'เลื่อนคิวแล้ว'); return; }
+  if (ds.oopen !== undefined) { S.ox = { doc: ds.doc || '', act: ds.oopen, reason: '', qty: '' }; S.keepScroll = true; render(); return; }
+  if (ds.odo) { const x = S.ox; S.keepScroll = true; act('rm_order_act', { p_doc: ds.odo, p_action: x.act, p: { reason: x.reason.trim(), qty: num(x.qty) } }, (r) => ({ close: 'ปิดใบ ', cancel: 'ยกเลิกใบ ', qty: 'แก้จำนวนใบ ' }[x.act] || '') + r.doc + ' แล้ว', () => { S.ox = { doc: '' }; }); return; }
+  if (ds.ikpt) { S.ik = Object.assign(S.ik, { point: ds.ikpt, doc: '', q: '', unit: '', bags: '', cx: { id: '', reason: '' } }); store('rm_ik_point', ds.ikpt); S.bsel = ''; render(); return; }
+  if (ds.ikdoc) { S.ik.doc = ds.ikdoc; S.ik.q = ''; S.ik.unit = ''; S.ik.bags = ''; render(); return; }
+  if (ds.ikunit) { S.ik.unit = ds.ikunit; S.ik.bags = ''; render(); return; }
+  if (ds.ikpick) { const u = D().live.find((x) => x.id === ds.ikpick); if (u) { S.ik.q = u.lot + '|' + u.p; S.ik.unit = u.id; S.ik.bags = ''; } render(); return; }
+  if (ds.ikclear) { S.ik.q = ''; S.ik.unit = ''; S.ik.bags = ''; render(); const n = document.getElementById('ikq'); if (n) n.focus(); return; }
+  if (ds.ikdo) { const k = S.ik; const os = pdOrders().filter((o) => o.intake === k.point && o.status === 'started'); const o = os.find((x) => x.doc === k.doc) || os[0]; if (!o) return; S.keepScroll = true;
+    act('rm_dump_scan', { p_doc: o.doc, p_unit: ds.ikdo, p_bags: String(k.bags).trim() === '' ? null : int(k.bags) }, (r) => 'เท ' + r.lot + ' ' + pl(r.p) + ' → ' + r.bin + ' ' + fmt(r.kg) + ' กก. แล้ว · ' + fmt(r.done) + '/' + fmt(r.qty) + ' ' + OUNIT[r.unit] + (r.finished ? ' · ครบใบแล้ว' : '') + (r.stage ? ' · เหลือ ' + fmt(r.left_bags) + ' ถุง ไว้ที่ ' + r.stage : ''),
+      () => { S.ik.q = ''; S.ik.unit = ''; S.ik.bags = ''; }).then(() => { const n = document.getElementById('ikq'); if (n) n.focus(); }); return; }
+  if (ds.ikcx !== undefined) { S.ik.cx = { id: ds.ikcx ? Number(ds.ikcx) : '', reason: '' }; S.keepScroll = true; render(); return; }
+  if (ds.ikcxdo) { S.keepScroll = true; act('rm_dump_cancel', { p_move: Number(ds.ikcxdo), p_reason: S.ik.cx.reason.trim() }, (r) => 'ยกเลิกการเท ' + r.lot + ' ' + pl(r.p) + ' แล้ว · คืน ' + fmt(r.kg) + ' กก. เข้าพาเลทเดิม', () => { S.ik.cx = { id: '', reason: '' }; }); return; }
   if (ds.set) { setPath(ds.set, ds.val); if (ds.set === 'iType' || ds.set === 'iStore') S.iPick = {}; render(); return; }
-  if (ds.refresh) { try { await load(); S.toast = ''; } catch (err) { S.toast = err.message; S.toastErr = true; } render(); return; }
+  if (ds.refresh) { try { await load(); if (pdScreen(S.screen)) await loadPD(true); if (S.bcard.bin && S.screen === 'bins') loadBinCard(S.bcard.bin); S.toast = ''; } catch (err) { S.toast = err.message; S.toastErr = true; } render(); return; }
   if (ds.themeT) { setTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'); render(); return; }
   if (ds.logout) { logout(); return; }
   if (ds.labelp) { S.labelP = ds.labelp; render(); return; }
@@ -1650,6 +1894,8 @@ function applyField(el) {
     else setPath(ds.bind, el.value);
     if (ds.bind === 'labelLot') { S.labelP = ''; S.cancel = ''; S.pf = { unit: '', bags: '', reason: '' }; S.le = { lot: '' }; S.rw = { net: '', reason: '' }; S.holdReason = ''; }
     if (ds.bind === 'iItem') S.iPick = {};
+    if (ds.bind === 'of.bin' && !S.of.item) { const b = pdBins().find((x) => x.code === el.value); const it = b && b.item && S.snap.items.find((i) => i.code === b.item); if (it) setItem('of', it); }
+    if (ds.bind === 'ik.q') { S.ik.unit = ''; S.ik.bags = ''; }
     if (ds.bind === 'rep.day') { S.rep.data = null; S.fx = { doc: '' }; loadRep(); }
     return true;
   }
@@ -1684,7 +1930,7 @@ document.addEventListener('change', (e) => {
 
 // ช่องค้นหาวัตถุดิบ: Enter = เลือกรายการแรก (ไม่ส่งฟอร์ม)
 document.addEventListener('keydown', (e) => {
-  const el = e.target; if (e.key === 'Enter' && el.id === 'scanq') { e.preventDefault(); el.select(); return; }
+  const el = e.target; if (e.key === 'Enter' && (el.id === 'scanq' || el.id === 'ikq')) { e.preventDefault(); el.select(); return; }
   if (e.key !== 'Enter' || !el.dataset || !el.dataset.ikey) return;
   const k = el.dataset.ikey; e.preventDefault();
   if (S[k].item) return;
@@ -1740,6 +1986,12 @@ document.addEventListener('submit', async (e) => {
 async function loadAdmin() { S.adminInfo = null; S.users = null; try { S.adminInfo = await rpc('rm_admin_info', { p_token: S.tok }); S.users = await rpc('rm_user_list', { p_token: S.tok }); } catch (err) { S.toast = err.message; S.toastErr = true; } render(); }
 
 (async () => { if (S.tok) { try { await load(); } catch (e) { S.tok = ''; } } render(); })();
+// หน้า PD โหลดใหม่ทุก 20 วินาที (เห็นใบสั่งเท / ยอดถังล่าสุด) — ไม่โหลดระหว่างพิมพ์
+setInterval(async () => {
+  const a = document.activeElement || document.body; const idleScan = a.id === 'ikq' && !a.value;
+  if (!S.tok || !S.snap || !pdScreen(S.screen) || S.busy || document.hidden || (isTyping(a) && !idleScan)) return;
+  try { await load(); await loadPD(true); render(); if (idleScan) { const n = document.getElementById('ikq'); if (n) n.focus(); } } catch (e) { /* ลองใหม่รอบหน้า */ }
+}, 20000);
 </script>
 </body>
 </html>
