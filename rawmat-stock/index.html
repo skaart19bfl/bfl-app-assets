@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Rawmat Stock · Bluefalo</title>
+<title>BFL WH System · Bluefalo</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
 <style>
@@ -43,6 +43,18 @@ nav{display:flex;gap:2px;padding:6px 12px 0;overflow-x:auto;background:var(--car
 nav button{background:none;color:var(--muted);border:0;border-bottom:3px solid transparent;border-radius:0;padding:10px 12px;white-space:nowrap;font-weight:500}
 nav button[aria-current=page]{color:var(--blue);border-bottom-color:var(--blue);font-weight:700}
 main{max-width:1240px;margin:0 auto;padding:16px;display:flex;flex-direction:column;gap:14px}
+.shell{display:flex;align-items:flex-start}
+.shell main{flex:1 1 auto;min-width:0;width:100%;box-sizing:border-box;margin:0 auto}
+.side{flex:0 0 250px;align-self:stretch;background:var(--card);border-right:1px solid var(--line);padding:12px 10px 24px;display:flex;flex-direction:column;gap:14px;box-sizing:border-box}
+.side .grp{display:flex;flex-direction:column;gap:1px}
+.side .gh{font-weight:700;font-size:14px;padding:4px 10px 2px;color:var(--ink)}
+.side button{background:none;color:var(--ink);border:0;border-radius:8px;text-align:left;padding:7px 10px 7px 20px;font-weight:400;min-height:36px;display:flex;justify-content:space-between;align-items:center;gap:6px}
+.side button:hover:not(:disabled){background:var(--card2)}
+.side button[aria-current=page]{background:var(--blue-weak);color:var(--blue);font-weight:600}
+.side button:disabled{color:var(--muted);cursor:default}
+.side .ext{font-size:11.5px;color:var(--muted);white-space:nowrap}
+header .menu-t{display:none}
+@media (max-width:900px){.shell{flex-direction:column;align-items:stretch}.side{display:none;flex-basis:auto;border-right:0;border-bottom:1px solid var(--line)}.side.open{display:flex}header .menu-t{display:inline-flex}}
 h1{margin:0;font-size:22px;font-weight:700}
 h2{margin:0 0 10px;font-size:17px;font-weight:700}
 .lead{margin:2px 0 0;color:var(--muted);font-size:14px}
@@ -174,6 +186,16 @@ const supDiff = (sup, net) => { if (!(sup > 0) || !(net > 0)) return ''; const d
 const SOURCES = [['purchase', 'ซื้อจากผู้ขาย'], ['transfer', 'รับโอนจากโรงงาน / ผลิตภายใน'], ['return', 'รับคืนเข้า Lot เดิม']];
 const PROVINCES = 'กรุงเทพมหานคร กระบี่ กาญจนบุรี กาฬสินธุ์ กำแพงเพชร ขอนแก่น จันทบุรี ฉะเชิงเทรา ชลบุรี ชัยนาท ชัยภูมิ ชุมพร เชียงราย เชียงใหม่ ตรัง ตราด ตาก นครนายก นครปฐม นครพนม นครราชสีมา นครศรีธรรมราช นครสวรรค์ นนทบุรี นราธิวาส น่าน บึงกาฬ บุรีรัมย์ ปทุมธานี ประจวบคีรีขันธ์ ปราจีนบุรี ปัตตานี พระนครศรีอยุธยา พะเยา พังงา พัทลุง พิจิตร พิษณุโลก เพชรบุรี เพชรบูรณ์ แพร่ ภูเก็ต มหาสารคาม มุกดาหาร แม่ฮ่องสอน ยโสธร ยะลา ร้อยเอ็ด ระนอง ระยอง ราชบุรี ลพบุรี ลำปาง ลำพูน เลย ศรีสะเกษ สกลนคร สงขลา สตูล สมุทรปราการ สมุทรสงคราม สมุทรสาคร สระแก้ว สระบุรี สิงห์บุรี สุโขทัย สุพรรณบุรี สุราษฎร์ธานี สุรินทร์ หนองคาย หนองบัวลำภู อ่างทอง อำนาจเจริญ อุดรธานี อุตรดิตถ์ อุทัยธานี อุบลราชธานี'.split(' ');
 const METHODS = ['รถโฟล์คลิฟท์', 'แรงงานคน', 'เทลงหลุม', 'ปั๊มลงแท็งก์'];
+// เมนูแยกตามหน่วยงาน (แบบ B) · ncp = เปิดระบบ NCP เดิม (Apps Script) จนกว่าจะย้ายเข้าระบบนี้ · soon = ยังไม่ทำ
+const NCP_URL = 'https://script.google.com/macros/s/AKfycbwL2RlhYt3DsouOa2juTE48-fqirdLNOfVt3lrVtcEnj5B0LWju3UjvnjtYwX4uQIH2/exec';
+const MENU = [
+  { g: 'WH คลังสินค้า', roles: ['wh', 'view'], items: [['home', 'งานวันนี้'], ['recv', 'รับเข้า วัตถุดิบ'], ['ncp', 'ตรวจรับ NCP'], ['grind', 'บด TC'], ['issue', 'จ่ายออก / ส่ง BFL-PC'], ['count', 'ตรวจนับ'], ['loc', 'Location'], ['stock', 'คงเหลือ / Stock card'], ['docs', 'ป้าย / แบบฟอร์ม']] },
+  { g: 'PD ฝ่ายผลิต', roles: ['intake', 'control', 'wh'], items: [['ncp', 'เบิก / ใช้ผลิต NCP'], ['soon', 'Intake เท · ยอดในถัง', 'เฟส 2']] },
+  { g: 'Control', roles: ['control'], items: [['ncp', 'บอร์ด NCP'], ['soon', 'งานเท / Plan batch', 'เฟส 2–3']] },
+  { g: 'รายงาน', roles: ['wh', 'view', 'control', 'intake'], items: [['reports', 'รายงานประจำวัน'], ['stockrep', 'คงเหลือรายวัน / รายเดือน'], ['ncp', 'รายงาน NCP / LINE']] },
+  { g: 'ระบบ', roles: [], items: [['admin', 'ผู้ใช้ · ยอดยกมา · ฐานข้อมูล']] }
+];
+const repScreen = (sc) => !!REP_KIND[sc] || sc === 'reports';
 const TABS = [['home', 'ภาพรวม'], ['recv', 'รับเข้า'], ['grind', 'บด TC'], ['issue', 'จ่ายออก'], ['stock', 'คงเหลือ / Stock card'], ['count', 'ตรวจนับ'], ['loc', 'Location'], ['docs', 'แบบฟอร์ม']];
 
 const S = {
@@ -222,7 +244,7 @@ async function act(fn, args, okMsg, after) {
     const r = await rpc(fn, Object.assign({ p_token: S.tok }, args));
     if (after) after(r);
     S.toast = typeof okMsg === 'function' ? okMsg(r) : okMsg; S.toastErr = false;
-    await load(); if (REP_KIND[S.screen] && S.rep.data) await fetchRep();
+    await load(); if (repScreen(S.screen) && S.rep.data) await fetchRep();
   } catch (e) { S.toast = e.message; S.toastErr = true; }
   S.busy = false; render(); if (S.keepScroll) { S.keepScroll = false; return; } window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -740,6 +762,18 @@ async function camStart() {
   tick();
 }
 
+// ---------- รายงาน (หน่วยงาน: รายงาน) ----------
+function viewReports(d) {
+  const k = REP_KIND[S.repKind] ? S.repKind : 'recv';
+  return `<div><h1>รายงานประจำวัน</h1><p class="lead">เลือกส่วนงาน · แก้ไข/ยกเลิกได้จากตาราง (ตามสิทธิ์) · พิมพ์ A4 หรือดาวน์โหลด Excel · รายงาน NCP อยู่ในระบบ NCP</p></div>
+    <div class="chips" role="group" aria-label="ส่วนงาน">${Object.entries(REP_KIND).map(([id, l]) => `<button type="button" class="tg" aria-pressed="${k === id}" data-repk="${id}">${l}</button>`).join('')}
+      <button type="button" class="ghost sm" data-ncp="1">NCP: สต็อกแยกประเภท · รายงาน LINE ↗</button></div>
+    ${viewRep(d, k)}`;
+}
+function viewStockRep(d) {
+  return `<div><h1>คงเหลือรายวัน / รายเดือน</h1><p class="lead">คลังวัตถุดิบ RM · RM-G · PX · ยอดยกมา รับ จ่าย คงเหลือ ต่อรหัส</p></div>${viewSR(d)}`;
+}
+
 // ---------- screens ----------
 function viewLogin() {
   return `<form id="login" class="card" data-form="login">
@@ -790,7 +824,8 @@ function viewHome(d) {
       <button type="button" class="ghost sm" data-go="${go}">${cta}</button></div>`).join('');
   const log = d.s.log.map((g) => `<div class="lrow smt"><span class="muted mono" style="min-width:42px">${hm(g.at)}</span>
       <span style="min-width:0"><b class="mono" style="font-weight:600">${esc(g.doc)}</b><span class="muted" style="display:block">${esc(g.note)} · ${esc(g.by)}</span></span></div>`).join('') || '<p class="muted">ยังไม่มีรายการ</p>';
-  return `<div><h1>ภาพรวมคลังวัตถุดิบ</h1><p class="lead">ยอดคงเหลือตอนนี้ แยกตามคลัง · รอบวัน ${dmy(d.s.biz_day)} (08:00–07:59)</p></div>
+  return `<div><h1>งานวันนี้ · WH</h1><p class="lead">ยอดคงเหลือคลังวัตถุดิบตอนนี้ และงานที่ต้องจัดการ · รอบวัน ${dmy(d.s.biz_day)} (08:00–07:59)</p></div>
+    <div class="note" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between"><span><b>NCP (WH-RW / PD-RW)</b><span class="muted smt" style="display:block">ตรวจรับ เบิก ใช้ผลิต ส่ง BFL-PC และรายงาน LINE ยังอยู่ในระบบ NCP เดิม — จะย้ายเข้ามาในระบบนี้ภายหลัง</span></span><button type="button" class="ghost sm" data-ncp="1">เปิดระบบ NCP ↗</button></div>
     <div class="kpis">${cards}<div class="kpi" style="border-style:dashed"><span class="l"><b>PY</b>จัดเตรียมชุดสารเสริม</span><span class="s" style="margin-top:6px">เปิดใช้ในเฟส 4</span></div></div>
     <div class="row"><div class="card" style="flex:1 1 380px;min-width:0"><h2>ต้องจัดการ</h2>${todo}</div>
       <div class="card" style="flex:1 1 320px;min-width:0"><h2>บันทึกล่าสุด</h2>${log}</div></div>`;
@@ -1261,7 +1296,7 @@ function viewStock(d) {
   return `<div><h1>คงเหลือและ Stock card</h1><p class="lead">ยอดจากระบบนี้เท่านั้น · หน่วยกิโลกรัม</p></div>
     <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center"><div class="chips" role="group" aria-label="กรองคลัง">${filters}</div><div class="chips" role="group" aria-label="มุมมอง" style="margin-left:auto">${views}</div></div>
     ${card}<div class="card tw" style="padding:6px 8px">${table}</div>
-    ${viewSR(d)}`;
+    <div><button type="button" class="ghost sm" data-go="stockrep">รายงานคงเหลือรายวัน / รายเดือน →</button></div>`;
 }
 
 // ปรับยอดจากผลตรวจนับ (admin) · ใส่จำนวนถุงที่นับได้ ระบบคิด กก. ตามน้ำหนักเฉลี่ยของพาเลทให้ (แก้ได้) · 0 = ไม่พบของ
@@ -1429,19 +1464,24 @@ function render() {
   const d = D();
   const me = S.snap.me;
   const tabs = TABS.concat(me.role === 'admin' ? [['admin', 'ระบบ']] : []);
-  const screens = { home: viewHome, recv: viewRecv, grind: viewGrind, issue: viewIssue, stock: viewStock, count: viewCount, loc: viewLoc, docs: viewDocs, admin: viewAdmin };
+  const screens = { home: viewHome, recv: viewRecv, grind: viewGrind, issue: viewIssue, stock: viewStock, count: viewCount, loc: viewLoc, docs: viewDocs, admin: viewAdmin, reports: viewReports, stockrep: viewStockRep };
+  if (S.screen === 'admin' && me.role !== 'admin') S.screen = 'home';
   const dark = document.documentElement.getAttribute('data-theme') === 'dark';
   app.innerHTML = `<header>
       <div class="logo"><img src="${LOGO}" alt="Bluefalo"></div>
-      <div class="title"><b>Rawmat Stock</b><span>คลังวัตถุดิบ · รอบวัน ${dmy(S.snap.biz_day)} (08:00–07:59)</span></div>
+      <button type="button" class="menu-t" data-menu="1" aria-expanded="${!!S.menuOpen}" aria-label="เมนู">☰ เมนู</button>
+      <div class="title"><b>BFL WH System</b><span>คลังวัตถุดิบ · NCP · รอบวัน ${dmy(S.snap.biz_day)} (08:00–07:59)</span></div>
       <span class="sp"></span>
       <button type="button" data-scanopen="1" title="สแกน QR หรือค้นหาพาเลท">📷 สแกน</button>
       <button type="button" data-refresh="1" title="โหลดข้อมูลใหม่">⟳ โหลดใหม่</button>
       <button type="button" data-theme-t="1" title="สลับโหมดสว่าง / มืด" aria-label="สลับโหมดสว่าง / มืด">${dark ? '☀️' : '🌙'}</button>
       <span class="hchip">${esc(me.name)} · ${esc(me.role)}</span>
       <button type="button" data-logout="1">ออก</button></header>
-    <nav aria-label="เมนูหลัก">${tabs.map(([id, l]) => `<button type="button" data-go="${id}" aria-current="${S.screen === id ? 'page' : 'false'}">${l}</button>`).join('')}</nav>
-    <main>${S.toast ? `<div role="status" class="msg ${S.toastErr ? 'bad' : ''}">${esc(S.toast)}</div>` : ''}${S.scan.open ? viewScan(d) : ''}${(screens[S.screen] || viewHome)(d)}</main>
+    <div class="shell"><nav class="side ${S.menuOpen ? 'open' : ''}" aria-label="เมนูตามหน่วยงาน">${MENU.filter((g) => me.role === 'admin' || g.roles.includes(me.role)).map((g) => `<div class="grp"><span class="gh">${g.g}</span>${g.items.map(([id, l, tag]) =>
+        id === 'ncp' ? `<button type="button" data-ncp="1" title="เปิดระบบ NCP (แท็บใหม่)">${l}<span class="ext">ระบบ NCP ↗</span></button>`
+        : id === 'soon' ? `<button type="button" disabled>${l}<span class="ext">${tag}</span></button>`
+        : `<button type="button" data-go="${id}" aria-current="${S.screen === id ? 'page' : 'false'}">${l}</button>`).join('')}</div>`).join('')}</nav>
+    <main>${S.toast ? `<div role="status" class="msg ${S.toastErr ? 'bad' : ''}">${esc(S.toast)}</div>` : ''}${S.scan.open ? viewScan(d) : ''}${(screens[S.screen] || viewHome)(d)}</main></div>
     <datalist id="dl-method">${METHODS.map((m) => `<option value="${m}"></option>`).join('')}</datalist>
     <datalist id="dl-prov">${PROVINCES.map((m) => `<option value="${m}"></option>`).join('')}</datalist>`;
 }
@@ -1462,7 +1502,7 @@ function printForm(kind) {
 document.addEventListener('click', async (e) => {
   const b = e.target.closest('button'); if (!b) return;
   const ds = b.dataset;
-  if (ds.go) { S.screen = ds.go; S.toast = ''; if (ds.lab) { S.labelLot = ds.lab; S.labelP = ''; } if (ds.store) S.storeF = ds.store; if (ds.go === 'admin') loadAdmin(); S.fx = { doc: '' }; render(); if (REP_KIND[ds.go]) loadRep(); return; }
+  if (ds.go) { S.screen = ds.go; S.toast = ''; if (ds.lab) { S.labelLot = ds.lab; S.labelP = ''; } if (ds.store) S.storeF = ds.store; if (ds.go === 'admin') loadAdmin(); S.fx = { doc: '' }; S.menuOpen = false; render(); if (repScreen(ds.go)) loadRep(); return; }
   if (ds.adjopen !== undefined) { S.adj = { unit: ds.adjopen, kg: '', bags: '', loc: '', reason: '' }; render(); return; }
   if (ds.adjzero) { S.adj.kg = '0'; S.adj.bags = '0'; render(); return; }
   if (ds.adjdo) { const u = S.snap.units.find((x) => x.id === ds.adjdo); if (!u) return; const a = S.adj; const per = u.bags > 0 && u.kg > 0 ? u.kg / u.bags : 0;
@@ -1492,6 +1532,9 @@ document.addEventListener('click', async (e) => {
       (r) => (r.new ? 'เพิ่มผู้ใช้ ' : 'บันทึกผู้ใช้ ') + r.username + ' แล้ว' + (r.new ? ' · ผู้ใช้ต้องเปลี่ยนรหัสตอนเข้าครั้งแรก' : ''), () => { S.uf = { mode: 'new', username: '', name: '', role: 'wh', active: true, password: '' }; setTimeout(loadAdmin, 0); }); return; }
   if (ds.upw !== undefined) { S.upw = { user: ds.upw, pw: '' }; render(); return; }
   if (ds.upwdo) { S.keepScroll = true; act('rm_user_reset_pw', { p_username: S.upw.user, p_password: S.upw.pw }, 'ตั้งรหัสใหม่ให้ ' + S.upw.user + ' แล้ว · ผู้ใช้ต้องเปลี่ยนรหัสตอนเข้าครั้งแรก', () => { S.upw = { user: '', pw: '' }; setTimeout(loadAdmin, 0); }); return; }
+  if (ds.menu) { S.menuOpen = !S.menuOpen; render(); return; }
+  if (ds.ncp) { window.open(NCP_URL, '_blank', 'noopener'); S.menuOpen = false; render(); return; }
+  if (ds.repk) { S.repKind = ds.repk; S.fx = { doc: '' }; render(); return; }
   if (ds.reload) { loadRep(); return; }
   if (ds.prep) { printRep(D(), ds.prep); return; }
   if (ds.glabel) { printGrindLabels(D(), ds.glabel); return; }
