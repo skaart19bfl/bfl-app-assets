@@ -192,10 +192,17 @@ function itemResolve(v, k) {
   const x = String(v || '').trim().toUpperCase(); if (!x) return null; const code = x.split(' · ')[0].trim();
   return itemPool(k).find((i) => i.code.toUpperCase() === code || i.name.toUpperCase() === x || (i.code + ' · ' + i.name).toUpperCase() === x) || null;
 }
+// ช่องวัตถุดิบ = dropdown จาก Master (จัดกลุ่มตามรหัส 4 ตัวแรก) + ช่องค้นหาเพื่อกรองรายการ (ผู้ใช้ 3 พ.ย.)
 function itemPicker(key, label, text, it) {
-  const list = !it && String(text || '').trim() ? itemMatches(text, key) : [];
-  return `<div class="ipick"><label class="fld">${label}<input data-bind="${key}.itemText" data-ikey="${key}" value="${esc(it ? it.code + ' · ' + it.name : text || '')}" autocomplete="off" placeholder="เช่น 01PT004 หรือ SOYBEAN" role="combobox" aria-expanded="${list.length > 0}" aria-controls="ipl-${key}"></label>
-    ${!it && String(text || '').trim() ? `<div class="ipl" id="ipl-${key}" role="listbox">${list.length ? list.map((i, n) => `<button type="button" role="option" data-ipick="${key}" data-code="${esc(i.code)}"${n === 0 ? ' class="first"' : ''}><span class="mono">${esc(i.code)}</span><span>${esc(i.name)}${i.category === 'NCP' ? ' <span class="tag">NCP</span>' : ''}</span></button>`).join('') : '<span class="muted smt" style="padding:8px 10px">ไม่พบวัตถุดิบ</span>'}</div>` : ''}</div>`;
+  const q = String((S[key] || {}).iq || '').toUpperCase().split(/\s+/).filter(Boolean);
+  const pool = itemPool(key).filter((i) => i.status === 'Active' || (it && i.code === it.code))
+    .filter((i) => !q.length || (it && i.code === it.code) || q.every((w) => (i.code + ' ' + i.name).toUpperCase().includes(w)))
+    .sort((a, b) => a.code.localeCompare(b.code, 'en', { numeric: true }));
+  const gs = {}; pool.forEach((i) => (gs[i.code.slice(0, 4)] = gs[i.code.slice(0, 4)] || []).push(i));
+  const opts = Object.keys(gs).map((g) => `<optgroup label="${esc(g)} (${gs[g].length})">${gs[g].map((i) => `<option value="${esc(i.code)}" ${it && it.code === i.code ? 'selected' : ''}>${esc(i.code)} · ${esc(i.name)}${i.category === 'NCP' ? ' (NCP)' : ''}</option>`).join('')}</optgroup>`).join('');
+  return `<div class="ipick"><div class="fld"><span>${label}</span><div style="display:flex;gap:6px;flex-wrap:wrap">
+    <select data-isel="${key}" aria-label="${esc(label)}" style="flex:1 1 260px;min-width:0;width:auto"><option value="">${pool.length ? '— เลือกวัตถุดิบ (' + pool.length + ' รายการ) —' : '— ไม่พบตามคำค้น —'}</option>${opts}</select>
+    <input data-bind="${key}.iq" value="${esc((S[key] || {}).iq || '')}" placeholder="🔍 กรองรายการ" autocomplete="off" aria-label="กรองรายการวัตถุดิบ" style="flex:0 1 150px;min-width:110px;width:auto"></div></div></div>`;
 }
 function setItem(key, it) {
   const o = S[key]; const was = o.item; o.item = it ? it.code : ''; o.itemText = it ? it.code + ' · ' + it.name : o.itemText;
@@ -1414,7 +1421,7 @@ function viewRecv(d) {
     ${f.source === 'return' ? viewReturnForm(d) : `    <form class="card" data-form="recv" style="flex:1 1 440px;min-width:0;display:flex;flex-direction:column;gap:14px">
       <h2 style="margin:0">ขั้น 1 · รถเข้า เปิด Lot และพิมพ์ป้าย</h2>
       <div class="chips" role="group" aria-label="แหล่งที่มา">${SOURCES.map(([id, t]) => `<button type="button" class="tg" aria-pressed="${f.source === id}" data-set="f.source" data-val="${id}">${t}</button>`).join('')}</div>
-      ${itemPicker('f', 'วัตถุดิบ (พิมพ์รหัสหรือชื่อ)', f.itemText, it)}
+      ${itemPicker('f', 'วัตถุดิบ', f.itemText, it)}
       ${it ? `<p class="muted smt" style="margin:-8px 0 0">คลัง ${spill(it.store)} · ${esc(it.category || '-')}</p>` : ''}
       <div class="chips" role="group" aria-label="ประเภทบรรจุ">ประเภทบรรจุ ${packChips}</div>
 ${f.source === 'transfer' ? `      <div class="sect">รับโอน · ไม่ต้อง QC · น้ำหนักตามเอกสาร · ตั้ง Lot ใหม่</div>
@@ -2184,6 +2191,7 @@ document.addEventListener('input', (e) => {
 
 document.addEventListener('change', (e) => {
   const el = e.target; const ds = el.dataset;
+  if (ds.isel) { const it = S.snap.items.find((i) => i.code === el.value) || null; setItem(ds.isel, it); if (!it) S[ds.isel].itemText = ''; render(); return; }
   if (isTyping(el)) { applyField(el); return; }
   if (applyField(el)) { render(); return; }
   if (ds.gsel) { S.gSel[ds.gsel] = el.checked; render(); return; }
