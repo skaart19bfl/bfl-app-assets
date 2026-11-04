@@ -1274,8 +1274,24 @@ function viewIntake(d) {
 }
 
 // ===== Master วัตถุดิบ / NCP (density สำหรับถัง) =====
-async function loadMaster() { try { S.mst.data = await rpc('rm_master', { p_token: S.tok }); } catch (e) { S.toast = e.message; S.toastErr = true; } render(); }
+async function loadMaster() { try { const [m, bl] = await Promise.all([rpc('rm_master', { p_token: S.tok }), rpc('rm_bin_list', { p_token: S.tok })]); S.mst.data = m; S.mst.bins = Array.isArray(bl) ? bl : []; } catch (e) { S.toast = e.message; S.toastErr = true; } render(); }
+// Master ถัง: สถานะเปิด/ปิดใช้งาน (ผู้ใช้ 4 พ.ย.) · ปิด = ไม่แสดงในบอร์ด/ยอดในถัง ณ เวลา · สั่งเท/เบิกเข้าถังไม่ได้ · batch ที่ดึงจากถังยังตัดยอดตามปกติ
+function viewBinMaster(d) {
+  const bins = S.mst.bins || []; const ctl = isCtl();
+  const tabs = masterTabs(d);
+  if (!S.mst.bins) return tabs + '<p class="muted">กำลังโหลด…</p>';
+  const on = bins.filter((b) => b.active).length;
+  const body = PD_GRP.map(([g, l]) => { const bs = bins.filter((b) => b.grp === g); if (!bs.length) return '';
+    return `<tr class="mg"><td colspan="7" style="padding:8px 10px!important"><b>${esc(l)}</b> <span class="muted smt">เปิด ${bs.filter((b) => b.active).length}/${bs.length}</span></td></tr>` + bs.map((b) => `<tr${b.active ? '' : ' style="opacity:.6"'}><td class="mono"><b>${esc(b.code)}</b></td><td class="smt">${esc(b.name || '')}</td><td class="num smt">${b.cap_m3 ? fmt(b.cap_m3) : '–'}</td>
+      <td class="smt">${b.item ? `<span class="mono">${esc(b.item)}</span> · ${esc(inm(d, b.item))}` : '<span class="muted">–</span>'}</td><td class="num">${fmt(b.bal)}</td><td class="smt">${b.start ? 'ตั้งยอด ' + dtm(b.start) : '<span class="muted">ยังไม่ตั้งยอด</span>'}</td>
+      <td>${ctl ? `<button type="button" class="tg" aria-pressed="${b.active}" data-binact="${esc(b.code)}" data-on="${b.active ? '0' : '1'}" ${S.busy ? 'disabled' : ''}>${b.active ? '✓ เปิดใช้งาน' : 'ปิดอยู่ · กดเปิด'}</button>` : (b.active ? '<span class="tag st-ready">เปิดใช้งาน</span>' : '<span class="tag bad">ปิด</span>')}</td></tr>`).join(''); }).join('');
+  return `${tabs}<div class="card" style="display:flex;flex-direction:column;gap:10px"><p class="smt" style="margin:0">เปิดใช้งาน <b>${on}</b> / ${bins.length} ถัง · ถังที่ปิด: ไม่แสดงในบอร์ดยอดในถัง · ออกใบสั่งเท / เบิกเข้าถังไม่ได้ · batch ที่ดึงจากถังยังตัดยอดตามปกติ${ctl ? '' : ' · เปิด/ปิดได้เฉพาะ Control'}</p>
+    <div class="tw"><table><thead><tr><th>ถัง</th><th>ชื่อ</th><th class="num">ลบ.ม.</th><th>วัตถุดิบในถัง</th><th class="num">คงเหลือ กก.</th><th>ยอดตั้งต้น</th><th>สถานะ</th></tr></thead><tbody>${body}</tbody></table></div></div>`;
+}
+function masterTabs(d) { const M = S.mst;
+  return `<div><h1>Master วัตถุดิบ / NCP / ถัง</h1><p class="lead">density ใช้แปลงปริมาตรถังเป็น กก. · ถังเปิด/ปิดใช้งานได้</p></div><div class="chips" role="group" aria-label="ประเภท"><button type="button" class="tg" aria-pressed="${M.tab === 'rm'}" data-msttab="rm">วัตถุดิบ / สารเสริม (${d.s.items.filter((i) => i.category !== 'NCP').length})</button><button type="button" class="tg" aria-pressed="${M.tab === 'ncp'}" data-msttab="ncp">NCP รีเวิร์ค (${d.s.items.filter((i) => i.category === 'NCP').length})</button><button type="button" class="tg" aria-pressed="${M.tab === 'bin'}" data-msttab="bin">ถัง Batching (${(M.bins || []).filter((b) => b.active).length}/${(M.bins || []).length || '–'})</button></div>`; }
 function viewMaster(d) {
+  if (S.mst.tab === 'bin') return viewBinMaster(d);
   const M = S.mst; const ctl = isCtl(); const ncp = M.tab === 'ncp'; const use = (M.data || {}).usage || {}; const inbin = (M.data || {}).inbin || {};
   const all = d.s.items.filter((i) => ncp ? i.category === 'NCP' : i.category !== 'NCP');
   const q = M.q.trim().toUpperCase().split(/\s+/).filter(Boolean);
@@ -1297,7 +1313,7 @@ function viewMaster(d) {
   const body = keys.map((k) => { const gs = groups[k]; const open = auto || !!M.open[k]; const nod = gs.filter((i) => !(i.density > 0)).length; const nb = gs.filter((i) => use[i.code] || inbin[i.code]).length;
     return `<tr class="mg"><td colspan="9"><button type="button" class="mgb" data-mstg="${esc(k)}" aria-expanded="${open}"><span aria-hidden="true">${open ? '▾' : '▸'}</span> <b class="mono">${esc(k)}</b> <span>${gs.length} รายการ${nb ? ' · ใช้กับถัง ' + nb : ''}${nod ? ' · ไม่มี density ' + nod : ''}</span><span class="muted smt">${esc(gs[0].category || '')}</span></button></td></tr>${open ? gs.map(row).join('') : ''}`; }).join('');
   return `<div><h1>Master วัตถุดิบ / NCP</h1><p class="lead">density (กก./ลบ.ม. = กรัม/ลิตร) ใช้แปลงปริมาตรถังเป็น กก. · ความจุถัง = ลบ.ม. ตามไฟล์ Batching_Bin_Size × density · ชื่อ/หมวด/สถานะมาจาก RM_Master และ NCP Detail (แก้ที่ต้นทาง)</p></div>
-    <div class="chips" role="group" aria-label="ประเภท"><button type="button" class="tg" aria-pressed="${!ncp}" data-msttab="rm">วัตถุดิบ / สารเสริม (${d.s.items.filter((i) => i.category !== 'NCP').length})</button><button type="button" class="tg" aria-pressed="${ncp}" data-msttab="ncp">NCP รีเวิร์ค (${d.s.items.filter((i) => i.category === 'NCP').length})</button>
+    <div class="chips" role="group" aria-label="ประเภท"><button type="button" class="tg" aria-pressed="${!ncp}" data-msttab="rm">วัตถุดิบ / สารเสริม (${d.s.items.filter((i) => i.category !== 'NCP').length})</button><button type="button" class="tg" aria-pressed="${ncp}" data-msttab="ncp">NCP รีเวิร์ค (${d.s.items.filter((i) => i.category === 'NCP').length})</button><button type="button" class="tg" aria-pressed="false" data-msttab="bin">ถัง Batching (${(M.bins || []).filter((b) => b.active).length}/${(M.bins || []).length || '–'})</button>
       ${ncp && ctl ? `<button type="button" class="ghost sm" data-ncpsync="1" ${S.busy ? 'disabled' : ''}>ดึงรายการ NCP ล่าสุด</button><span class="muted smt">NCP Detail sync ${dtm((M.data || {}).ncp_synced)}</span>` : ''}</div>
     ${binNo ? `<div class="note smt">รหัสที่ใช้กับถัง (ตั้งในถัง หรือ batch ดึง 30 วัน) แต่ยังไม่มี density: <b>${binNo}</b> รหัส — ถังเหล่านี้คำนวณ % ความจุ และวัดระยะว่างเป็น กก. ไม่ได้</div>` : ''}
     <div class="card" style="display:flex;flex-direction:column;gap:10px">
@@ -2144,6 +2160,7 @@ document.addEventListener('click', async (e) => {
   if (ds.ncpdo) { const n = S.nf; S.keepScroll = true; act('rm_bin_ncp_add', { p_bin: ds.ncpdo, p: { kg: num(n.kg), note: n.note } }, (r) => 'เท NCP เข้า ' + r.bin + ' ' + fmt(r.kg) + ' กก. แล้ว', () => { S.nf = { bin: '', kg: '', note: '' }; }); return; }
   if (ds.mstg) { S.mst.open[ds.mstg] = !S.mst.open[ds.mstg]; render(); return; }
   if (ds.mstall !== undefined) { const d = D(); const on = ds.mstall === '1'; S.mst.open = {}; if (on) d.s.items.forEach((i) => { S.mst.open[String(i.code).slice(0, 4).toUpperCase()] = true; }); render(); return; }
+  if (ds.binact) { S.keepScroll = true; act('rm_bin_active', { p_bin: ds.binact, p_active: ds.on === '1' }, (r) => 'ถัง ' + r.bin + (r.active ? ' เปิดใช้งานแล้ว' : ' ปิดใช้งานแล้ว'), null).then(loadMaster); return; }
   if (ds.msttab) { S.mst.tab = ds.msttab; S.mst.chg = {}; render(); return; }
   if (ds.mstonly !== undefined) { S.mst.only = S.mst.only === ds.mstonly ? '' : ds.mstonly; render(); return; }
   if (ds.mstsave) { const items = Object.entries(S.mst.chg).filter(([c, v]) => { const it = D().items[c]; return it && String(v).trim() !== String(it.density ?? ''); }).map(([code, density]) => ({ code, density: String(density).trim() }));
