@@ -299,7 +299,7 @@ const S = {
   storeF: 'ALL', view: 'sum', card: null, cardRows: null,
   selSlot: 'S-01', sp: { unit: '' }, spLast: null, lf: { zone: 'S', zoneName: '', code: '' }, adminInfo: null,
   docDay: '', docLot: '', docTag: '',
-  pd: { data: null, loading: false, err: '' }, bsel: '', bcard: { bin: '', rows: null }, bs: { item: '', itemText: '', kg: '', reason: '', mode: 'kg', empty: '' }, hl: { bin: '', kg: '' }, sh: { kg: '', ref: '' }, nf: { bin: '', kg: '', note: '' }, mst: { tab: 'rm', q: '', only: '', chg: {}, bulk: '', data: null, open: {} }, lrn: { lot: '', v: '', reason: '' },
+  pd: { data: null, loading: false, err: '' }, bsel: '', bcard: { bin: '', rows: null }, bs: { item: '', itemText: '', kg: '', reason: '', mode: 'kg', empty: '' }, hl: { bin: '', kg: '' }, sh: { kg: '', ref: '' }, nf: { bin: '', kg: '', note: '' }, mst: { tab: 'rm', q: '', only: '', chg: {}, bulk: '', data: null, open: {} }, lrn: { lot: '', v: '', reason: '' }, qe: { lot: '', open: false, r: {}, reason: '' },
   of: { intake: 'IN2', bin: '', item: '', itemText: '', qty: '', unit: 'PALLET', note: '' }, ox: { doc: '' },
   br: { at: '', from: '', day: '', view: 'table', only: '', data: null, loading: false },
   pk: { doc: '', v: {} }, dd: { bin: '', item: '', itemText: '', iq: '', sel: {}, v: {}, note: '', auto: '' },
@@ -1710,6 +1710,30 @@ function lotRenameBox(d, lot) {
       <label class="fld">เหตุผล<input data-bind="lrn.reason" value="${esc(S.lrn.reason)}" maxlength="120" autocomplete="off" placeholder="เช่น พิมพ์เลข Lot ผิด"></label></div>
     <div class="chips"><button type="button" data-lrndo="${esc(lot.lot)}" ${ok ? '' : 'disabled'}>เปลี่ยนเลข Lot</button><span class="muted smt">ย้ายทุกพาเลท ความเคลื่อนไหว และเอกสารไปเลขใหม่ · ป้ายที่พิมพ์แล้วต้องพิมพ์ใหม่</span></div>`;
 }
+// แก้จำนวนรับเข้า (ถุง / กก.) รายพาเลท หลังชั่งแล้ว · สิทธิ์ WH · พาเลทที่ถูกเบิก/บด/จ่ายแล้วแก้ไม่ได้ (server ตรวจ) · ผู้ใช้ 5 พ.ย.
+function qtyEditBox(d, lot) {
+  const us = d.s.units.filter((u) => u.lot === lot.lot && u.store === lot.store).sort((a, b) => pSort(a.p) - pSort(b.p));
+  if (!us.length) return '';
+  if (S.qe.lot !== lot.lot) S.qe = { lot: lot.lot, open: false, r: {}, reason: '' };
+  const q = S.qe; let nb = 0, nk = 0; const chg = [];
+  const rows = us.map((u) => {
+    const r = q.r[u.id] || {}; const pal = u.kind === 'PALLET'; const pb = pal && u.bags > 0 ? Number(u.kg) / u.bags : 0;
+    const b = pal && r.bags !== undefined && r.bags !== '' ? int(r.bags) : Number(u.bags || 0);
+    const k = r.kt && r.kg !== '' ? num(r.kg) : pal && r.bags !== undefined && r.bags !== '' && pb ? Math.round(b * pb * 100) / 100 : Number(u.kg || 0);
+    nb += b; nk += k || 0; const ch = b !== Number(u.bags || 0) || Math.abs((k || 0) - Number(u.kg || 0)) > 0.004; if (ch) chg.push({ id: u.id, bags: pal ? b : undefined, kg: k });
+    return `<tr${ch ? ' style="background:var(--hl,#fff7d6)"' : ''}><td class="mono">${esc(u.p)}</td><td>${pal ? `<input data-bind="qe.r.${u.id}.bags" data-qe="${u.id}" value="${esc(r.bags !== undefined ? r.bags : String(u.bags))}" inputmode="numeric" style="width:72px">` : esc(unitName(lot))}</td>
+      <td><input data-bind="qe.r.${u.id}.kg" data-qe="${u.id}" data-qek="1" value="${esc(r.kt ? r.kg : String(k))}" inputmode="decimal" style="width:100px"></td><td class="num muted">${pal && b ? fmt(Math.round(k / b * 100) / 100) : ''}</td></tr>`;
+  }).join('');
+  S.qe.chg = chg;
+  const ok = chg.length && q.reason.trim().length >= 3 && chg.every((c) => c.kg > 0 && (c.bags === undefined || c.bags >= 1)) && !S.busy;
+  return `<details class="note" ${q.open ? 'open' : ''} data-qeopen="1" style="display:flex;flex-direction:column;gap:8px"><summary><b>แก้จำนวนรับเข้า (ถุง / กก.)</b> <span class="muted smt">${us.length} ${pal1(us)} · รวม ${fmt(lot.bags)} ถุง ${fmt(lot.net)} กก.</span></summary>
+    <p class="muted smt" style="margin:6px 0">แก้จำนวนถุง ระบบคิด กก. ตามน้ำหนักต่อถุงเดิม (แก้ กก. เองได้) · ปรับยอดเป็นรายการ "ปรับรับเข้า" ใน Stock card · พาเลทที่ถูกเบิก/บด/จ่ายแล้วแก้ไม่ได้ · ยกเลิกทั้งพาเลทใช้ "แก้ / ยกเลิก" ที่แท็บป้าย</p>
+    <div class="tw" style="max-height:360px;overflow:auto"><table><thead><tr><th>พาเลท</th><th>ถุง</th><th>กก.</th><th class="num">กก./ถุง</th></tr></thead><tbody>${rows}</tbody></table></div>
+    <span class="smt">หลังแก้: <b>${fmt(nb)}</b> ถุง · <b>${fmt(Math.round(nk * 100) / 100)}</b> กก. ${chg.length ? `(${nk - Number(lot.net || 0) >= 0 ? '+' : ''}${fmt(Math.round((nk - Number(lot.net || 0)) * 100) / 100)} กก. · แก้ ${chg.length} รายการ)` : ''}</span>
+    <div class="grid2" style="align-items:end"><label class="fld">เหตุผล<input data-bind="qe.reason" value="${esc(q.reason)}" maxlength="200" autocomplete="off" placeholder="เช่น นับถุงผิด / ชั่งใหม่"></label>
+      <div class="chips"><button type="button" data-qedo="${esc(lot.lot)}" ${ok ? '' : 'disabled'}>บันทึกจำนวนใหม่</button>${chg.length ? '<button type="button" class="ghost" data-qereset="1">คืนค่าเดิม</button>' : ''}</div></div></details>`;
+}
+const pal1 = (us) => us.every((u) => u.kind === 'PALLET') ? 'พาเลท' : 'หน่วย';
 function viewLotInfo(d, lot) {
   if (S.le.lot !== lot.lot) S.le = leInit(lot);
   const le = S.le; const it = d.items[lot.item] || {}; const admin = S.snap.me.role === 'admin';
@@ -1766,6 +1790,7 @@ function viewLotInfo(d, lot) {
       : `<div class="grid2" style="align-items:end"><label class="fld">เหตุผลที่ Hold<input data-bind="holdReason" value="${esc(S.holdReason)}" maxlength="200" autocomplete="off"></label>
         <div><button type="button" style="background:var(--bad);border-color:var(--bad)" data-qcset="${esc(lot.lot)}" data-st="hold" ${S.holdReason.trim() && !S.busy ? '' : 'disabled'}>Hold Lot นี้</button></div></div>
         <p class="muted smt" style="margin:-4px 0 0">${pre ? 'ระหว่างลงของ/รอชั่ง: ติด Hold ไว้ พอชั่งแล้ว Lot เป็น Hold (เบิกไม่ได้)' : 'Lot จะเบิก/บด/จ่ายไม่ได้จนกว่าจะปลด Hold'}</p>`}
+    ${['qc', 'hold', 'ready'].includes(lot.status) ? qtyEditBox(d, lot) : ''}
     ${rwOk ? `<div class="sect">แก้น้ำหนักชั่ง (admin)</div>
       <div class="grid2" style="align-items:end"><label class="fld">น้ำหนักสุทธิที่ถูกต้อง (กก.)<input data-bind="rw.net" value="${esc(S.rw.net)}" inputmode="decimal" placeholder="${fmt(lot.net)}"></label>
         <label class="fld">เหตุผล<input data-bind="rw.reason" value="${esc(S.rw.reason)}" maxlength="200" autocomplete="off"></label></div>
@@ -2108,6 +2133,7 @@ function render() {
 }
 
 // ---------- events ----------
+document.addEventListener('toggle', (e) => { const t = e.target; if (t && t.dataset && t.dataset.qeopen) S.qe.open = t.open; }, true);
 const todayYmd = () => new Date(Date.now() + 7 * 3600e3).toISOString().slice(0, 10); // วันที่ปฏิทินไทย
 function getPath(path) { return path.split('.').reduce((o, k) => (o == null ? o : o[k]), S); }
 function setPath(path, val) { const ks = path.split('.'); let o = S; while (ks.length > 1) o = o[ks.shift()]; o[ks[0]] = val; }
@@ -2270,6 +2296,9 @@ document.addEventListener('click', async (e) => {
   if (ds.lotinfo) { S.labelLot = ds.lotinfo; S.lotTab = 'info'; S.le = { lot: '' }; S.cancel = ''; S.rw = { net: '', reason: '' }; S.holdReason = ''; render(); const c = document.getElementById('labelcard'); if (c) c.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
   if (ds.lottab) { S.lotTab = ds.lottab; render(); return; }
   if (ds.lereset) { S.le = { lot: '' }; render(); return; }
+  if (ds.qereset) { S.qe.r = {}; render(); return; }
+  if (ds.qedo) { const units = (S.qe.chg || []).map((c) => ({ id: c.id, bags: c.bags, kg: c.kg }));
+    act('rm_lot_qty_edit', { p_lot: ds.qedo, p: { units, reason: S.qe.reason.trim() } }, (r) => 'แก้จำนวนรับเข้า ' + r.lot + ' แล้ว · รวม ' + fmt(r.bags) + ' ถุง ' + fmt(r.net) + ' กก.', () => { S.qe = { lot: '', open: false, r: {}, reason: '' }; }); return; }
   if (ds.madd) { const v = String(getPath(ds.madd) || '').trim().replace(/\s+/g, ' '); const k = ds.madd + '|' + (ds.mctx || '');
     act('rm_option_add', { p: { kind: 'method', value: v } }, 'เพิ่ม "' + v + '" เข้ารายการวิธีการลงแล้ว', () => { mOther[k] = false; setPath(ds.madd, v); }); return; }
   if (ds.mdel) { const v = ds.mdel; act('rm_option_del', { p: { kind: 'method', value: v } }, 'ลบ "' + v + '" ออกจากรายการแล้ว (ข้อมูลที่บันทึกไปแล้วไม่เปลี่ยน)', () => { Object.keys(mOther).forEach((k) => delete mOther[k]); }); return; }
@@ -2315,6 +2344,7 @@ function applyField(el) {
   if (ds.bind) {
     if (ds.ikey) { const k = ds.ikey; S[k].itemText = el.value; setItem(k, itemResolve(el.value, k)); }
     else if (ds.iqk) { setPath(ds.bind, el.value); iqPick(ds.iqk, el.value); }
+    else if (ds.qe) { const r = (S.qe.r[ds.qe] = S.qe.r[ds.qe] || {}); if (ds.qek) { r.kg = el.value; r.kt = true; } else r.bags = el.value; }
     else setPath(ds.bind, el.value);
     if (ds.bind === 'labelLot') { S.labelP = ''; S.cancel = ''; S.pf = { unit: '', bags: '', reason: '' }; S.le = { lot: '' }; S.rw = { net: '', reason: '' }; S.holdReason = ''; }
     if (ds.bind === 'iItem') S.iPick = {};
