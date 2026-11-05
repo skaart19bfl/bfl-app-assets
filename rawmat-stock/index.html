@@ -250,6 +250,12 @@ const supDiff = (sup, net) => { if (!(sup > 0) || !(net > 0)) return ''; const d
 const SOURCES = [['purchase', 'ซื้อจากผู้ขาย'], ['transfer', 'รับโอนจากโรงงาน / ผลิตภายใน'], ['return', 'รับคืนเข้า Lot เดิม']];
 const PROVINCES = 'กรุงเทพมหานคร กระบี่ กาญจนบุรี กาฬสินธุ์ กำแพงเพชร ขอนแก่น จันทบุรี ฉะเชิงเทรา ชลบุรี ชัยนาท ชัยภูมิ ชุมพร เชียงราย เชียงใหม่ ตรัง ตราด ตาก นครนายก นครปฐม นครพนม นครราชสีมา นครศรีธรรมราช นครสวรรค์ นนทบุรี นราธิวาส น่าน บึงกาฬ บุรีรัมย์ ปทุมธานี ประจวบคีรีขันธ์ ปราจีนบุรี ปัตตานี พระนครศรีอยุธยา พะเยา พังงา พัทลุง พิจิตร พิษณุโลก เพชรบุรี เพชรบูรณ์ แพร่ ภูเก็ต มหาสารคาม มุกดาหาร แม่ฮ่องสอน ยโสธร ยะลา ร้อยเอ็ด ระนอง ระยอง ราชบุรี ลพบุรี ลำปาง ลำพูน เลย ศรีสะเกษ สกลนคร สงขลา สตูล สมุทรปราการ สมุทรสงคราม สมุทรสาคร สระแก้ว สระบุรี สิงห์บุรี สุโขทัย สุพรรณบุรี สุราษฎร์ธานี สุรินทร์ หนองคาย หนองบัวลำภู อ่างทอง อำนาจเจริญ อุดรธานี อุตรดิตถ์ อุทัยธานี อุบลราชธานี'.split(' ');
 const METHODS = ['รถโฟล์คลิฟท์', 'แรงงานคน', 'เทลงหลุม', 'ปั๊มลงแท็งก์'];
+// วิธีการลง: dropdown แสดงครบทุกตัวเลือกเสมอ (datalist เดิมกรองตามค่าที่ค้างในช่อง ทำให้เห็นแค่ค่าเดียว) + อื่น ๆ พิมพ์เอง
+const mOther = {};
+function methodField(path, val, ctx) {
+  const k = path + '|' + (ctx || ''); const other = k in mOther ? mOther[k] : !!(val && !METHODS.includes(val));
+  return `<label class="fld">วิธีการลง<select data-msel="${path}" data-mctx="${esc(ctx || '')}"><option value="" ${!other && !val ? 'selected' : ''}>— เลือก —</option>${METHODS.map((m) => `<option value="${m}" ${!other && val === m ? 'selected' : ''}>${m}</option>`).join('')}<option value="__other" ${other ? 'selected' : ''}>อื่น ๆ (พิมพ์เอง)</option></select>${other ? `<input data-bind="${path}" value="${esc(val)}" maxlength="60" autocomplete="off" placeholder="พิมพ์วิธีการลง" aria-label="วิธีการลง (พิมพ์เอง)" style="margin-top:6px">` : ''}</label>`;
+}
 // เมนูแยกตามหน่วยงาน (แบบ B) · ncp = เปิดระบบ NCP เดิม (Apps Script) จนกว่าจะย้ายเข้าระบบนี้ · soon = ยังไม่ทำ
 const NCP_URL = 'https://script.google.com/macros/s/AKfycbwL2RlhYt3DsouOa2juTE48-fqirdLNOfVt3lrVtcEnj5B0LWju3UjvnjtYwX4uQIH2/exec';
 const MENU = [
@@ -1553,7 +1559,7 @@ ${f.source === 'transfer' ? `      <div class="sect">รับโอน · ไ�
       <div class="sect">รถ · บันทึกรับเข้าประจำวัน F-WI03-WHD01-05</div>
       <div class="grid${f.pack === 'BAG' ? '3' : '4'}">
         <label class="fld">จำนวนรถ<span style="display:flex;gap:6px"><input data-bind="f.vehN" value="${esc(f.vehN)}" inputmode="numeric" style="width:56px"><select data-bind="f.vehU" style="flex:1">${VEH_U.map((v) => `<option ${f.vehU === v ? 'selected' : ''}>${v}</option>`).join('')}</select></span></label>
-        <label class="fld">วิธีการลง<input list="dl-method" data-bind="f.method" value="${esc(f.method)}" maxlength="60" autocomplete="off"></label>
+        ${methodField('f.method', f.method)}
         <label class="fld">เวลาเริ่ม (ว่าง = ตอนบันทึก)<input type="time" data-bind="f.tStart" value="${esc(f.tStart)}"></label>
         ${f.pack === 'BAG' ? '' : `<label class="fld">เวลาสิ้นสุด<input type="time" data-bind="f.tEnd" value="${esc(f.tEnd)}"></label>`}
       </div>
@@ -1726,7 +1732,7 @@ function viewLotInfo(d, lot) {
       ${pre ? `<label class="fld">ช่องพักของ<select data-bind="le.loc">${locOpts(d, le.loc)}</select></label>` : ''}
       ${lot.status === 'unload' ? `${inp('per', 'ถุงต่อพาเลท', 'inputmode="numeric"')}${inp('labels', 'จำนวนป้ายที่พิมพ์', 'inputmode="numeric"')}` : ''}
       ${inp('vehicle', 'จำนวนรถ (เช่น 1 พ่วง)', 'maxlength="30"')}
-      ${inp('method', 'วิธีการลง', 'maxlength="60" list="dl-method"')}
+      ${methodField('le.method', le.method, le.lot)}
       <label class="fld">เวลาเริ่มลง<input type="time" data-bind="le.t_start" value="${esc(le.t_start)}"></label>
       <label class="fld">เวลาสิ้นสุด<input type="time" data-bind="le.t_end" value="${esc(le.t_end)}"></label>
     </div>
@@ -2078,7 +2084,6 @@ function render() {
       <span class="hchip">${esc(me.name)} · ${esc(me.role)}</span>
       <button type="button" data-logout="1">ออก</button></header>
     <div class="shell"><main>${modBar()}${S.toast ? `<div role="status" class="msg ${S.toastErr ? 'bad' : ''}">${esc(S.toast)}</div>` : ''}${S.scan.open ? viewScan(d) : ''}${(screens[S.screen] || viewHome)(d)}</main></div>
-    <datalist id="dl-method">${METHODS.map((m) => `<option value="${m}"></option>`).join('')}</datalist>
     <datalist id="dl-prov">${PROVINCES.map((m) => `<option value="${m}"></option>`).join('')}</datalist>`;
 }
 
@@ -2278,6 +2283,7 @@ document.addEventListener('click', async (e) => {
 // (ไม่วาดใหม่ตอน change ของช่องพิมพ์ — กันคลิกปุ่มแรกหายเพราะหน้าถูกวาดใหม่ระหว่างคลิก)
 function applyField(el) {
   const ds = el.dataset;
+  if (ds.msel) { const o = el.value === '__other'; mOther[ds.msel + '|' + (ds.mctx || '')] = o; setPath(ds.msel, o ? '' : el.value); return true; }
   if (ds.bind) {
     if (ds.ikey) { const k = ds.ikey; S[k].itemText = el.value; setItem(k, itemResolve(el.value, k)); }
     else if (ds.iqk) { setPath(ds.bind, el.value); iqPick(ds.iqk, el.value); }
