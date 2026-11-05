@@ -299,7 +299,7 @@ const S = {
   storeF: 'ALL', view: 'sum', card: null, cardRows: null,
   selSlot: 'S-01', sp: { unit: '' }, spLast: null, lf: { zone: 'S', zoneName: '', code: '' }, adminInfo: null,
   docDay: '', docLot: '', docTag: '',
-  pd: { data: null, loading: false, err: '' }, bsel: '', bcard: { bin: '', rows: null }, bs: { item: '', itemText: '', kg: '', reason: '', mode: 'kg', empty: '' }, hl: { bin: '', kg: '' }, sh: { kg: '', ref: '' }, nf: { bin: '', kg: '', note: '' }, mst: { tab: 'rm', q: '', only: '', chg: {}, bulk: '', data: null, open: {} }, lrn: { lot: '', v: '', reason: '' }, vm: { lot: '', open: false, range: '', reason: '' }, qe: { lot: '', open: false, r: {}, reason: '' },
+  pd: { data: null, loading: false, err: '' }, bsel: '', bcard: { bin: '', rows: null }, bs: { item: '', itemText: '', kg: '', reason: '', mode: 'kg', empty: '' }, hl: { bin: '', kg: '' }, sh: { kg: '', ref: '' }, nf: { bin: '', kg: '', note: '' }, mst: { tab: 'rm', q: '', only: '', chg: {}, bulk: '', data: null, open: {} }, lrn: { lot: '', v: '', reason: '' }, vm: { lot: '', open: false, range: '', reason: '' }, rs: { sel: {}, reason: '' }, qe: { lot: '', open: false, r: {}, reason: '' },
   of: { intake: 'IN2', bin: '', item: '', itemText: '', qty: '', unit: 'PALLET', note: '' }, ox: { doc: '' },
   br: { at: '', from: '', day: '', view: 'table', only: '', data: null, loading: false },
   pk: { doc: '', v: {} }, dd: { bin: '', item: '', itemText: '', iq: '', sel: {}, v: {}, note: '', auto: '' },
@@ -371,6 +371,7 @@ const pl = (p) => String(p || '').startsWith('G') ? p : 'P' + p;
 const tag = (u) => u.lot + ' · ' + pl(u.p) + (u.scrap ? ' (เศษ)' : '');
 const pill = (st) => `<span class="tag st-${esc(st)}">${esc(ST[st] || st)}</span>`;
 const spill = (id) => `<span class="tag s-${esc(id)}">${esc(id)}</span>`;
+const fmt3 = (n) => (n === null || n === undefined || n === '' || isNaN(n)) ? '–' : Number(n).toLocaleString('en-US', { maximumFractionDigits: 3 });
 const sum = (list) => list.reduce((a, u) => a + (Number(u.kg) || 0), 0);
 const qrSvg = (text, cell) => { if (!window.qrcode) return ''; const g = qrcode(0, 'M'); g.addData(text); g.make(); return g.createSvgTag({ cellSize: cell || 4, margin: 0, scalable: true }); };
 
@@ -710,7 +711,13 @@ function repRows(d, kind) {
     return { v: false, doc: aj || undefined, cells: [esc(x.loc || '-'), `<span class="mono">${esc(x.lot + ' · ' + pl(x.p))}</span>`, esc(iname(x.item)), spill(x.store), sys, x.result === 'ok' ? '<span class="tag st-ready">ตรง</span>' : '<span class="tag bad">ไม่ตรง</span>',
       aj ? `<span class="smt">${esc(ajTxt)}</span> ${voidTag(aj)}<span class="muted smt" style="display:block">${esc(am.reason || '')}</span>` : '', esc((x.by || '') + ' ' + hm(x.at)),
       live ? (d.s.me.role === 'admin' ? fxBtns(aj, false) : '') : today && fix ? `<button type="button" class="tg" aria-pressed="${x.result === 'ok'}" data-count="${esc(x.unit)}" data-res="ok">ตรง</button> <button type="button" class="tg" aria-pressed="${x.result === 'diff'}" data-count="${esc(x.unit)}" data-res="diff">ไม่ตรง</button> <button type="button" class="ghost sm" data-count="${esc(x.unit)}" data-res="${esc(x.result)}">ล้างผล</button>` : ''],
-      print: [esc(x.loc || '-'), esc(x.lot + ' · ' + pl(x.p)), esc(iname(x.item)), esc(x.store), sys, x.result === 'ok' ? 'ตรง' : 'ไม่ตรง', esc(live ? ajTxt + ' · ' + (am.reason || '') : aj ? 'ยกเลิก ' + aj.doc : ''), esc(x.by || '')] }; }) };
+      print: [esc(x.loc || '-'), esc(x.lot + ' · ' + pl(x.p)), esc(iname(x.item)), esc(x.store), sys, x.result === 'ok' ? 'ตรง' : 'ไม่ตรง', esc(live ? ajTxt + ' · ' + (am.reason || '') : aj ? 'ยกเลิก ' + aj.doc : ''), esc(x.by || '')] }; })
+    // ใบตัดเศษค้าง (AJ kind=residue) ไม่มีผลนับ แสดงต่อท้ายให้ admin ยกเลิกได้
+    .concat((R.docs || []).filter((y) => y.type === 'AJ' && (y.meta || {}).kind === 'residue').map((aj) => { const am = aj.meta || {}; const live = aj.status !== 'void';
+      const ajTxt = `${aj.doc} ตัดเศษ ${fmt3(am.before_kg)} → 0 กก.`;
+      return { v: false, doc: aj, cells: [esc(am.before_loc || '-'), `<span class="mono">${esc(am.lot + ' · ' + pl(am.p))}</span>`, esc(iname(am.item)), spill(am.store), fmt3(am.before_kg) + ' กก.', '<span class="tag">ตัดเศษ</span>',
+        `<span class="smt">${esc(ajTxt)}</span> ${voidTag(aj)}<span class="muted smt" style="display:block">${esc(am.reason || '')}</span>`, esc((aj.by || '') + ' ' + hm(aj.at)), live && d.s.me.role === 'admin' ? fxBtns(aj, false) : ''],
+        print: [esc(am.before_loc || '-'), esc(am.lot + ' · ' + pl(am.p)), esc(iname(am.item)), esc(am.store), fmt3(am.before_kg) + ' กก.', 'ตัดเศษ', esc(live ? ajTxt + ' · ' + (am.reason || '') : 'ยกเลิก ' + aj.doc), esc(aj.by || '')] }; })) };
 }
 
 function viewRep(d, kind) {
@@ -1891,10 +1898,10 @@ function viewIssue(d) {
   const picked = pool.filter((u) => S.iPick[u.id]); const src = picked.length ? picked : pool;
   const avail = sum(src); const req = num(S.iKg); let rest = req > 0 ? req : 0; const cut = {};
   src.forEach((u) => { if (rest <= 0) return; const c = Math.min(u.kg, rest); rest -= c; cut[u.id] = c; });
-  const over = req > avail; const need = t === 'manual' && !S.iRef.trim();
+  const over = req > avail + 0.05; const need = t === 'manual' && !S.iRef.trim();
   S._issue = { code, store: st, picked: picked.map((u) => u.id) };
   const rows = pool.map((u) => `<tr class="${cut[u.id] ? 'cut' : ''}"><td><input type="checkbox" data-ipick="${u.id}" ${S.iPick[u.id] ? 'checked' : ''} aria-label="เลือก ${esc(tag(u))}"></td>
-      <td class="mono">${esc(tag(u))}</td><td>${esc(u.loc || '-')}</td><td class="num">${fmt(u.kg)}</td><td class="num" style="font-weight:600">${cut[u.id] ? fmt(cut[u.id]) : '–'}</td><td class="num">${fmt(u.kg - (cut[u.id] || 0))}</td></tr>`).join('');
+      <td class="mono">${esc(tag(u))}</td><td>${esc(u.loc || '-')}</td><td class="num">${u.kg < 1 ? fmt3(u.kg) : fmt(u.kg)}</td><td class="num" style="font-weight:600">${cut[u.id] ? (cut[u.id] < 1 ? fmt3(cut[u.id]) : fmt(cut[u.id])) : '–'}</td><td class="num">${u.kg - (cut[u.id] || 0) < 1 ? fmt3(Math.round((u.kg - (cut[u.id] || 0)) * 1000) / 1000) : fmt(u.kg - (cut[u.id] || 0))}</td></tr>`).join('');
   return `<div><h1>จ่ายออก</h1><p class="lead">ของที่ไม่ผ่าน Intake · ไม่เลือก Lot = ตัดเข้าก่อนออกก่อนอัตโนมัติ · เลือก Lot = ตัดเฉพาะที่เลือก</p></div>
   <div class="chips" role="group" aria-label="ประเภทการจ่าย">${ISSUE_TYPES.map(([id, l]) => `<button type="button" class="tg" aria-pressed="${t === id}" data-set="iType" data-val="${id}">${l}</button>`).join('')}</div>
   <div class="row"><div class="card" style="flex:1 1 320px;min-width:0;display:flex;flex-direction:column;gap:14px">
@@ -1902,13 +1909,33 @@ function viewIssue(d) {
     <div class="chips" role="group" aria-label="คลังต้นทาง">จ่ายจากคลัง ${avStores.map((s) => `<button type="button" class="tg" aria-pressed="${s === st}" data-set="iStore" data-val="${s}">${s}</button>`).join('')}</div>
     <div class="grid2"><label class="fld">จำนวนที่จ่าย (กก.)<input data-bind="iKg" value="${esc(S.iKg)}" inputmode="decimal"></label>
       <label class="fld">${t === 'manual' ? 'เหตุผล (ต้องใส่)' : 'เอกสารอ้างอิง (ถ้ามี)'}<input data-bind="iRef" value="${esc(S.iRef)}" maxlength="200"></label></div>
-    <div class="muted smt">${picked.length ? 'ตัดจาก Lot ที่เลือก ' + picked.length + ' รายการ' : 'ตัดเข้าก่อนออกก่อนอัตโนมัติ'} · พร้อมจ่าย ${fmt(avail)} กก.</div>
+    <div class="muted smt" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">${picked.length ? 'ตัดจาก Lot ที่เลือก ' + picked.length + ' รายการ' : 'ตัดเข้าก่อนออกก่อนอัตโนมัติ'} · พร้อมจ่าย ${fmt3(avail)} กก.${avail > 0 ? ` <button type="button" class="ghost sm" data-iall="${Math.round(avail * 1000) / 1000}">จ่ายทั้งหมด</button>` : ''}</div>
     ${over ? `<p role="alert" class="err" style="margin:0">ยอดไม่พอ ขาด ${fmt(req - avail)} กก.</p>` : ''}
     <button type="button" data-issue="1" ${S.busy || !(req > 0) || over || need || !code ? 'disabled' : ''}>บันทึกจ่ายออก</button>
   </div>
   <div class="card" style="flex:1 1 440px;min-width:0"><div class="fc"><h2>Lot ที่จ่ายได้</h2>${picked.length ? '<button type="button" class="ghost sm" data-clearpick="1">กลับไปตัดอัตโนมัติ</button>' : ''}</div>
-    ${rows ? `<div class="tw"><table><thead><tr><th>เลือก</th><th>Lot · พาเลท</th><th>ช่อง</th><th class="num">มีอยู่</th><th class="num">ตัด</th><th class="num">เหลือ</th></tr></thead><tbody>${rows}</tbody></table></div>` : '<p class="muted">—</p>'}</div></div>
+    ${rows ? `<div class="tw"><table><thead><tr><th>เลือก</th><th>Lot · พาเลท</th><th>ช่อง</th><th class="num">มีอยู่</th><th class="num">ตัด</th><th class="num">เหลือ</th></tr></thead><tbody>${rows}</tbody></table></div>` : '<p class="muted">—</p>'}
+    ${residueBox(d, pool)}</div></div>
   ${viewRep(d, 'issue')}`;
+}
+
+// ตัดเศษค้าง ≤ 1 กก. ต่อพาเลท (WH/admin) → ใบ AJ ละพาเลท (admin ยกเลิกได้ที่รายงานตรวจนับ/ปรับยอด) · rm_unit_clear_residue · ผู้ใช้ 5 พ.ย.
+const RESIDUE_MAX = 1;
+function residueBox(d, units, card) {
+  if (!S.snap || !['wh', 'admin'].includes(S.snap.me.role)) return '';
+  const res = units.filter((u) => u.kg !== null && Number(u.kg) > 0 && Number(u.kg) <= RESIDUE_MAX && !String(u.id).startsWith('v'))
+    .sort((a, b) => a.lot < b.lot ? -1 : a.lot > b.lot ? 1 : pSort(a.p) - pSort(b.p));
+  if (!res.length) return '';
+  const r = S.rs; const sel = res.filter((u) => r.sel[u.id] !== false); const kg = sel.reduce((a, u) => a + Number(u.kg), 0);
+  const ok = sel.length && r.reason.trim().length >= 3 && !S.busy;
+  const rows = res.map((u) => { const it = d.items[(d.lots[u.lot] || {}).item] || {};
+    return `<label style="display:flex;gap:8px;align-items:center"><input type="checkbox" data-rssel="${esc(u.id)}" ${r.sel[u.id] !== false ? 'checked' : ''}><span class="mono">${esc(tag(u))}</span><span class="muted smt">${esc(it.name || '')} · ${esc(u.store)}${u.loc ? ' · ' + esc(u.loc) : ''}</span><b class="mono" style="margin-left:auto">${fmt3(u.kg)} กก.</b></label>`; }).join('');
+  return `<div class="${card ? 'card ' : ''}note" style="display:flex;flex-direction:column;gap:8px;${card ? '' : 'margin-top:12px'}">
+    <b>เศษค้าง ≤ ${RESIDUE_MAX} กก. (${res.length} พาเลท)</b>
+    <span class="muted smt">ยอดเล็กมากที่เหลือจากการปัดเศษตอนจ่าย/เบิก ตัดออกให้เป็น 0 ได้ · บันทึกเป็นใบปรับยอด (AJ) ละพาเลท · admin ยกเลิกใบได้</span>
+    <div style="display:flex;flex-direction:column;gap:4px">${rows}</div>
+    <div class="grid2" style="align-items:end"><label class="fld">เหตุผล (ต้องใส่)<input data-bind="rs.reason" value="${esc(r.reason)}" maxlength="200" autocomplete="off" placeholder="เช่น เศษจากการจ่าย"></label>
+      <div class="chips"><button type="button" data-rsdo="1" ${ok ? '' : 'disabled'}>ตัดเศษ ${fmt(sel.length)} พาเลท (${fmt3(Math.round(kg * 1000) / 1000)} กก.)</button></div></div></div>`;
 }
 
 function viewStock(d) {
@@ -1950,6 +1977,7 @@ function viewStock(d) {
   }
   return `<div><h1>คงเหลือและ Stock card</h1><p class="lead">ยอดจากระบบนี้เท่านั้น · หน่วยกิโลกรัม</p></div>
     <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center"><div class="chips" role="group" aria-label="กรองคลัง">${filters}</div><div class="chips" role="group" aria-label="มุมมอง" style="margin-left:auto">${views}</div></div>
+    ${residueBox(d, d.live.filter((u) => f === 'ALL' || u.store === f), true)}
     ${card}<div class="card tw" style="padding:6px 8px">${table}</div>
     <div><button type="button" class="ghost sm" data-go="stockrep">รายงานคงเหลือรายวัน / รายเดือน →</button></div>`;
 }
@@ -2305,6 +2333,10 @@ document.addEventListener('click', async (e) => {
   if (ds.lsel !== undefined) { S.lsel.ps[ds.lsel] = !S.lsel.ps[ds.lsel]; if (S.labelP !== ds.lsel) S.pf = { unit: '', bags: '', reason: '' }; S.labelP = ds.lsel; render(); return; }
   if (ds.lselall) { const d = D(); const lot = d.lots[S.lsel.lot]; if (lot) labelUnits(d, lot).forEach((u) => { S.lsel.ps[u.p] = true; }); render(); return; }
   if (ds.lselnone) { S.lsel.ps = {}; render(); return; }
+  if (ds.iall) { S.iKg = ds.iall; render(); return; }
+  if (ds.rsdo) { const ids = Array.from(document.querySelectorAll('input[data-rssel]')).filter((i) => i.checked).map((i) => i.dataset.rssel);
+    if (!ids.length) return; S.keepScroll = true;
+    act('rm_unit_clear_residue', { p_units: ids, p_reason: S.rs.reason.trim() }, (r) => 'ตัดเศษแล้ว ' + fmt(r.n) + ' พาเลท · ' + fmt3(r.kg) + ' กก. · ' + (r.docs || []).join(', '), () => { S.rs = { sel: {}, reason: '' }; }); return; }
   if (ds.vmrange) { const d = D(); const lot = d.lots[S.lsel.lot]; if (!lot) return; const want = new Set(parsePs(S.vm.range));
     S.lsel.ps = {}; labelUnits(d, lot).forEach((u) => { if (want.has(String(u.p))) S.lsel.ps[u.p] = true; }); S.vm.open = true; render(); return; }
   if (ds.vmdo) { const d = D(); const lot = d.lots[ds.vmdo]; if (!lot) return;
@@ -2425,6 +2457,7 @@ document.addEventListener('change', (e) => {
   if (ds.fxadd) { S.fx.add = el.checked; render(); return; }
   if (ds.mmsel) { S.mm[ds.mmsel] = el.checked; render(); return; }
   if (ds.ipick) { S.iPick[ds.ipick] = el.checked; render(); return; }
+  if (ds.rssel) { S.rs.sel[ds.rssel] = el.checked; render(); return; }
   if (ds.move) { act('rm_move_unit', { p_unit: ds.move, p_to: el.value }, 'ย้ายไปช่อง ' + el.value + ' แล้ว'); return; }
 });
 
