@@ -295,7 +295,7 @@ const S = {
   storeF: 'ALL', view: 'sum', card: null, cardRows: null,
   selSlot: 'S-01', sp: { unit: '' }, spLast: null, lf: { zone: 'S', zoneName: '', code: '' }, adminInfo: null,
   docDay: '', docLot: '', docTag: '',
-  pd: { data: null, loading: false, err: '' }, bsel: '', bcard: { bin: '', rows: null }, bs: { item: '', itemText: '', kg: '', reason: '', mode: 'kg', empty: '' }, hl: { bin: '', kg: '' }, sh: { kg: '', ref: '' }, nf: { bin: '', kg: '', note: '' }, mst: { tab: 'rm', q: '', only: '', chg: {}, bulk: '', data: null, open: {} },
+  pd: { data: null, loading: false, err: '' }, bsel: '', bcard: { bin: '', rows: null }, bs: { item: '', itemText: '', kg: '', reason: '', mode: 'kg', empty: '' }, hl: { bin: '', kg: '' }, sh: { kg: '', ref: '' }, nf: { bin: '', kg: '', note: '' }, mst: { tab: 'rm', q: '', only: '', chg: {}, bulk: '', data: null, open: {} }, lrn: { lot: '', v: '', reason: '' },
   of: { intake: 'IN2', bin: '', item: '', itemText: '', qty: '', unit: 'PALLET', note: '' }, ox: { doc: '' },
   br: { at: '', from: '', day: '', view: 'table', only: '', data: null, loading: false },
   pk: { doc: '', v: {} }, dd: { bin: '', item: '', itemText: '', iq: '', sel: {}, v: {}, note: '', auto: '' },
@@ -1694,6 +1694,16 @@ function leDiff(lot) {
   return p;
 }
 
+// เปลี่ยนเลข Lot (WH) · server ย้ายทุกพาเลท/ความเคลื่อนไหว/เอกสารไปเลขใหม่ · audit LOT_RENAME
+function lotRenameBox(d, lot) {
+  if (S.lrn.lot !== lot.lot) S.lrn = { lot: lot.lot, v: '', reason: '' };
+  const v = S.lrn.v.replace(/\s/g, '').toUpperCase(); const bad = v && !LOT_RE.test(v); const dup = v && !bad && d.s.lots.some((l) => l.lot === v);
+  const ok = v && !bad && !dup && v !== lot.lot && S.lrn.reason.trim().length >= 3 && !S.busy;
+  return `<div class="sect">เปลี่ยนเลข Lot</div>
+    <div class="grid2"><label class="fld">เลข Lot ใหม่ (เดิม ${esc(lot.lot)})<input data-bind="lrn.v" value="${esc(S.lrn.v)}" maxlength="20" autocomplete="off" autocapitalize="characters" placeholder="WHYYMMDDNNN">${bad ? '<span class="err smt">รูปแบบ WHYYMMDDNNN หรือ WHYYMMDDNNN-PC</span>' : dup ? '<span class="err smt">เลข Lot นี้มีในระบบแล้ว</span>' : ''}</label>
+      <label class="fld">เหตุผล<input data-bind="lrn.reason" value="${esc(S.lrn.reason)}" maxlength="120" autocomplete="off" placeholder="เช่น พิมพ์เลข Lot ผิด"></label></div>
+    <div class="chips"><button type="button" data-lrndo="${esc(lot.lot)}" ${ok ? '' : 'disabled'}>เปลี่ยนเลข Lot</button><span class="muted smt">ย้ายทุกพาเลท ความเคลื่อนไหว และเอกสารไปเลขใหม่ · ป้ายที่พิมพ์แล้วต้องพิมพ์ใหม่</span></div>`;
+}
 function viewLotInfo(d, lot) {
   if (S.le.lot !== lot.lot) S.le = leInit(lot);
   const le = S.le; const it = d.items[lot.item] || {}; const admin = S.snap.me.role === 'admin';
@@ -1740,6 +1750,7 @@ function viewLotInfo(d, lot) {
     ${tr ? '' : `<div class="chips">QC เบื้องต้น ${qcBtns}</div>
     ${le.qci === 'cond' ? inp('qcin', 'เงื่อนไขที่ QC ให้ผ่าน', 'maxlength="200"') : ''}`}
     <div class="chips"><button type="button" data-lesave="1" ${nd && !S.busy && !(le.qci === 'cond' && !le.qcin.trim()) ? '' : 'disabled'}>บันทึกการแก้ไข${nd ? ` (${nd})` : ''}</button>${nd ? '<button type="button" class="ghost" data-lereset="1">คืนค่าเดิม</button>' : ''}</div>
+    ${lotRenameBox(d, lot)}
     <datalist id="dl-sup-lot">${sups.map((x) => `<option value="${esc(x)}"></option>`).join('')}</datalist>
     <div class="sect">QC ขณะรับวัตถุดิบ</div>
     ${hold ? `<div class="chips"><span class="tag bad">Hold${lot.qcn ? ': ' + esc(lot.qcn) : ''}</span><button type="button" class="sm" data-qcset="${esc(lot.lot)}" data-st="ready">ปลด Hold (ผ่าน)</button></div>`
@@ -2248,6 +2259,9 @@ document.addEventListener('click', async (e) => {
   if (ds.lotinfo) { S.labelLot = ds.lotinfo; S.lotTab = 'info'; S.le = { lot: '' }; S.cancel = ''; S.rw = { net: '', reason: '' }; S.holdReason = ''; render(); const c = document.getElementById('labelcard'); if (c) c.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
   if (ds.lottab) { S.lotTab = ds.lottab; render(); return; }
   if (ds.lereset) { S.le = { lot: '' }; render(); return; }
+  if (ds.lrndo) { const nl = S.lrn.v.replace(/\s/g, '').toUpperCase();
+    act('rm_lot_rename', { p_lot: ds.lrndo, p: { new_lot: nl, reason: S.lrn.reason.trim() } }, (r) => 'เปลี่ยนเลข Lot ' + r.from + ' เป็น ' + r.lot + ' แล้ว (' + r.units + ' พาเลท/หน่วย) · พิมพ์ป้ายใหม่ที่แท็บป้าย',
+      (r) => { S.labelLot = r.lot; S.labelP = ''; S.le = { lot: '' }; S.lrn = { lot: '', v: '', reason: '' }; S.lsel = { lot: '', ps: {} }; }); return; }
   if (ds.lesave) { const l = D().lots[S.le.lot]; if (!l) return; const p = leDiff(l);
     act('rm_lot_edit', { p_lot: l.lot, p }, 'บันทึกการแก้ไข ' + l.lot + ' แล้ว (' + Object.keys(p).length + ' รายการ)', () => { S.le = { lot: '' }; }); return; }
   if (ds.reweigh) { act('rm_lot_reweigh', { p_lot: ds.reweigh, p_net: num(S.rw.net), p_reason: S.rw.reason.trim() }, (r) => 'แก้น้ำหนัก ' + r.lot + ' เป็น ' + fmt(r.net) + ' กก. แล้ว' + (r.avg ? ' · ' + fmt(r.avg) + ' กก./ถุง' : ''), () => { S.rw = { net: '', reason: '' }; }); return; }
