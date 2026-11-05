@@ -1454,11 +1454,12 @@ const LOT_RE = /^WH(\d{10}|\d{9}(-PC)?)$/;
 function lotField(f) {
   const v = f.lot.replace(/\s/g, '').toUpperCase(); const bad = v && !LOT_RE.test(v);
   const ymd = (() => { const t = new Date(Date.now() + 7 * 3600e3); return String(t.getUTCFullYear()).slice(2) + String(t.getUTCMonth() + 1).padStart(2, '0') + String(t.getUTCDate()).padStart(2, '0'); })();
-  const dup = v && !bad && ((S.snap && S.snap.lots) || []).some((l) => l.lot === v);
+  const same = v && !bad ? ((S.snap && S.snap.lots) || []).find((l) => l.lot === v) : null; const dup = same && same.status !== 'void'; // Lot ที่ยกเลิกแล้วใช้เลขซ้ำได้
+  const reuse = same && same.status === 'void' ? '<span class="muted smt" style="display:block">เลขนี้เป็นของ Lot ที่ยกเลิกแล้ว · ใช้ซ้ำได้ (Lot ที่ยกเลิกจะย้ายไปเป็น ' + esc(v) + '-X1)</span>' : '';
   const hint = !v ? '<span class="muted smt">ว่างไว้ = ระบบออกเลขให้อัตโนมัติ</span>'
     : bad ? '<span class="err smt">รูปแบบ WHYYMMDDNNN หรือ WHYYMMDDNNN-PC เช่น WH' + ymd + '001</span>'
     : dup ? '<span class="err smt">เลข Lot นี้มีในระบบแล้ว</span>'
-    : v.slice(2, 8) !== ymd ? '<span class="smt" style="color:var(--warn,#b45309)">วันที่ในเลข Lot (' + esc(v.slice(2, 8)) + ') ไม่ใช่วันนี้ — ตรวจสอบอีกครั้ง</span>' : '';
+    : (v.slice(2, 8) !== ymd ? '<span class="smt" style="color:var(--warn,#b45309)">วันที่ในเลข Lot (' + esc(v.slice(2, 8)) + ') ไม่ใช่วันนี้ — ตรวจสอบอีกครั้ง</span>' : '') + reuse;
   return `<label class="fld">Lot No. (ใส่เอง)<input data-bind="f.lot" value="${esc(f.lot)}" maxlength="20" autocomplete="off" autocapitalize="characters" placeholder="WH${ymd}001">${hint}</label>`;
 }
 function viewRecv(d) {
