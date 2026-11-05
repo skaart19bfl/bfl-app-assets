@@ -299,7 +299,7 @@ const S = {
   storeF: 'ALL', view: 'sum', card: null, cardRows: null,
   selSlot: 'S-01', sp: { unit: '' }, spLast: null, lf: { zone: 'S', zoneName: '', code: '' }, adminInfo: null,
   docDay: '', docLot: '', docTag: '',
-  pd: { data: null, loading: false, err: '' }, bsel: '', bcard: { bin: '', rows: null }, bs: { item: '', itemText: '', kg: '', reason: '', mode: 'kg', empty: '' }, hl: { bin: '', kg: '' }, sh: { kg: '', ref: '' }, nf: { bin: '', kg: '', note: '' }, mst: { tab: 'rm', q: '', only: '', chg: {}, bulk: '', data: null, open: {} }, lrn: { lot: '', v: '', reason: '' }, qe: { lot: '', open: false, r: {}, reason: '' },
+  pd: { data: null, loading: false, err: '' }, bsel: '', bcard: { bin: '', rows: null }, bs: { item: '', itemText: '', kg: '', reason: '', mode: 'kg', empty: '' }, hl: { bin: '', kg: '' }, sh: { kg: '', ref: '' }, nf: { bin: '', kg: '', note: '' }, mst: { tab: 'rm', q: '', only: '', chg: {}, bulk: '', data: null, open: {} }, lrn: { lot: '', v: '', reason: '' }, vm: { lot: '', open: false, range: '', reason: '' }, qe: { lot: '', open: false, r: {}, reason: '' },
   of: { intake: 'IN2', bin: '', item: '', itemText: '', qty: '', unit: 'PALLET', note: '' }, ox: { doc: '' },
   br: { at: '', from: '', day: '', view: 'table', only: '', data: null, loading: false },
   pk: { doc: '', v: {} }, dd: { bin: '', item: '', itemText: '', iq: '', sel: {}, v: {}, note: '', auto: '' },
@@ -1677,9 +1677,39 @@ function viewLabel(d, lot) {
     <div class="prev">${labelHTML(lot, u, it)}</div>
     <div class="chips">${pill(lot.status)}${holdFlag(lot) && lot.status !== 'hold' ? '<span class="tag bad">ติด Hold</span>' : ''}<span class="muted">${esc(note)}</span></div>
     ${fixBox}
+    ${voidManyBox(lot, units, sel)}
     <div class="chips"><button type="button" data-plabel="${esc(lot.lot)}">พิมพ์ทั้งหมด (${units.length} ใบ)</button>
       <button type="button" data-plabel="${esc(lot.lot)}" data-sel="1" ${sel.length ? '' : 'disabled'}>พิมพ์ที่เลือก (${sel.length} ใบ)</button>
       ${extra.length ? `<button type="button" class="ghost" data-plabel="${esc(lot.lot)}" data-from="${lot.labels + 1}">พิมพ์ใบที่เกินแผน ${esc(pl(extra[0].p))}${extra.length > 1 ? '–' + esc(pl(extra[extra.length - 1].p)) : ''}</button>` : ''}</div>`;
+}
+
+// ยกเลิกหลายพาเลท (เปิดพาเลทเกิน / ไม่มีของจริง) · สิทธิ์ WH · ตรวจทีละพาเลทที่ server (rm_pallet_void_many) · ผู้ใช้ 5 พ.ย.
+function voidManyBox(lot, units, sel) {
+  const role = S.snap.me.role;
+  if (!['weigh', 'qc', 'hold', 'ready'].includes(lot.status) || !['wh', 'admin'].includes(role) || !(lot.pack === 'BAG' || lot.pack === 'BIGBAG')) return '';
+  if (S.vm.lot !== lot.lot) S.vm = { lot: lot.lot, open: false, range: '', reason: '' };
+  const v = S.vm; const aw = lot.status !== 'weigh';
+  const cand = units.filter((u) => !String(u.id).startsWith('v') && u.store === lot.store && !String(u.p).startsWith('G'));
+  const pick = sel.filter((u) => cand.includes(u));
+  const kg = pick.reduce((a, u) => a + Number(u.kg || 0), 0), bags = pick.reduce((a, u) => a + Number(u.bags || 0), 0);
+  const left = cand.length - pick.length;
+  const ok = pick.length && left >= 1 && v.reason.trim().length >= 3 && !S.busy;
+  const why = !pick.length ? 'แตะเลือกพาเลทด้านบน หรือใส่ช่วงแล้วกด "เลือกตามช่วง"' : left < 1 ? 'ต้องเหลืออย่างน้อย 1 พาเลท (ถ้าไม่มีของทั้ง Lot ให้ยกเลิกทั้ง Lot)' : v.reason.trim().length < 3 ? 'ใส่เหตุผลอย่างน้อย 3 ตัวอักษร' : '';
+  const unit = lot.pack === 'BIGBAG' ? 'Bigbag' : 'พาเลท';
+  return `<details class="note" ${v.open ? 'open' : ''} data-vmopen="1" style="display:flex;flex-direction:column;gap:8px"><summary><b>ยกเลิกหลาย${unit}</b> <span class="muted smt">เปิดเกิน / ไม่มีของจริง</span></summary>
+    <p class="muted smt" style="margin:6px 0">เลือก${unit}ที่จะยกเลิกจากปุ่มด้านบน หรือใส่ช่วง เช่น <span class="mono">14-49</span> · ${aw ? 'ตัดน้ำหนักรับเข้าของ' + unit + 'ที่ยกเลิกออกจาก Lot (Stock card แสดง "ยกเลิกรับเข้า")' : 'ยังไม่ชั่ง: ระบบเฉลี่ยน้ำหนักชั่งตามจำนวนถุงที่เหลือ'} · ${unit}ที่ถูกเบิก/บด/จ่ายแล้วยกเลิกไม่ได้ · ป้ายที่พิมพ์แล้วให้เก็บทิ้ง</p>
+    <div class="grid2" style="align-items:end"><label class="fld">ช่วง${unit}<input data-bind="vm.range" value="${esc(v.range)}" placeholder="เช่น 14-49 หรือ 3,5,8" autocomplete="off"></label>
+      <div class="chips"><button type="button" class="ghost" data-vmrange="1" ${parsePs(v.range).length ? '' : 'disabled'}>เลือกตามช่วง</button></div></div>
+    <span class="smt">ที่เลือก: <b>${fmt(pick.length)}</b> ${unit}${pick.length ? ` (${esc(psText(pick.map((u) => u.p)))}) · ${fmt(bags)} ${lot.pack === 'BIGBAG' ? 'ใบ' : 'ถุง'}${aw ? ' · ' + fmt(Math.round(kg * 100) / 100) + ' กก.' : ''}` : ''}${pick.length ? ` → หลังยกเลิก: คงคลัง <b>${fmt(left)}</b> ${unit} · ยอดรับเข้า Lot ${fmt(Number(lot.bags || 0) - bags)} ${lot.pack === 'BIGBAG' ? 'ใบ' : 'ถุง'}${aw ? ' · ' + fmt(Math.round((Number(lot.net || 0) - kg) * 100) / 100) + ' กก.' : ''}` : ''}</span>
+    <div class="grid2" style="align-items:end"><label class="fld">เหตุผล (ต้องใส่)<input data-bind="vm.reason" value="${esc(v.reason)}" maxlength="200" autocomplete="off" placeholder="เช่น เปิดพาเลทเกิน"></label>
+      <div class="chips"><button type="button" style="background:var(--bad);border-color:var(--bad)" data-vmdo="${esc(lot.lot)}" ${ok ? '' : 'disabled'}>ยกเลิก ${fmt(pick.length)} ${unit}ที่เลือก</button></div></div>
+    ${why ? `<span class="muted smt">${esc(why)}</span>` : ''}</details>`;
+}
+// รวมเลขพาเลทเป็นช่วง เช่น 14–20, 25
+function psText(ps) {
+  const n = ps.map((p) => int(p)).sort((a, b) => a - b); const out = [];
+  for (let i = 0; i < n.length; i++) { let j = i; while (j + 1 < n.length && n[j + 1] === n[j] + 1) j++; out.push(j > i ? n[i] + '–' + n[j] : String(n[i])); i = j; }
+  return 'P' + out.join(', P');
 }
 
 function leInit(lot) {
@@ -1728,11 +1758,12 @@ function qtyEditBox(d, lot) {
   S.qe.chg = chg;
   const ok = chg.length && q.reason.trim().length >= 3 && chg.every((c) => c.kg > 0 && (c.bags === undefined || c.bags >= 1)) && !S.busy;
   return `<details class="note" ${q.open ? 'open' : ''} data-qeopen="1" style="display:flex;flex-direction:column;gap:8px"><summary><b>แก้จำนวนรับเข้า (ถุง / กก.)</b> <span class="muted smt">${us.length} ${pal1(us)} · รวม ${fmt(lot.bags)} ถุง ${fmt(lot.net)} กก.</span></summary>
-    <p class="muted smt" style="margin:6px 0">แก้จำนวนถุง ระบบคิด กก. ตามน้ำหนักต่อถุงเดิม (แก้ กก. เองได้) · ปรับยอดเป็นรายการ "ปรับรับเข้า" ใน Stock card · พาเลทที่ถูกเบิก/บด/จ่ายแล้วแก้ไม่ได้ · ยกเลิกทั้งพาเลทใช้ "แก้ / ยกเลิก" ที่แท็บป้าย</p>
+    <p class="muted smt" style="margin:6px 0">แก้จำนวนถุง ระบบคิด กก. ตามน้ำหนักต่อถุงเดิม (แก้ กก. เองได้) · ปรับยอดเป็นรายการ "ปรับรับเข้า" ใน Stock card · พาเลทที่ถูกเบิก/บด/จ่ายแล้วแก้ไม่ได้ · พาเลทที่ไม่มีของจริงใช้ "ยกเลิกหลายพาเลท" ที่แท็บป้าย</p>
     <div class="tw" style="max-height:360px;overflow:auto"><table><thead><tr><th>พาเลท</th><th>ถุง</th><th>กก.</th><th class="num">กก./ถุง</th></tr></thead><tbody>${rows}</tbody></table></div>
     <span class="smt">หลังแก้: <b>${fmt(nb)}</b> ถุง · <b>${fmt(Math.round(nk * 100) / 100)}</b> กก. ${chg.length ? `(${nk - Number(lot.net || 0) >= 0 ? '+' : ''}${fmt(Math.round((nk - Number(lot.net || 0)) * 100) / 100)} กก. · แก้ ${chg.length} รายการ)` : ''}</span>
     <div class="grid2" style="align-items:end"><label class="fld">เหตุผล<input data-bind="qe.reason" value="${esc(q.reason)}" maxlength="200" autocomplete="off" placeholder="เช่น นับถุงผิด / ชั่งใหม่"></label>
-      <div class="chips"><button type="button" data-qedo="${esc(lot.lot)}" ${ok ? '' : 'disabled'}>บันทึกจำนวนใหม่</button>${chg.length ? '<button type="button" class="ghost" data-qereset="1">คืนค่าเดิม</button>' : ''}</div></div></details>`;
+      <div class="chips"><button type="button" data-qedo="${esc(lot.lot)}" ${ok ? '' : 'disabled'}>บันทึกจำนวนใหม่</button>${chg.length ? '<button type="button" class="ghost" data-qereset="1">คืนค่าเดิม</button>' : ''}</div></div>
+    ${ok || S.busy ? '' : `<span class="muted smt">${!chg.length ? 'ยังไม่มีพาเลทที่ตัวเลขเปลี่ยน (แถวที่แก้จะเป็นสีเหลือง)' : !chg.every((c) => c.kg > 0 && (c.bags === undefined || c.bags >= 1)) ? 'แต่ละพาเลทต้องมีอย่างน้อย 1 ถุง และ กก. มากกว่า 0 · ถ้าพาเลทไม่มีของจริง ให้ใช้ "ยกเลิกหลายพาเลท" ที่แท็บป้าย' : 'ใส่เหตุผลอย่างน้อย 3 ตัวอักษร'}</span>`}</details>`;
 }
 const pal1 = (us) => us.every((u) => u.kind === 'PALLET') ? 'พาเลท' : 'หน่วย';
 function viewLotInfo(d, lot) {
@@ -2134,7 +2165,7 @@ function render() {
 }
 
 // ---------- events ----------
-document.addEventListener('toggle', (e) => { const t = e.target; if (t && t.dataset && t.dataset.qeopen) S.qe.open = t.open; }, true);
+document.addEventListener('toggle', (e) => { const t = e.target; if (t && t.dataset && t.dataset.qeopen) S.qe.open = t.open; if (t && t.dataset && t.dataset.vmopen) S.vm.open = t.open; }, true);
 const todayYmd = () => new Date(Date.now() + 7 * 3600e3).toISOString().slice(0, 10); // วันที่ปฏิทินไทย
 function getPath(path) { return path.split('.').reduce((o, k) => (o == null ? o : o[k]), S); }
 function setPath(path, val) { const ks = path.split('.'); let o = S; while (ks.length > 1) o = o[ks.shift()]; o[ks[0]] = val; }
@@ -2274,6 +2305,14 @@ document.addEventListener('click', async (e) => {
   if (ds.lsel !== undefined) { S.lsel.ps[ds.lsel] = !S.lsel.ps[ds.lsel]; if (S.labelP !== ds.lsel) S.pf = { unit: '', bags: '', reason: '' }; S.labelP = ds.lsel; render(); return; }
   if (ds.lselall) { const d = D(); const lot = d.lots[S.lsel.lot]; if (lot) labelUnits(d, lot).forEach((u) => { S.lsel.ps[u.p] = true; }); render(); return; }
   if (ds.lselnone) { S.lsel.ps = {}; render(); return; }
+  if (ds.vmrange) { const d = D(); const lot = d.lots[S.lsel.lot]; if (!lot) return; const want = new Set(parsePs(S.vm.range));
+    S.lsel.ps = {}; labelUnits(d, lot).forEach((u) => { if (want.has(String(u.p))) S.lsel.ps[u.p] = true; }); S.vm.open = true; render(); return; }
+  if (ds.vmdo) { const d = D(); const lot = d.lots[ds.vmdo]; if (!lot) return;
+    const ids = labelUnits(d, lot).filter((u) => S.lsel.ps[u.p] && u.store === lot.store && !String(u.p).startsWith('G') && !String(u.id).startsWith('v')).map((u) => u.id);
+    if (!ids.length) return;
+    act('rm_pallet_void_many', { p_lot: ds.vmdo, p_units: ids, p_reason: S.vm.reason.trim() },
+      (r) => 'ยกเลิก ' + fmt(r.n) + ' พาเลทของ ' + r.lot + ' แล้ว · Lot เหลือ ' + fmt(r.total_bags) + ' ถุง' + (r.net != null ? ' ' + fmt(r.net) + ' กก.' : ''),
+      () => { S.vm = { lot: '', open: false, range: '', reason: '' }; S.lsel.ps = {}; S.labelP = ''; S.pf = { unit: '', bags: '', reason: '' }; }); return; }
   if (ds.pfopen !== undefined) { S.pf = { unit: ds.pfopen, bags: '', reason: '' }; render(); return; }
   if (ds.pfdo) { const pf = S.pf; const u = (S.snap.units || []).find((x) => x.id === pf.unit);
     act('rm_pallet_fix', { p_unit: pf.unit, p_action: ds.pfdo, p_bags: ds.pfdo === 'bags' ? int(pf.bags) : null, p_reason: pf.reason.trim() },
