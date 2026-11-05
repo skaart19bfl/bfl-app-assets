@@ -183,7 +183,7 @@ const packChipsOf = (o, key) => PACKS.map(([pk, ct, t]) => `<button type="button
 // ค้นหาวัตถุดิบจากรหัสหรือชื่อ (ทุกคำต้องเจอ) · รหัสที่ขึ้นต้นด้วยคำค้นมาก่อน
 const ncpKey = (k) => k === 'bs';
 const BIN_KEYS = ['bs', 'of', 'dd']; // ฟอร์มที่เกี่ยวกับถัง: แสดงเฉพาะวัตถุดิบที่เปิดใช้กับถัง Batching (Master)
-const itemPool = (k) => S.snap.items.filter((i) => (ncpKey(k) || i.category !== 'NCP') && (!BIN_KEYS.includes(k) || i.bin || i.code === (S[k] || {}).item));
+const itemPool = (k) => S.snap.items.filter((i) => (ncpKey(k) || i.category !== 'NCP') && (!BIN_KEYS.includes(k) || i.bin || i.code === (S[k] || {}).item) && (k !== 'le' || i.store === S.le.store)); // le = แก้ Lot: เฉพาะคลังเดียวกัน
 function itemMatches(q, k) {
   const t = String(q || '').toUpperCase().split(/\s+/).filter(Boolean); if (!t.length) return [];
   return itemPool(k).filter((i) => i.status === 'Active').filter((i) => { const x = (i.code + ' ' + i.name).toUpperCase(); return t.every((w) => x.includes(w)); })
@@ -251,10 +251,14 @@ const SOURCES = [['purchase', 'ซื้อจากผู้ขาย'], ['tran
 const PROVINCES = 'กรุงเทพมหานคร กระบี่ กาญจนบุรี กาฬสินธุ์ กำแพงเพชร ขอนแก่น จันทบุรี ฉะเชิงเทรา ชลบุรี ชัยนาท ชัยภูมิ ชุมพร เชียงราย เชียงใหม่ ตรัง ตราด ตาก นครนายก นครปฐม นครพนม นครราชสีมา นครศรีธรรมราช นครสวรรค์ นนทบุรี นราธิวาส น่าน บึงกาฬ บุรีรัมย์ ปทุมธานี ประจวบคีรีขันธ์ ปราจีนบุรี ปัตตานี พระนครศรีอยุธยา พะเยา พังงา พัทลุง พิจิตร พิษณุโลก เพชรบุรี เพชรบูรณ์ แพร่ ภูเก็ต มหาสารคาม มุกดาหาร แม่ฮ่องสอน ยโสธร ยะลา ร้อยเอ็ด ระนอง ระยอง ราชบุรี ลพบุรี ลำปาง ลำพูน เลย ศรีสะเกษ สกลนคร สงขลา สตูล สมุทรปราการ สมุทรสงคราม สมุทรสาคร สระแก้ว สระบุรี สิงห์บุรี สุโขทัย สุพรรณบุรี สุราษฎร์ธานี สุรินทร์ หนองคาย หนองบัวลำภู อ่างทอง อำนาจเจริญ อุดรธานี อุตรดิตถ์ อุทัยธานี อุบลราชธานี'.split(' ');
 const METHODS = ['รถโฟล์คลิฟท์', 'แรงงานคน', 'เทลงหลุม', 'ปั๊มลงแท็งก์'];
 // วิธีการลง: dropdown แสดงครบทุกตัวเลือกเสมอ (datalist เดิมกรองตามค่าที่ค้างในช่อง ทำให้เห็นแค่ค่าเดียว) + อื่น ๆ พิมพ์เอง
+// + วิธีการลงที่ผู้ใช้เพิ่มเอง (rm_option kind=method) · เพิ่ม/ลบได้ที่ช่องนี้ (ผู้ใช้ 5 พ.ย.)
 const mOther = {};
+const userMethods = () => ((S.snap && S.snap.options && S.snap.options.method) || []).filter((m) => !METHODS.includes(m));
+const allMethods = () => METHODS.concat(userMethods());
 function methodField(path, val, ctx) {
-  const k = path + '|' + (ctx || ''); const other = k in mOther ? mOther[k] : !!(val && !METHODS.includes(val));
-  return `<label class="fld">วิธีการลง<select data-msel="${path}" data-mctx="${esc(ctx || '')}"><option value="" ${!other && !val ? 'selected' : ''}>— เลือก —</option>${METHODS.map((m) => `<option value="${m}" ${!other && val === m ? 'selected' : ''}>${m}</option>`).join('')}<option value="__other" ${other ? 'selected' : ''}>อื่น ๆ (พิมพ์เอง)</option></select>${other ? `<input data-bind="${path}" value="${esc(val)}" maxlength="60" autocomplete="off" placeholder="พิมพ์วิธีการลง" aria-label="วิธีการลง (พิมพ์เอง)" style="margin-top:6px">` : ''}</label>`;
+  const k = path + '|' + (ctx || ''); const list = allMethods(); const other = k in mOther ? mOther[k] : !!(val && !list.includes(val));
+  const v = String(val || '').trim(); const canAdd = other && v && !list.includes(v); const canDel = !other && userMethods().includes(val);
+  return `<div class="fld"><label for="ms-${esc(k)}">วิธีการลง</label><select id="ms-${esc(k)}" data-msel="${path}" data-mctx="${esc(ctx || '')}"><option value="" ${!other && !val ? 'selected' : ''}>— เลือก —</option>${list.map((m) => `<option value="${esc(m)}" ${!other && val === m ? 'selected' : ''}>${esc(m)}</option>`).join('')}<option value="__other" ${other ? 'selected' : ''}>＋ อื่น ๆ / เพิ่มวิธีใหม่</option></select>${other ? `<span style="display:flex;gap:6px;margin-top:6px"><input data-bind="${path}" value="${esc(val)}" maxlength="60" autocomplete="off" placeholder="พิมพ์วิธีการลง" aria-label="วิธีการลง (พิมพ์เอง)" style="flex:1;min-width:0"><button type="button" class="sm" data-madd="${path}" data-mctx="${esc(ctx || '')}" ${canAdd && !S.busy ? '' : 'disabled'} title="บันทึกไว้เป็นตัวเลือกให้ทุกคนใช้ครั้งต่อไป">เพิ่มเข้ารายการ</button></span>` : ''}${canDel ? `<button type="button" class="ghost sm" style="margin-top:6px;align-self:flex-start" data-mdel="${esc(val)}">ลบ "${esc(val)}" ออกจากรายการ</button>` : ''}</div>`;
 }
 // เมนูแยกตามหน่วยงาน (แบบ B) · ncp = เปิดระบบ NCP เดิม (Apps Script) จนกว่าจะย้ายเข้าระบบนี้ · soon = ยังไม่ทำ
 const NCP_URL = 'https://script.google.com/macros/s/AKfycbwL2RlhYt3DsouOa2juTE48-fqirdLNOfVt3lrVtcEnj5B0LWju3UjvnjtYwX4uQIH2/exec';
@@ -1679,17 +1683,19 @@ function viewLabel(d, lot) {
 
 function leInit(lot) {
   const m = lot.meta || {};
-  return { lot: lot.lot, supplier: lot.supplier || '', plate: lot.plate || '', province: lot.province || '', exp: lot.exp || '', ticket: lot.ticket || '', delivery: lot.delivery || '',
+  const it = S.snap.items.find((i) => i.code === lot.item);
+  return { lot: lot.lot, item: lot.item, itemText: it ? it.code + ' · ' + it.name : lot.item, iq: '', store: lot.store, supplier: lot.supplier || '', plate: lot.plate || '', province: lot.province || '', exp: lot.exp || '', ticket: lot.ticket || '', delivery: lot.delivery || '',
     po: lot.po || '', ref: lot.ref || '', win: toLocal(lot.win), wout: toLocal(lot.wout), qci: lot.qci || 'pass', qcin: lot.qcin || '', loc: lot.loc || '',
     per: lot.per == null ? '' : String(lot.per), labels: lot.labels == null ? '' : String(lot.labels),
     vehicle: m.vehicle || '', method: m.method || '', t_start: m.t_start || '', t_end: m.t_end || '', note: m.note || '',
     plant: lot.plant || '', tdoc: lot.tdoc || '', slot: lot.slot || '', supkg: lot.supkg == null ? '' : String(Number(lot.supkg)) };
 }
-const LE_KEYS = { supplier: 'supplier', plate: 'plate', province: 'province', exp: 'exp', ticket: 'ticket', delivery: 'delivery', po: 'po', ref: 'ref_receipt',
+const LE_KEYS = { item: 'item', supplier: 'supplier', plate: 'plate', province: 'province', exp: 'exp', ticket: 'ticket', delivery: 'delivery', po: 'po', ref: 'ref_receipt',
   win: 'weigh_in', wout: 'weigh_out', loc: 'location', per: 'per', labels: 'labels', vehicle: 'vehicle', method: 'method', t_start: 't_start', t_end: 't_end', note: 'note', tdoc: 'transfer_doc', slot: 'src_lot', plant: 'plant', supkg: 'sup_kg' };
 function leDiff(lot) {
   const a = leInit(lot), b = S.le, p = {};
   Object.keys(LE_KEYS).forEach((k) => { if (String(b[k] ?? '') !== String(a[k] ?? '')) p[LE_KEYS[k]] = (k === 'per' || k === 'labels') ? int(b[k]) : k === 'supkg' ? num(b[k]) : b[k]; });
+  if (!p.item) delete p.item;
   if (lot.source !== 'transfer') { delete p.transfer_doc; delete p.src_lot; delete p.plant; if (b.qci !== a.qci || b.qcin !== a.qcin) { p.qc_initial = b.qci; p.qc_initial_note = b.qcin; } } else { delete p.supplier; delete p.sup_kg; }
   return p;
 }
@@ -1723,7 +1729,9 @@ function viewLotInfo(d, lot) {
       <span class="muted">ใบรับ</span><span class="mono">${esc(lot.doc)} · ${esc(lot.by || '')} · รับ ${dmy(lot.recv_day)}</span>
       ${lot.net ? `<span class="muted">น้ำหนัก</span><span>${fmt(lot.net)} กก. · ${fmt(lot.bags)} ${esc(unitName(lot))}${lot.wsrc === 'doc' ? ' · ตามใบโอน' : lot.wsrc === 'label' ? ` · ตามฉลาก ${fmt(lot.lpb)} กก./ถุง` : lot.wsrc === 'opening' ? ' · ยอดยกมา' : ' · ตาชั่ง'}</span>` : ''}
     </div>
-    <div class="sect">แก้ไขข้อมูล (ป้ายที่พิมพ์แล้วใช้ต่อได้)</div>
+    <div class="sect">แก้ไขข้อมูล</div>
+    ${itemPicker('le', 'รหัสวัตถุดิบ (เปลี่ยนได้เฉพาะคลัง ' + esc(lot.store) + ')', le.itemText, d.items[le.item])}
+    ${le.item !== lot.item ? `<p class="smt" style="margin:-4px 0 0;color:var(--warn,#b45309)">เปลี่ยนจาก ${esc(lot.item)} เป็น ${esc(le.item || '-')} · ความเคลื่อนไหวทั้งหมดของ Lot จะเปลี่ยนรหัสตาม · พิมพ์ป้ายใหม่หลังบันทึก</p>` : '<p class="muted smt" style="margin:-4px 0 0">ข้อมูลอื่นแก้แล้วป้ายที่พิมพ์ไปใช้ต่อได้</p>'}
     <div class="grid2">
       ${tr ? `<div class="fld">จาก<span class="chips">${(it.store === 'PX' ? TPLANTS : PLANTS).map((q) => `<button type="button" class="tg" aria-pressed="${le.plant === q}" data-set="le.plant" data-val="${q}">${plantName(q)}</button>`).join('')}</span></div>
       ${inp('tdoc', 'เลขที่ใบโอน', 'maxlength="40"')}
@@ -2099,6 +2107,7 @@ function render() {
 }
 
 // ---------- events ----------
+function getPath(path) { return path.split('.').reduce((o, k) => (o == null ? o : o[k]), S); }
 function setPath(path, val) { const ks = path.split('.'); let o = S; while (ks.length > 1) o = o[ks.shift()]; o[ks[0]] = val; }
 
 function printForm(kind) {
@@ -2259,6 +2268,9 @@ document.addEventListener('click', async (e) => {
   if (ds.lotinfo) { S.labelLot = ds.lotinfo; S.lotTab = 'info'; S.le = { lot: '' }; S.cancel = ''; S.rw = { net: '', reason: '' }; S.holdReason = ''; render(); const c = document.getElementById('labelcard'); if (c) c.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
   if (ds.lottab) { S.lotTab = ds.lottab; render(); return; }
   if (ds.lereset) { S.le = { lot: '' }; render(); return; }
+  if (ds.madd) { const v = String(getPath(ds.madd) || '').trim().replace(/\s+/g, ' '); const k = ds.madd + '|' + (ds.mctx || '');
+    act('rm_option_add', { p: { kind: 'method', value: v } }, 'เพิ่ม "' + v + '" เข้ารายการวิธีการลงแล้ว', () => { mOther[k] = false; setPath(ds.madd, v); }); return; }
+  if (ds.mdel) { const v = ds.mdel; act('rm_option_del', { p: { kind: 'method', value: v } }, 'ลบ "' + v + '" ออกจากรายการแล้ว (ข้อมูลที่บันทึกไปแล้วไม่เปลี่ยน)', () => { Object.keys(mOther).forEach((k) => delete mOther[k]); }); return; }
   if (ds.lrndo) { const nl = S.lrn.v.replace(/\s/g, '').toUpperCase();
     act('rm_lot_rename', { p_lot: ds.lrndo, p: { new_lot: nl, reason: S.lrn.reason.trim() } }, (r) => 'เปลี่ยนเลข Lot ' + r.from + ' เป็น ' + r.lot + ' แล้ว (' + r.units + ' พาเลท/หน่วย) · พิมพ์ป้ายใหม่ที่แท็บป้าย',
       (r) => { S.labelLot = r.lot; S.labelP = ''; S.le = { lot: '' }; S.lrn = { lot: '', v: '', reason: '' }; S.lsel = { lot: '', ps: {} }; }); return; }
