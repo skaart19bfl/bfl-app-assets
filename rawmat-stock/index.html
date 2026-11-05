@@ -1684,18 +1684,18 @@ function viewLabel(d, lot) {
 function leInit(lot) {
   const m = lot.meta || {};
   const it = S.snap.items.find((i) => i.code === lot.item);
-  return { lot: lot.lot, item: lot.item, itemText: it ? it.code + ' · ' + it.name : lot.item, iq: '', store: lot.store, supplier: lot.supplier || '', plate: lot.plate || '', province: lot.province || '', exp: lot.exp || '', ticket: lot.ticket || '', delivery: lot.delivery || '',
+  return { lot: lot.lot, item: lot.item, itemText: it ? it.code + ' · ' + it.name : lot.item, iq: '', store: lot.store, recv: lot.recv_day || '', supplier: lot.supplier || '', plate: lot.plate || '', province: lot.province || '', exp: lot.exp || '', ticket: lot.ticket || '', delivery: lot.delivery || '',
     po: lot.po || '', ref: lot.ref || '', win: toLocal(lot.win), wout: toLocal(lot.wout), qci: lot.qci || 'pass', qcin: lot.qcin || '', loc: lot.loc || '',
     per: lot.per == null ? '' : String(lot.per), labels: lot.labels == null ? '' : String(lot.labels),
     vehicle: m.vehicle || '', method: m.method || '', t_start: m.t_start || '', t_end: m.t_end || '', note: m.note || '',
     plant: lot.plant || '', tdoc: lot.tdoc || '', slot: lot.slot || '', supkg: lot.supkg == null ? '' : String(Number(lot.supkg)) };
 }
-const LE_KEYS = { item: 'item', supplier: 'supplier', plate: 'plate', province: 'province', exp: 'exp', ticket: 'ticket', delivery: 'delivery', po: 'po', ref: 'ref_receipt',
+const LE_KEYS = { item: 'item', recv: 'recv_day', supplier: 'supplier', plate: 'plate', province: 'province', exp: 'exp', ticket: 'ticket', delivery: 'delivery', po: 'po', ref: 'ref_receipt',
   win: 'weigh_in', wout: 'weigh_out', loc: 'location', per: 'per', labels: 'labels', vehicle: 'vehicle', method: 'method', t_start: 't_start', t_end: 't_end', note: 'note', tdoc: 'transfer_doc', slot: 'src_lot', plant: 'plant', supkg: 'sup_kg' };
 function leDiff(lot) {
   const a = leInit(lot), b = S.le, p = {};
   Object.keys(LE_KEYS).forEach((k) => { if (String(b[k] ?? '') !== String(a[k] ?? '')) p[LE_KEYS[k]] = (k === 'per' || k === 'labels') ? int(b[k]) : k === 'supkg' ? num(b[k]) : b[k]; });
-  if (!p.item) delete p.item;
+  if (!p.item) delete p.item; if (!p.recv_day) delete p.recv_day;
   if (lot.source !== 'transfer') { delete p.transfer_doc; delete p.src_lot; delete p.plant; if (b.qci !== a.qci || b.qcin !== a.qcin) { p.qc_initial = b.qci; p.qc_initial_note = b.qcin; } } else { delete p.supplier; delete p.sup_kg; }
   return p;
 }
@@ -1733,6 +1733,7 @@ function viewLotInfo(d, lot) {
     ${itemPicker('le', 'รหัสวัตถุดิบ (เปลี่ยนได้เฉพาะคลัง ' + esc(lot.store) + ')', le.itemText, d.items[le.item])}
     ${le.item !== lot.item ? `<p class="smt" style="margin:-4px 0 0;color:var(--warn,#b45309)">เปลี่ยนจาก ${esc(lot.item)} เป็น ${esc(le.item || '-')} · ความเคลื่อนไหวทั้งหมดของ Lot จะเปลี่ยนรหัสตาม · พิมพ์ป้ายใหม่หลังบันทึก</p>` : '<p class="muted smt" style="margin:-4px 0 0">ข้อมูลอื่นแก้แล้วป้ายที่พิมพ์ไปใช้ต่อได้</p>'}
     <div class="grid2">
+      <label class="fld">วันที่รับเข้า<input type="date" data-bind="le.recv" value="${esc(le.recv)}" max="${esc(todayYmd())}">${le.recv !== (lot.recv_day || '') ? `<span class="smt" style="color:var(--warn,#b45309)">เปลี่ยนจาก ${dmy(lot.recv_day)} · ใบรับ ${esc(lot.doc || '')} และรายการรับเข้าใน Stock card เลื่อนตาม${lot.wsrc === 'opening' ? ' (Lot ยอดยกมา: เปลี่ยนเฉพาะวันที่รับ)' : ''}</span>` : ''}</label><span></span>
       ${tr ? `<div class="fld">จาก<span class="chips">${(it.store === 'PX' ? TPLANTS : PLANTS).map((q) => `<button type="button" class="tg" aria-pressed="${le.plant === q}" data-set="le.plant" data-val="${q}">${plantName(q)}</button>`).join('')}</span></div>
       ${inp('tdoc', 'เลขที่ใบโอน', 'maxlength="40"')}
       ${inp('slot', 'Lot ต้นทาง (ทวนสอบ)', 'maxlength="40"')}
@@ -2107,6 +2108,7 @@ function render() {
 }
 
 // ---------- events ----------
+const todayYmd = () => new Date(Date.now() + 7 * 3600e3).toISOString().slice(0, 10); // วันที่ปฏิทินไทย
 function getPath(path) { return path.split('.').reduce((o, k) => (o == null ? o : o[k]), S); }
 function setPath(path, val) { const ks = path.split('.'); let o = S; while (ks.length > 1) o = o[ks.shift()]; o[ks[0]] = val; }
 
