@@ -280,7 +280,7 @@ const TABS = [['home', 'ภาพรวม'], ['recv', 'รับเข้า'],
 
 const S = {
   tok: sessionStorage.getItem('rm_tok') || '', snap: null, screen: 'menu', mod: '', toast: '', toastErr: false, busy: false,
-  f: { source: 'purchase', plant: 'BFL-PC', tdoc: '', slot: '', item: '', itemText: '', pack: 'BAG', cont: '', supKg: '', sup: '', supText: '', plate: '', exp: '', ticket: '', weighIn: '', delivery: '', po: '', province: '', qci: '', qcin: '', per: '', labels: '', bigbags: '', location: 'S-01', vehN: '1', vehU: 'คัน', method: '', tStart: '', tEnd: '', note: '' },
+  f: { source: 'purchase', plant: 'BFL-PC', lot: '', tdoc: '', slot: '', item: '', itemText: '', pack: 'BAG', cont: '', supKg: '', sup: '', supText: '', plate: '', exp: '', ticket: '', weighIn: '', delivery: '', po: '', province: '', qci: '', qcin: '', per: '', labels: '', bigbags: '', location: 'S-01', vehN: '1', vehU: 'คัน', method: '', tStart: '', tEnd: '', note: '' },
   net: {}, ud: {}, wo: {}, rt: { plant: 'BFL-PC', key: '', tdoc: '', pack: 'BAG', n: '', per: '', last: '', big: '', net: '', loc: 'S-01', note: '' }, rtc: { doc: '', reason: '' }, lotTab: 'label', le: { lot: '' }, holdReason: '', rw: { net: '', reason: '' },
   ob: { item: '', itemText: '', lot: '', store: 'RM', pack: 'BAG', cont: '', recv: '', exp: '', sup: '', loc: 'S-01', n: '', bags: '', kgb: '', lastBags: '', total: '', lines: '', tb: '', tkg: '' }, labelLot: '', labelP: '', lsel: { lot: '', ps: {} }, pf: { unit: '', bags: '', reason: '' }, cancel: '', cxReason: '', docPs: '',
   rep: { day: '', data: null, loading: false }, fx: { doc: '' }, gLast: '', adj: { unit: '' }, gW: [], mm: {}, mmTo: '', scan: { open: false, q: '', to: '' }, sr: { mode: 'day', day: '', month: '', from: '', to: '', data: null, loading: false }, users: null, uf: { mode: 'new', username: '', name: '', role: 'wh', active: true, password: '' }, upw: { user: '', pw: '' },
@@ -1439,6 +1439,18 @@ function recvCalc(it) {
 
 const infoBtn = (lot) => `<button type="button" class="sm ghost" data-lotinfo="${esc(lot)}">รายละเอียด / แก้ไข</button>`;
 
+const LOT_RE = /^WH(\d{10}|\d{9}(-PC)?)$/;
+// เลข Lot ใส่เอง (ว่าง = ระบบออกให้) · ตรวจรูปแบบ/วันที่/ซ้ำเบื้องต้น ฝั่ง server ตรวจซ้ำอีกรอบ
+function lotField(f) {
+  const v = f.lot.replace(/\s/g, '').toUpperCase(); const bad = v && !LOT_RE.test(v);
+  const ymd = (() => { const t = new Date(Date.now() + 7 * 3600e3); return String(t.getUTCFullYear()).slice(2) + String(t.getUTCMonth() + 1).padStart(2, '0') + String(t.getUTCDate()).padStart(2, '0'); })();
+  const dup = v && !bad && ((S.snap && S.snap.lots) || []).some((l) => l.lot === v);
+  const hint = !v ? '<span class="muted smt">ว่างไว้ = ระบบออกเลขให้อัตโนมัติ</span>'
+    : bad ? '<span class="err smt">รูปแบบ WHYYMMDDNNN หรือ WHYYMMDDNNN-PC เช่น WH' + ymd + '001</span>'
+    : dup ? '<span class="err smt">เลข Lot นี้มีในระบบแล้ว</span>'
+    : v.slice(2, 8) !== ymd ? '<span class="smt" style="color:var(--warn,#b45309)">วันที่ในเลข Lot (' + esc(v.slice(2, 8)) + ') ไม่ใช่วันนี้ — ตรวจสอบอีกครั้ง</span>' : '';
+  return `<label class="fld">Lot No. (ใส่เอง)<input data-bind="f.lot" value="${esc(f.lot)}" maxlength="20" autocomplete="off" autocapitalize="characters" placeholder="WH${ymd}001">${hint}</label>`;
+}
 function viewRecv(d) {
   const f = S.f; const it = d.items[f.item];
   const sups = it ? [...new Set(d.s.suppliers.filter((x) => x.item === it.code).map((x) => x.supplier))] : [];
@@ -1506,6 +1518,7 @@ function viewRecv(d) {
       ${itemPicker('f', 'วัตถุดิบ', f.itemText, it)}
       ${it ? `<p class="muted smt" style="margin:-8px 0 0">คลัง ${spill(it.store)} · ${esc(it.category || '-')}</p>` : ''}
       <div class="chips" role="group" aria-label="ประเภทบรรจุ">ประเภทบรรจุ ${packChips}</div>
+      ${lotField(f)}
 ${f.source === 'transfer' ? `      <div class="sect">รับโอน · ไม่ต้อง QC · น้ำหนักตามเอกสาร · ตั้ง Lot ใหม่</div>
       <div class="chips" role="group" aria-label="โรงงานต้นทาง">จาก ${TPLANTS.map((p) => `<button type="button" class="tg" aria-pressed="${f.plant === p}" data-set="f.plant" data-val="${p}">${plantName(p)}</button>`).join('')}</div>
       ${f.plant === 'PD' ? `<p class="muted smt" style="margin:-6px 0 0">ผลิตภายใน: รับเข้าได้เฉพาะสารเสริม (คลัง PX) ${it && it.store !== 'PX' ? '<b class="err">· รหัสนี้ไม่ใช่ PX</b>' : ''}</p>` : ''}
@@ -1548,7 +1561,7 @@ ${f.source === 'transfer' ? `      <div class="sect">รับโอน · ไ�
       <div class="sect">จำนวน</div>
       ${qty}
       <div class="note" style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between">
-        <span>ระบบออก Lot ให้เมื่อบันทึก<span class="muted" style="display:block">${recvCalc(it)}</span></span>
+        <span>${f.lot.replace(/\s/g, '') ? 'Lot ' + esc(f.lot.replace(/\s/g, '').toUpperCase()) + ' ' : 'ระบบออก Lot ให้เมื่อบันทึก'}<span class="muted" style="display:block">${recvCalc(it)}</span></span>
         <button type="submit" ${S.busy || !qcOk ? 'disabled' : ''} title="${qcOk ? '' : f.source === 'transfer' ? 'ใส่เลขที่ใบโอนและ Lot ต้นทาง' : 'เลือกผล QC เบื้องต้นก่อน'}">${f.source === 'transfer' ? 'รับโอน · ' : ''}${f.pack === 'BAG' ? 'เปิด Lot และออกป้าย' : 'บันทึกลงของ'}</button></div>
     </form>`}
     ${viewLotCard(d)}
@@ -2345,13 +2358,15 @@ document.addEventListener('submit', async (e) => {
     const tr = f.source === 'transfer';
     if (!tr && !(f.qci === 'pass' || (f.qci === 'cond' && f.qcin.trim()))) { S.toast = 'QC เบื้องต้นต้องผ่านก่อนจึงเปิด Lot ได้'; S.toastErr = true; render(); return; }
     if (tr && f.plant === 'PD' && it.store !== 'PX') { S.toast = 'รับจากการผลิต (PD) ได้เฉพาะสารเสริม คลัง PX'; S.toastErr = true; render(); return; }
-    const p = { item: it.code, pack: f.pack, cont: f.cont || undefined, sup_kg: !tr && num(f.supKg) > 0 ? num(f.supKg) : undefined, supplier: manual ? f.supText.trim() : f.sup, supplier_manual: manual, plate: f.plate, exp: f.exp, location: f.location,
+    const lotIn = f.lot.replace(/\s/g, '').toUpperCase();
+    if (lotIn && !LOT_RE.test(lotIn)) { S.toast = 'เลข Lot ไม่ถูกต้อง ต้องเป็น WHYYMMDDNNN หรือ WHYYMMDDNNN-PC'; S.toastErr = true; render(); return; }
+    const p = { lot: lotIn || undefined, item: it.code, pack: f.pack, cont: f.cont || undefined, sup_kg: !tr && num(f.supKg) > 0 ? num(f.supKg) : undefined, supplier: manual ? f.supText.trim() : f.sup, supplier_manual: manual, plate: f.plate, exp: f.exp, location: f.location,
       ticket: f.ticket, weigh_in: f.weighIn, delivery: f.delivery, po: f.po, province: f.province, qc_initial: f.qci, qc_initial_note: f.qcin,
       source: tr ? 'transfer' : 'purchase', plant: f.plant, transfer_doc: f.tdoc, src_lot: f.slot,
       per: int(f.per), labels: int(f.labels) || suggestLabels(it), bigbags: int(f.bigbags),
       vehicle: int(f.vehN) > 0 ? int(f.vehN) + ' ' + f.vehU : '', method: f.method, t_start: f.tStart || nowHM(), t_end: f.pack === 'BAG' ? '' : f.tEnd, note: f.note };
     act('rm_receive', { p }, (r) => 'เปิด Lot ' + r.lot + ' แล้ว (' + r.doc + ') · ' + (r.status === 'unload' ? 'กดพิมพ์ป้าย ' + r.labels + ' ใบ แล้วลงของ' : r.labels ? r.labels + ' ป้าย · รอชั่งรถออก' : 'รอชั่งรถออก'),
-      (r) => { S.labelLot = r.lot; S.labelP = ''; S.f = Object.assign({}, S.f, { plate: '', exp: '', supText: '', vehN: '1', labels: '', tStart: '', tEnd: '', note: '', ticket: '', weighIn: '', delivery: '', po: '', province: '', qci: '', qcin: '', tdoc: '', slot: '', supKg: '' }); S.lotTab = 'label'; });
+      (r) => { S.labelLot = r.lot; S.labelP = ''; S.f = Object.assign({}, S.f, { lot: '', plate: '', exp: '', supText: '', vehN: '1', labels: '', tStart: '', tEnd: '', note: '', ticket: '', weighIn: '', delivery: '', po: '', province: '', qci: '', qcin: '', tdoc: '', slot: '', supKg: '' }); S.lotTab = 'label'; });
     return;
   }
   if (form.dataset.form === 'ret') {
