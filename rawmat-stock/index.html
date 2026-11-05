@@ -299,7 +299,7 @@ const S = {
   storeF: 'ALL', view: 'sum', card: null, cardRows: null,
   selSlot: 'S-01', sp: { unit: '' }, spLast: null, lf: { zone: 'S', zoneName: '', code: '' }, adminInfo: null,
   docDay: '', docLot: '', docTag: '',
-  pd: { data: null, loading: false, err: '' }, bsel: '', bcard: { bin: '', rows: null }, bs: { item: '', itemText: '', kg: '', reason: '', mode: 'kg', empty: '' }, hl: { bin: '', kg: '' }, sh: { kg: '', ref: '' }, nf: { bin: '', kg: '', note: '' }, mst: { tab: 'rm', q: '', only: '', chg: {}, bulk: '', data: null, open: {} }, lrn: { lot: '', v: '', reason: '' }, vm: { lot: '', open: false, range: '', reason: '' }, rs: { sel: {}, reason: '' }, qe: { lot: '', open: false, r: {}, reason: '' },
+  pd: { data: null, loading: false, err: '' }, bsel: '', bcard: { bin: '', rows: null }, bs: { item: '', itemText: '', kg: '', reason: '', mode: 'kg', empty: '' }, hl: { bin: '', kg: '' }, sh: { kg: '', ref: '' }, nf: { bin: '', kg: '', note: '' }, mst: { tab: 'rm', q: '', only: '', chg: {}, bulk: '', data: null, open: {} }, lrn: { lot: '', v: '', reason: '' }, vm: { lot: '', open: false, range: '', reason: '' }, rs: { sel: {}, reason: '' }, lr: { lot: '', open: false }, qe: { lot: '', open: false, r: {}, reason: '' },
   of: { intake: 'IN2', bin: '', item: '', itemText: '', qty: '', unit: 'PALLET', note: '' }, ox: { doc: '' },
   br: { at: '', from: '', day: '', view: 'table', only: '', data: null, loading: false },
   pk: { doc: '', v: {} }, dd: { bin: '', item: '', itemText: '', iq: '', sel: {}, v: {}, note: '', auto: '' },
@@ -1748,6 +1748,33 @@ function lotRenameBox(d, lot) {
       <label class="fld">เหตุผล<input data-bind="lrn.reason" value="${esc(S.lrn.reason)}" maxlength="120" autocomplete="off" placeholder="เช่น พิมพ์เลข Lot ผิด"></label></div>
     <div class="chips"><button type="button" data-lrndo="${esc(lot.lot)}" ${ok ? '' : 'disabled'}>เปลี่ยนเลข Lot</button><span class="muted smt">ย้ายทุกพาเลท ความเคลื่อนไหว และเอกสารไปเลขใหม่ · ป้ายที่พิมพ์แล้วต้องพิมพ์ใหม่</span></div>`;
 }
+// แก้จำนวนรับเข้าทั้ง Lot (พาเลทเต็ม / ถุงต่อพาเลท / ถุงพาเลทท้าย / น้ำหนัก) · สร้างพาเลทใหม่เหมือนลงของ+ชั่งออกใหม่ · rm_lot_restructure · ผู้ใช้ 5 พ.ย.
+function lotRestructBox(d, lot) {
+  if (lot.pack !== 'BAG' || !['wh', 'admin'].includes(S.snap.me.role)) return '';
+  if (S.lr.lot !== lot.lot) S.lr = { lot: lot.lot, open: false, full: String(lot.full ?? ''), per: String(lot.per ?? ''), scrap: String(lot.scrap ?? 0),
+    src: lot.wsrc === 'label' ? 'label' : lot.wsrc === 'doc' ? 'doc' : 'scale', net: lot.net == null ? '' : String(lot.net), lkg: lot.lpb == null ? '' : String(lot.lpb), reason: '' };
+  const r = S.lr; const full = int(r.full), per = int(r.per), scrap = int(r.scrap);
+  const n = full + (scrap > 0 ? 1 : 0), tot = full * per + scrap;
+  const net = r.src === 'label' ? Math.round(num(r.lkg) * tot * 100) / 100 : num(r.net);
+  const avg = tot > 0 && net > 0 ? net / tot : 0;
+  const curN = d.s.units.filter((u) => u.lot === lot.lot && u.store === lot.store).length;
+  const same = full === Number(lot.full || 0) && per === Number(lot.per || 0) && scrap === Number(lot.scrap || 0) && Math.abs(net - Number(lot.net || 0)) < 0.005 && curN === n;
+  const valid = full >= 0 && scrap >= 0 && per >= 1 && per <= 2000 && n >= 1 && n <= 500 && net > 0 && net <= 100000 && (r.src !== 'label' || num(r.lkg) > 0);
+  const ok = valid && !same && r.reason.trim().length >= 3 && !S.busy;
+  const why = !valid ? 'ใส่จำนวนพาเลท/ถุง และน้ำหนักให้ครบ (ถุงต่อพาเลท 1–2000 · น้ำหนักไม่เกิน 100,000 กก.)' : same ? 'ตัวเลขเท่าเดิม' : r.reason.trim().length < 3 ? 'ใส่เหตุผลอย่างน้อย 3 ตัวอักษร' : '';
+  const sup = Number(lot.supkg || 0); const dv = sup > 0 && net > 0 ? (net - sup) / sup * 100 : null;
+  const inp = (k, label, extra) => `<label class="fld">${label}<input data-bind="lr.${k}" value="${esc(r[k])}" ${extra || ''} autocomplete="off"></label>`;
+  const srcs = [['scale', 'ตาชั่ง (น้ำหนักสุทธิ)'], ['label', 'ตามฉลาก (กก./ถุง)']].concat(lot.source === 'transfer' ? [['doc', 'ตามใบโอน']] : [])
+    .map(([id, t]) => `<button type="button" class="tg" aria-pressed="${r.src === id}" data-set="lr.src" data-val="${id}">${t}</button>`).join('');
+  return `<details class="note" ${r.open ? 'open' : ''} data-lropen="1" style="display:flex;flex-direction:column;gap:8px"><summary><b>แก้จำนวนรับเข้าทั้ง Lot</b> <span class="muted smt">พาเลท / ถุง / น้ำหนัก · ตอนนี้ ${fmt(curN)} พาเลท · ${fmt(lot.bags)} ถุง · ${fmt(lot.net)} กก.</span></summary>
+    <p class="muted smt" style="margin:6px 0">ใช้เมื่อใส่จำนวนตอนลงของหรือน้ำหนักชั่งผิดทั้ง Lot · ระบบจัดพาเลทใหม่ (เพิ่ม/ยกเลิกพาเลท) และเฉลี่ยน้ำหนักตามจำนวนถุง · ปรับยอดเป็นรายการ "ปรับรับเข้า" ใน Stock card · ใช้ได้เฉพาะ Lot ที่ยังไม่มีการเบิก/บด/จ่าย · <b>ป้ายต้องพิมพ์ใหม่ทุกใบ</b></p>
+    <div class="grid2">${inp('full', 'พาเลทเต็ม', 'inputmode="numeric"')}${inp('per', 'ถุงต่อพาเลท', 'inputmode="numeric"')}${inp('scrap', 'ถุงพาเลทท้าย (0 = ไม่มี)', 'inputmode="numeric"')}</div>
+    <div class="chips" role="group" aria-label="แหล่งน้ำหนัก">น้ำหนักจาก ${srcs}</div>
+    <div class="grid2">${r.src === 'label' ? inp('lkg', 'กก./ถุง ตามฉลาก', 'inputmode="decimal"') : inp('net', r.src === 'doc' ? 'น้ำหนักตามใบโอน (กก.)' : 'น้ำหนักสุทธิจากตาชั่ง (กก.)', 'inputmode="decimal"')}${inp('reason', 'เหตุผล (ต้องใส่)', 'maxlength="200" placeholder="เช่น ลงจำนวนผิด / ลงข้อมูลซ้ำ"')}</div>
+    <span class="smt">หลังแก้: <b>${fmt(n)}</b> พาเลท · <b>${fmt(tot)}</b> ถุง · <b>${net > 0 ? fmt(net) : '–'}</b> กก. · เฉลี่ย ${avg ? fmt(Math.round(avg * 100) / 100) : '–'} กก./ถุง${dv !== null ? ` · เทียบใบส่งของ ${fmt(sup)} กก. <span class="${Math.abs(dv) > 2 ? 'err' : 'muted'}">(${dv >= 0 ? '+' : ''}${fmt(Math.round(dv * 100) / 100)}%)</span>` : ''}${n !== curN && valid ? ` · ${n > curN ? 'เพิ่ม ' + fmt(n - curN) : 'ยกเลิก ' + fmt(curN - n)} พาเลท` : ''}</span>
+    <div class="chips"><button type="button" data-lrdo="${esc(lot.lot)}" ${ok ? '' : 'disabled'}>บันทึกจำนวนรับเข้าใหม่</button></div>
+    ${why ? `<span class="muted smt">${esc(why)}</span>` : ''}</details>`;
+}
 // แก้จำนวนรับเข้า (ถุง / กก.) รายพาเลท หลังชั่งแล้ว · สิทธิ์ WH · พาเลทที่ถูกเบิก/บด/จ่ายแล้วแก้ไม่ได้ (server ตรวจ) · ผู้ใช้ 5 พ.ย.
 function qtyEditBox(d, lot) {
   const us = d.s.units.filter((u) => u.lot === lot.lot && u.store === lot.store).sort((a, b) => pSort(a.p) - pSort(b.p));
@@ -1829,7 +1856,7 @@ function viewLotInfo(d, lot) {
       : `<div class="grid2" style="align-items:end"><label class="fld">เหตุผลที่ Hold<input data-bind="holdReason" value="${esc(S.holdReason)}" maxlength="200" autocomplete="off"></label>
         <div><button type="button" style="background:var(--bad);border-color:var(--bad)" data-qcset="${esc(lot.lot)}" data-st="hold" ${S.holdReason.trim() && !S.busy ? '' : 'disabled'}>Hold Lot นี้</button></div></div>
         <p class="muted smt" style="margin:-4px 0 0">${pre ? 'ระหว่างลงของ/รอชั่ง: ติด Hold ไว้ พอชั่งแล้ว Lot เป็น Hold (เบิกไม่ได้)' : 'Lot จะเบิก/บด/จ่ายไม่ได้จนกว่าจะปลด Hold'}</p>`}
-    ${['qc', 'hold', 'ready'].includes(lot.status) ? qtyEditBox(d, lot) : ''}
+    ${['qc', 'hold', 'ready'].includes(lot.status) ? lotRestructBox(d, lot) + qtyEditBox(d, lot) : ''}
     ${rwOk ? `<div class="sect">แก้น้ำหนักชั่ง (admin)</div>
       <div class="grid2" style="align-items:end"><label class="fld">น้ำหนักสุทธิที่ถูกต้อง (กก.)<input data-bind="rw.net" value="${esc(S.rw.net)}" inputmode="decimal" placeholder="${fmt(lot.net)}"></label>
         <label class="fld">เหตุผล<input data-bind="rw.reason" value="${esc(S.rw.reason)}" maxlength="200" autocomplete="off"></label></div>
@@ -2193,7 +2220,7 @@ function render() {
 }
 
 // ---------- events ----------
-document.addEventListener('toggle', (e) => { const t = e.target; if (t && t.dataset && t.dataset.qeopen) S.qe.open = t.open; if (t && t.dataset && t.dataset.vmopen) S.vm.open = t.open; }, true);
+document.addEventListener('toggle', (e) => { const t = e.target; if (t && t.dataset && t.dataset.qeopen) S.qe.open = t.open; if (t && t.dataset && t.dataset.vmopen) S.vm.open = t.open; if (t && t.dataset && t.dataset.lropen) S.lr.open = t.open; }, true);
 const todayYmd = () => new Date(Date.now() + 7 * 3600e3).toISOString().slice(0, 10); // วันที่ปฏิทินไทย
 function getPath(path) { return path.split('.').reduce((o, k) => (o == null ? o : o[k]), S); }
 function setPath(path, val) { const ks = path.split('.'); let o = S; while (ks.length > 1) o = o[ks.shift()]; o[ks[0]] = val; }
@@ -2334,6 +2361,10 @@ document.addEventListener('click', async (e) => {
   if (ds.lselall) { const d = D(); const lot = d.lots[S.lsel.lot]; if (lot) labelUnits(d, lot).forEach((u) => { S.lsel.ps[u.p] = true; }); render(); return; }
   if (ds.lselnone) { S.lsel.ps = {}; render(); return; }
   if (ds.iall) { S.iKg = ds.iall; render(); return; }
+  if (ds.lrdo) { const r = S.lr; const p = { full: int(r.full), per: int(r.per), scrap: int(r.scrap), source: r.src, reason: r.reason.trim() };
+    if (r.src === 'label') p.label_kg = num(r.lkg); else p.net = num(r.net);
+    act('rm_lot_restructure', { p_lot: ds.lrdo, p }, (x) => 'แก้จำนวนรับเข้า ' + x.lot + ' แล้ว · ' + fmt(x.pallets) + ' พาเลท ' + fmt(x.bags) + ' ถุง ' + fmt(x.net) + ' กก. (เฉลี่ย ' + fmt(x.avg) + ' กก./ถุง)' + (x.added ? ' · เพิ่ม ' + x.added + ' พาเลท' : '') + (x.removed ? ' · ยกเลิก ' + x.removed + ' พาเลท' : '') + ' · พิมพ์ป้ายใหม่ที่แท็บป้าย',
+      () => { S.lr = { lot: '', open: false }; S.qe = { lot: '', open: false, r: {}, reason: '' }; S.lsel = { lot: '', ps: {} }; S.labelP = ''; }); return; }
   if (ds.rsdo) { const ids = Array.from(document.querySelectorAll('input[data-rssel]')).filter((i) => i.checked).map((i) => i.dataset.rssel);
     if (!ids.length) return; S.keepScroll = true;
     act('rm_unit_clear_residue', { p_units: ids, p_reason: S.rs.reason.trim() }, (r) => 'ตัดเศษแล้ว ' + fmt(r.n) + ' พาเลท · ' + fmt3(r.kg) + ' กก. · ' + (r.docs || []).join(', '), () => { S.rs = { sel: {}, reason: '' }; }); return; }
