@@ -299,7 +299,7 @@ const S = {
   storeF: 'ALL', view: 'sum', card: null, cardRows: null,
   selSlot: 'S-01', sp: { unit: '' }, spLast: null, lf: { zone: 'S', zoneName: '', code: '' }, adminInfo: null,
   docDay: '', docLot: '', docTag: '',
-  pd: { data: null, loading: false, err: '' }, bsel: '', bcard: { bin: '', rows: null }, bs: { item: '', itemText: '', kg: '', reason: '', mode: 'kg', empty: '' }, hl: { bin: '', kg: '' }, sh: { kg: '', ref: '' }, nf: { bin: '', kg: '', note: '' }, mst: { tab: 'rm', q: '', only: '', chg: {}, bulk: '', data: null, open: {} }, lrn: { lot: '', v: '', reason: '' }, vm: { lot: '', open: false, range: '', reason: '' }, rs: { sel: {}, reason: '' }, lr: { lot: '', open: false }, qe: { lot: '', open: false, r: {}, reason: '' },
+  pd: { data: null, loading: false, err: '' }, bsel: '', bcard: { bin: '', rows: null }, bs: { item: '', itemText: '', kg: '', reason: '', mode: 'kg', empty: '' }, hl: { bin: '', kg: '' }, sh: { kg: '', ref: '' }, nf: { bin: '', kg: '', note: '' }, mst: { tab: 'rm', q: '', only: '', chg: {}, bulk: '', data: null, open: {} }, lrn: { lot: '', v: '', reason: '' }, vm: { lot: '', open: false, range: '', reason: '' }, rs: { sel: {}, reason: '' }, lblQr: null, lr: { lot: '', open: false }, qe: { lot: '', open: false, r: {}, reason: '' },
   of: { intake: 'IN2', bin: '', item: '', itemText: '', qty: '', unit: 'PALLET', note: '' }, ox: { doc: '' },
   br: { at: '', from: '', day: '', view: 'table', only: '', data: null, loading: false },
   pk: { doc: '', v: {} }, dd: { bin: '', item: '', itemText: '', iq: '', sel: {}, v: {}, note: '', auto: '' },
@@ -402,12 +402,19 @@ document.getElementById('lbcss').textContent = FORM_FONT + LABEL_CSS;
 
 // น้ำหนักบนป้ายแสดงต่อกระสอบ/ชิ้น (ผู้ใช้ 3 พ.ย.) · Bigbag / รถ / Bulk = ต่อหน่วย
 const perBag = (lot, u) => u.kind === 'PALLET' && u.bags > 0 && u.kg > 0 ? Math.round(u.kg / u.bags * 100) / 100 : u.kind === 'PALLET' && lot.avg ? Number(lot.avg) : null;
+// ป้ายมี/ไม่มี QR: ก่อน 11 พ.ย. 2569 ค่าเริ่มต้นไม่มี QR (แบบฟอร์มเดิม) · ตั้งแต่ 11/11 ค่าเริ่มต้นมี QR · เลือกเองได้ทุกเมื่อ (ผู้ใช้ 6 พ.ย.)
+const QR_FROM = '2026-11-11';
+const lblQrDefault = () => ((S.snap && S.snap.biz_day) || new Date().toISOString().slice(0, 10)) >= QR_FROM;
+const lblQr = () => S.lblQr === null || S.lblQr === undefined ? lblQrDefault() : S.lblQr;
+const qrToggle = () => `<div class="chips" role="group" aria-label="แบบป้าย"><span class="muted smt">แบบป้าย</span>
+  <button type="button" class="tg" aria-pressed="${!lblQr()}" data-lblqr="0">ไม่มี QR</button><button type="button" class="tg" aria-pressed="${lblQr()}" data-lblqr="1">มี QR</button>
+  <span class="muted smt">${lblQrDefault() ? 'ค่าเริ่มต้น: มี QR' : 'ค่าเริ่มต้นถึง 10/11: ไม่มี QR · ตั้งแต่ 11/11 ใช้แบบมี QR'}</span></div>`;
 function labelHTML(lot, u, it) {
   const pb = perBag(lot, u); const unitW = u.kind === 'PALLET' ? (CONT[lot.cont] || 'กระสอบ') : u.kind === 'BIGBAG' ? 'ใบ' : u.kind === 'TRUCK' ? 'คัน' : '';
   const kg = u.kind === 'PALLET' ? (pb ? fkg(pb) : '') : (u.kg === null ? '' : fkg(u.kg));
   return `<div class="lb">
     <div class="lh"><img src="${LOGO}" alt="Bluefalo"><div class="t">ป้ายบ่งชี้วัตถุดิบ<br>บริษัท บลูฟาโล่ จำกัด</div>
-      <div class="q">${qrSvg(lot.lot + '|' + u.p)}${esc(lot.lot)}|${esc(u.p)}</div></div>
+      <div class="q">${lblQr() ? qrSvg(lot.lot + '|' + u.p) + esc(lot.lot) + '|' + esc(u.p) : ''}</div></div>
     <div class="cd">F-SP-WHD01-02 Rev.00</div>
     <div class="ln"><span>ชื่อวัตถุดิบ</span><span class="fl b">${esc(it.name)} <span class="k">${esc(it.code || '')}</span></span></div>
     <div class="ln"><span>Lot/รุ่น</span><span class="fl b">${esc(lot.lot)}</span><span>วันที่ผลิต</span><span class="fl">${lot.mfg ? dfull(lot.mfg) : ''}</span></div>
@@ -1685,6 +1692,7 @@ function viewLabel(d, lot) {
     <div class="chips">${pill(lot.status)}${holdFlag(lot) && lot.status !== 'hold' ? '<span class="tag bad">ติด Hold</span>' : ''}<span class="muted">${esc(note)}</span></div>
     ${fixBox}
     ${voidManyBox(lot, units, sel)}
+    ${qrToggle()}
     <div class="chips"><button type="button" data-plabel="${esc(lot.lot)}">พิมพ์ทั้งหมด (${units.length} ใบ)</button>
       <button type="button" data-plabel="${esc(lot.lot)}" data-sel="1" ${sel.length ? '' : 'disabled'}>พิมพ์ที่เลือก (${sel.length} ใบ)</button>
       ${extra.length ? `<button type="button" class="ghost" data-plabel="${esc(lot.lot)}" data-from="${lot.labels + 1}">พิมพ์ใบที่เกินแผน ${esc(pl(extra[0].p))}${extra.length > 1 ? '–' + esc(pl(extra[extra.length - 1].p)) : ''}</button>` : ''}</div>`;
@@ -2116,9 +2124,9 @@ function viewDocs(d) {
   <div class="forms">
     ${card('F-WI03-WHD01-05 Rev.00', 'บันทึกการรับเข้าวัตถุดิบประจำวัน', 'Lot ที่รับเข้าคลัง RM ในวันที่เลือก พร้อมจำนวนพ่วง/คัน/ตู้ วิธีการลง เวลาเริ่ม–สิ้นสุด', dayCtl, `<button type="button" data-pf="recvRM">พิมพ์ (${onDay.filter((l) => l.store !== 'PX').length} รายการ)</button>`)}
     ${card('F-WI01-WHD01-01 Rev.00', 'บันทึกการรับเข้าสารเสริมประจำวัน', 'Lot ที่รับเข้าคลัง PX ในวันที่เลือก · เลขที่ใบรับ ขนาดบรรจุ น้ำหนักรวม สถานที่จัดเก็บ (A4 แนวนอน)', dayCtl, `<button type="button" data-pf="recvPX">พิมพ์ (${onDay.filter((l) => l.store === 'PX').length} รายการ)</button>`)}
-    ${card('F-SP-WHD01-02 Rev.00', 'ป้ายบ่งชี้วัตถุดิบ', 'ป้ายพาเลท/Bigbag ของ Lot · พิมพ์ทั้งหมดหรือเฉพาะใบ · 2 ป้ายต่อ A4 · มี QR (Lot|พาเลท)',
+    ${card('F-SP-WHD01-02 Rev.00', 'ป้ายบ่งชี้วัตถุดิบ', 'ป้ายพาเลท/Bigbag ของ Lot · พิมพ์ทั้งหมดหรือเฉพาะใบ · 2 ป้ายต่อ A4 · เลือกแบบมี/ไม่มี QR (Lot|พาเลท)',
       lotsDesc.length ? `<label class="fld">Lot<select data-bind="docLot">${lotsDesc.map((l) => `<option value="${esc(l.lot)}" ${l.lot === docLot ? 'selected' : ''}>${esc(l.lot)} · ${esc((d.items[l.item] || {}).name)}</option>`).join('')}</select></label>
-      <label class="fld">ใบที่ (ว่าง = ทั้งหมด)<input data-bind="docPs" value="${esc(S.docPs)}" placeholder="เช่น 1-5, 8, 12" autocomplete="off"></label>` : '<p class="muted">ยังไม่มี Lot ที่ต้องติดป้าย</p>',
+      <label class="fld">ใบที่ (ว่าง = ทั้งหมด)<input data-bind="docPs" value="${esc(S.docPs)}" placeholder="เช่น 1-5, 8, 12" autocomplete="off"></label>${qrToggle()}` : '<p class="muted">ยังไม่มี Lot ที่ต้องติดป้าย</p>',
       `<div class="chips"><button type="button" data-plabel="${esc(docLot)}" data-range="1" ${docLot ? '' : 'disabled'}>พิมพ์</button><button type="button" class="ghost" data-go="recv" data-lab="${esc(docLot)}" ${docLot ? '' : 'disabled'}>เลือกใบ / ยกเลิก Lot ที่หน้ารับเข้า</button></div>`)}
   </div>
   <div class="sect">คงคลัง</div>
@@ -2361,6 +2369,7 @@ document.addEventListener('click', async (e) => {
   if (ds.lselall) { const d = D(); const lot = d.lots[S.lsel.lot]; if (lot) labelUnits(d, lot).forEach((u) => { S.lsel.ps[u.p] = true; }); render(); return; }
   if (ds.lselnone) { S.lsel.ps = {}; render(); return; }
   if (ds.iall) { S.iKg = ds.iall; render(); return; }
+  if (ds.lblqr !== undefined) { S.lblQr = ds.lblqr === '1'; render(); return; }
   if (ds.lrdo) { const r = S.lr; const p = { full: int(r.full), per: int(r.per), scrap: int(r.scrap), source: r.src, reason: r.reason.trim() };
     if (r.src === 'label') p.label_kg = num(r.lkg); else p.net = num(r.net);
     act('rm_lot_restructure', { p_lot: ds.lrdo, p }, (x) => 'แก้จำนวนรับเข้า ' + x.lot + ' แล้ว · ' + fmt(x.pallets) + ' พาเลท ' + fmt(x.bags) + ' ถุง ' + fmt(x.net) + ' กก. (เฉลี่ย ' + fmt(x.avg) + ' กก./ถุง)' + (x.added ? ' · เพิ่ม ' + x.added + ' พาเลท' : '') + (x.removed ? ' · ยกเลิก ' + x.removed + ' พาเลท' : '') + ' · พิมพ์ป้ายใหม่ที่แท็บป้าย',
