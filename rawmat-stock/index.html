@@ -2561,7 +2561,18 @@ document.addEventListener('submit', async (e) => {
 
 async function loadAdmin() { S.adminInfo = null; S.users = null; try { S.adminInfo = await rpc('rm_admin_info', { p_token: S.tok }); S.users = await rpc('rm_user_list', { p_token: S.tok }); } catch (err) { S.toast = err.message; S.toastErr = true; } render(); }
 
-(async () => { if (S.tok) { try { await load(); } catch (e) { S.tok = ''; } } render(); })();
+// BFL Hub (9 Nov 2026): opened from the Hub with ?hub=<one-time ticket> → sign in as the account the Hub names (rm_hub_login).
+// Opened directly → unchanged (username + password as before).
+(async () => {
+  const hub = new URLSearchParams(location.search).get('hub');
+  if (hub) {
+    try { history.replaceState(null, '', location.pathname + location.hash); } catch (e) { /* ignore */ }
+    try { const r = await rpc('rm_hub_login', { p_ticket: hub }); if (!r || !r.ok) throw new Error((r && r.error) || 'Hub');
+      S.tok = r.token; sessionStorage.setItem('rm_tok', r.token); }
+    catch (e) { S.toast = 'เข้าจาก Hub ไม่สำเร็จ: ' + e.message; S.toastErr = true; }
+  }
+  if (S.tok) { try { await load(); } catch (e) { S.tok = ''; } } render();
+})();
 // หน้า PD โหลดใหม่ทุก 20 วินาที (เห็นใบสั่งเท / ยอดถังล่าสุด) — ไม่โหลดระหว่างพิมพ์
 setInterval(async () => {
   const a = document.activeElement || document.body; const idleScan = a.id === 'ikq' && !a.value;
