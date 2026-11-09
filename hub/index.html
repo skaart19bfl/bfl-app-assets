@@ -30,8 +30,9 @@
   .names button { width:100%; text-align:left; font-weight:600; }
   .pin { display:flex; gap:10px; justify-content:center; margin:10px 0; } .pin i { width:16px; height:16px; border-radius:50%; border:2px solid var(--blue); }
   .pin i.on { background:var(--blue); }
+  .tpin { display:flex; gap:10px; justify-content:center; } .tpin span { width:48px; height:56px; border:1px solid var(--line); border-radius:12px; display:grid; place-items:center; font-size:26px; font-weight:700; background:var(--card); }
   .pad { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; } .pad button { min-height:58px; font-size:22px; font-weight:600; }
-  .switch { display:flex; align-items:center; gap:10px; padding:10px 12px; border:1px solid var(--line); border-radius:12px; background:var(--card); cursor:pointer; }
+  .switch { display:flex; flex-direction:row; align-items:center; gap:10px; color:var(--ink); text-align:left; padding:10px 12px; border:1px solid var(--line); border-radius:12px; background:var(--card); cursor:pointer; }
   .switch input { width:22px; min-height:22px; margin:0; }
   .err { background:var(--bad-weak); color:var(--bad); padding:10px 12px; border-radius:12px; font-size:14px; }
   /* app shell */
@@ -94,11 +95,14 @@ const pinDots = (n) => '<div class="pin">' + [0, 1, 2, 3].map((i) => '<i class="
 const pad = () => '<div class="pad">' + [1, 2, 3, 4, 5, 6, 7, 8, 9].map((d) => '<button data-act="key" data-arg="' + d + '">' + d + '</button>').join('')
   + '<button class="ghost" data-act="clr">ล้าง</button><button data-act="key" data-arg="0">0</button><button class="ghost" data-act="del">⌫</button></div>';
 
-V.setup = () => '<div class="wrap">' + brand('ตั้งค่าครั้งแรก') + '<div class="card col"><h2>ตั้ง Admin คนแรก</h2>'
-  + '<span class="muted small">ทำครั้งเดียว — คนนี้จะเพิ่มผู้ใช้คนอื่นและตั้ง PIN ชั่วคราวให้</span>'
-  + '<label>ชื่อ<input id="sn" autocomplete="off"></label><label>PIN 4 หลัก<input id="sp1" inputmode="numeric" maxlength="4" type="password"></label>'
-  + '<label>ใส่ PIN อีกครั้ง<input id="sp2" inputmode="numeric" maxlength="4" type="password"></label>' + errBox()
-  + '<button class="primary" data-act="setup">บันทึก</button></div></div>';
+V.setup = () => {
+  const head = '<div class="wrap">' + brand('ตั้งค่าครั้งแรก') + '<div class="card col"><h2>ตั้ง Admin คนแรก</h2>';
+  if (!S.setupName) return head + '<span class="muted small">ทำครั้งเดียว — คนนี้จะเพิ่มผู้ใช้คนอื่นและตั้ง PIN ชั่วคราวให้</span>'
+    + '<label>ชื่อ (แสดงตอน login)<input id="sn" autocomplete="off" value="' + esc(S.setupDraft || '') + '"></label>' + errBox()
+    + '<button class="primary" data-act="setupName">ถัดไป → ตั้ง PIN</button></div></div>';
+  return head + '<span class="muted small"><b>' + esc(S.setupName) + '</b> · ' + (!S.pin1 ? 'กดตั้ง PIN 4 หลักของคุณเอง' : 'กด PIN เดิมอีกครั้ง') + '</span>'
+    + pinDots(S.pin.length) + errBox() + pad() + '<button class="ghost" data-act="setupBack">← แก้ชื่อ</button></div></div>';
+};
 
 V.login = () => {
   const groups = {}; S.names.forEach((u) => (groups[u.dept || 'อื่นๆ'] = groups[u.dept || 'อื่นๆ'] || []).push(u));
@@ -157,7 +161,11 @@ function editHtml() {
     + '<label>ชื่อ (แสดงตอน login)<input data-in="name" value="' + esc(e.name || '') + '"></label>'
     + '<label>ฝ่าย / จุดงาน<input data-in="dept" value="' + esc(e.dept || '') + '" placeholder="เช่น Control, QC, Coating, Rawmat"></label>'
     + '<h3>ใช้แอปไหนได้ ด้วยบัญชีอะไร</h3>' + A.apps.map((a) => '<label>' + esc(a.name) + acc(a.key) + '</label>').join('')
-    + '<h3>PIN</h3><label>' + (isNew ? 'PIN ชั่วคราว 4 หลัก (บังคับ)' : 'รีเซ็ต PIN — ใส่ PIN ชั่วคราวใหม่ (เว้นว่าง = ไม่เปลี่ยน)') + '<input data-in="pin" inputmode="numeric" maxlength="4" value="' + esc(e.pin || '') + '"></label>'
+    + '<h3>' + (isNew ? 'PIN ชั่วคราว 4 หลัก (บังคับ)' : 'รีเซ็ต PIN — กด PIN ชั่วคราวใหม่ (ไม่กด = ไม่เปลี่ยน)') + '</h3>'
+    + '<div class="tpin">' + [0, 1, 2, 3].map((i) => '<span>' + esc(String(e.pin || '').charAt(i) || '·') + '</span>').join('') + '</div>'
+    + '<div class="pad">' + [1, 2, 3, 4, 5, 6, 7, 8, 9].map((d) => '<button data-act="tkey" data-arg="' + d + '">' + d + '</button>').join('')
+    + '<button class="ghost" data-act="tclr">ล้าง</button><button data-act="tkey" data-arg="0">0</button><button class="ghost" data-act="tdel">⌫</button></div>'
+    + '<span class="muted small">จด / บอกเลขนี้ให้ผู้ใช้ — ใช้ login ได้ครั้งเดียว</span>'
     + '<span class="muted small">ผู้ใช้ต้องตั้ง PIN ของตัวเองตอน login ครั้งแรก</span>'
     + '<label class="switch"><input type="checkbox" data-in="is_admin"' + (e.is_admin ? ' checked' : '') + '> Admin (จัดการผู้ใช้ได้)</label>'
     + (isNew ? '' : '<label class="switch"><input type="checkbox" data-in="active"' + (e.active ? ' checked' : '') + '> เปิดใช้งาน</label>')
@@ -217,6 +225,12 @@ const ACT = {
         S.session = { token: r.token, exp: r.exp, me: r.me, shared: S.shared }; LS.set('hub-session', S.session);
         S.pin = ''; if (r.me.must_change) { S.oldPin = ''; S.pin1 = ''; return go('newpin'); }
         await enter();
+      } else if (S.view === 'setup') {
+        if (!S.pin1) { S.pin1 = S.pin; S.pin = ''; return render(); }
+        if (S.pin1 !== S.pin) { S.pin1 = ''; S.pin = ''; throw new Error('PIN 2 ครั้งไม่ตรงกัน — กดตั้งใหม่อีกครั้ง'); }
+        const r = await rpc('hub_setup', { p_name: S.setupName, p_pin: S.pin });
+        if (!r.ok) { S.pin1 = ''; S.pin = ''; throw new Error(r.error); }
+        S.pin1 = ''; S.pin = ''; S.setupName = ''; toast('ตั้ง Admin แล้ว — แตะชื่อแล้วกด PIN เพื่อเข้าใช้งาน'); start();
       } else if (S.view === 'newpin') {
         if (!S.oldPin) { S.oldPin = S.pin; S.pin = ''; return render(); }
         if (!S.pin1) { S.pin1 = S.pin; S.pin = ''; return render(); }
@@ -228,12 +242,16 @@ const ACT = {
     } catch (e) { S.pin = ''; S.err = e.message; render(); }
     finally { S.busy = false; }
   },
-  async setup() {
-    const n = document.getElementById('sn').value.trim(), p1 = document.getElementById('sp1').value, p2 = document.getElementById('sp2').value;
-    if (p1 !== p2) { S.err = 'PIN 2 ครั้งไม่ตรงกัน'; return render(); }
-    const r = await rpc('hub_setup', { p_name: n, p_pin: p1 }); if (!r.ok) { S.err = r.error; return render(); }
-    toast('ตั้ง Admin แล้ว — login ด้วยชื่อและ PIN'); start();
+  setupName() {
+    const n = document.getElementById('sn').value.trim(); S.setupDraft = n;
+    if (n.length < 2) { S.err = 'ใส่ชื่อ (อย่างน้อย 2 ตัวอักษร)'; return render(); }
+    S.setupName = n; S.pin = ''; S.pin1 = ''; S.err = ''; render();
   },
+  setupBack() { S.setupName = ''; S.pin = ''; S.pin1 = ''; S.err = ''; render(); },
+  // temporary PIN in the user form: number pad, digits shown so the Admin can tell the user
+  tkey(d) { if (!S.edit) return; S.edit.pin = String(S.edit.pin || ''); if (S.edit.pin.length < 4) S.edit.pin += d; S.err = ''; render(); },
+  tdel() { if (S.edit) { S.edit.pin = String(S.edit.pin || '').slice(0, -1); render(); } },
+  tclr() { if (S.edit) { S.edit.pin = ''; render(); } },
   async logout() { const t = tok(); clearSession(); if (t) rpc('hub_logout', { p_token: t }).catch(() => {}); start(); },
   async tab(k) {
     S.tab = k; S.edit = null; render();
@@ -277,7 +295,7 @@ document.addEventListener('change', (ev) => {
     if (k.indexOf('app_') === 0) { S.edit.apps = S.edit.apps || {}; S.edit.apps[k.slice(4)] = v; } else S.edit[k] = v; }
 });
 document.addEventListener('input', (ev) => { const el = ev.target; if (el.dataset.in && S.edit && el.type !== 'checkbox' && el.tagName !== 'SELECT') { const k = el.dataset.in; if (k.indexOf('app_') === 0) { S.edit.apps[k.slice(4)] = el.value; } else S.edit[k] = el.value; } });
-document.addEventListener('keydown', (ev) => { if ((S.view === 'pin' || S.view === 'newpin') && /^\d$/.test(ev.key)) ACT.key(ev.key); else if ((S.view === 'pin' || S.view === 'newpin') && ev.key === 'Backspace') ACT.del(); });
+document.addEventListener('keydown', (ev) => { const padView = S.view === 'pin' || S.view === 'newpin' || (S.view === 'setup' && S.setupName); if (!padView) return; if (/^\d$/.test(ev.key)) ACT.key(ev.key); else if (ev.key === 'Backspace') ACT.del(); });
 // shared device: end of shift → back to the login screen (checked every 30 s)
 setInterval(() => { if (S.session && S.session.exp && Date.now() > S.session.exp) expired(); }, 30000);
 
