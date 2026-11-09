@@ -2573,12 +2573,23 @@ async function loadAdmin() { S.adminInfo = null; S.users = null; try { S.adminIn
   }
   if (S.tok) { try { await load(); } catch (e) { S.tok = ''; } } render();
 })();
-// หน้า PD โหลดใหม่ทุก 20 วินาที (เห็นใบสั่งเท / ยอดถังล่าสุด) — ไม่โหลดระหว่างพิมพ์
+// Realtime ทุกหน้า (user 9 Nov 2026): ทุก 5 วินาทีถาม rm_stamp (ตัวนับการเขียนของตาราง rm_* — เบามาก)
+// ถ้ามีข้อมูลใหม่จึงโหลดหน้าที่เปิดอยู่ใหม่ · ไม่โหลดระหว่างพิมพ์ / ระหว่างบันทึก / ตอนเปิดกล้องสแกน
+let liveV = '', liveBusy = false;
 setInterval(async () => {
   const a = document.activeElement || document.body; const idleScan = a.id === 'ikq' && !a.value;
-  if (!S.tok || !S.snap || !pdScreen(S.screen) || S.busy || document.hidden || (isTyping(a) && !idleScan)) return;
-  try { await load(); await loadPD(true); render(); if (idleScan) { const n = document.getElementById('ikq'); if (n) n.focus(); } } catch (e) { /* ลองใหม่รอบหน้า */ }
-}, 20000);
+  if (!S.tok || !S.snap || S.busy || liveBusy || document.hidden || S.scan.open || (isTyping(a) && !idleScan)) return;
+  liveBusy = true;
+  try {
+    const st = await rpc('rm_stamp', { p_token: S.tok });
+    const changed = liveV && st !== liveV; liveV = st;
+    if (!changed || S.busy || S.scan.open) return;
+    const b = document.activeElement || document.body; if (isTyping(b) && !(b.id === 'ikq' && !b.value)) { liveV = ''; return; } // พิมพ์อยู่ → รอบหน้า
+    await load(); if (repScreen(S.screen) && S.rep.data) await fetchRep(); if (pdScreen(S.screen)) await loadPD(true);
+    if (S.bcard.bin && S.screen === 'bins') loadBinCard(S.bcard.bin);
+    render(); if (idleScan) { const n = document.getElementById('ikq'); if (n) n.focus(); }
+  } catch (e) { /* ลองใหม่รอบหน้า */ } finally { liveBusy = false; }
+}, 5000);
 </script>
 </body>
 </html>
