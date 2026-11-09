@@ -134,7 +134,7 @@ V.app = () => {
 function homeHtml() {
   return '<div class="page"><div class="wrap" style="max-width:720px">'
     + (S.apps.length ? '<div class="tiles">' + S.apps.map((a) => '<button class="tile card" data-act="tab" data-arg="' + a.key + '">' + esc(a.name)
-      + '<small>' + (a.url ? (a.sso ? 'เข้าอัตโนมัติ' : 'login ในแอป') : 'ยังไม่ได้ตั้ง URL') + '</small></button>').join('') + '</div>'
+      + '<small>' + (a.url ? (a.frame === false ? 'เปิดเป็นแท็บใหม่' : a.sso ? 'เข้าอัตโนมัติ' : 'login ในแอป') : 'ยังไม่ได้ตั้ง URL') + '</small></button>').join('') + '</div>'
       : '<div class="card muted">ยังไม่ได้รับสิทธิ์ใช้แอปใด — แจ้ง Admin</div>')
     + '<p class="muted small" style="margin-top:18px">แตะแอปเพื่อเปิด · สลับแอปได้จากแถบด้านบนโดยไม่ต้องโหลดใหม่ · ทุกแอปยังเปิดจากลิงก์เดิมได้เหมือนเดิม</p></div></div>';
 }
@@ -182,11 +182,16 @@ function render() {
   const st = document.getElementById('stage');
   let pg = st.querySelector('.page'); if (pg) pg.remove();
   st.querySelectorAll('iframe, .loading').forEach((f) => { f.style.display = f.dataset.app === S.tab ? '' : 'none'; });
+  const tabApp = S.apps.find((x) => x.key === S.tab && x.frame === false);
+  if (tabApp) st.insertAdjacentHTML('beforeend', '<div class="page"><div class="wrap col" style="max-width:460px;text-align:center;padding-top:48px">'
+    + '<h2>' + esc(tabApp.name) + '</h2><span class="muted small">แอปนี้ต้อง login บัญชี Google จึงเปิดในหน้า Hub ไม่ได้ — เปิดเป็นแท็บใหม่' + (tabApp.sso ? ' และเข้าให้อัตโนมัติ' : '') + '</span>'
+    + '<button class="primary" data-act="popout" style="min-height:56px;font-size:18px">เปิด ' + esc(tabApp.name) + ' ↗</button></div></div>');
   if (S.tab === 'home') st.insertAdjacentHTML('beforeend', homeHtml());
   else if (S.tab === 'admin') st.insertAdjacentHTML('beforeend', adminHtml());
 }
 async function openApp(key, force) {
   const a = S.apps.find((x) => x.key === key); if (!a) return;
+  if (a.frame === false) return; // opens in a new tab from its page (button → popout)
   const st = document.getElementById('stage'); let f = st.querySelector('iframe[data-app="' + key + '"]');
   if (f && !force) return;
   if (!a.url) { toast('ยังไม่ได้ตั้ง URL ของ ' + a.name + ' — แจ้ง Admin', true); return; }
