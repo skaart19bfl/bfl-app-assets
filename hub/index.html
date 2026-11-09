@@ -4,7 +4,7 @@
 <base target="_top">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>BFL Hub</title>
+<title>BFL Production Hub</title>
 <style>
   /* Bluefalo: #FFFFFF #2E2E2E #268AFA #162C9A #FAAA20 */
   :root { --bg:#f4f7fc; --card:#fff; --ink:#2E2E2E; --muted:#6b7385; --line:#e3e8f2; --blue:#268AFA; --navy:#162C9A; --amber:#FAAA20;
@@ -62,7 +62,7 @@
 <body>
 <div id="root"></div>
 <script>
-/* BFL Hub (user 9 Nov 2026) — one login (new PIN per person) for Production · Coating · NCP System · Raw material.
+/* BFL Production Hub (user 9 Nov 2026; renamed from "BFL Hub" the same day) — one login (new PIN per person) for Production · Coating · NCP System · Raw material.
  * Logins / users / app list live in Supabase bfl-production (hub_* functions). Each app opens inside this page; apps that support
  * the Hub get a one-time ticket (?hub=…) and sign the person in as the app account the Admin mapped. Every app still opens directly as before.
  * Shared station devices (Control, QC): the login ends at the end of the shift (08:00 / 16:00 / 00:00). Personal devices: 30 days. */
@@ -88,7 +88,7 @@ const tok = () => S.session && S.session.token;
 /* ---------- screens ---------- */
 const V = {};
 V.loading = () => '<div class="wrap"><div class="muted">กำลังโหลด…</div></div>';
-const brand = (sub) => '<div class="brand"><div class="logo">B</div><div><b>BFL Hub</b><small>' + esc(sub || 'Production · Coating · NCP · วัตถุดิบ') + '</small></div></div>';
+const brand = (sub) => '<div class="brand"><div class="logo">B</div><div><b>BFL Production Hub</b><small>' + esc(sub || 'Production · Coating · NCP · วัตถุดิบ') + '</small></div></div>';
 const errBox = () => S.err ? '<div class="err">' + esc(S.err) + '</div>' : '';
 const pinDots = (n) => '<div class="pin">' + [0, 1, 2, 3].map((i) => '<i class="' + (i < n ? 'on' : '') + '"></i>').join('') + '</div>';
 const pad = () => '<div class="pad">' + [1, 2, 3, 4, 5, 6, 7, 8, 9].map((d) => '<button data-act="key" data-arg="' + d + '">' + d + '</button>').join('')
