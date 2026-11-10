@@ -1,0 +1,26 @@
+
+/* ---------- GitHub Pages (user 10 Nov 2026) ----------
+ * หน้าแอปบน GitHub Pages (skaart19bfl.github.io/bfl-app-assets/<app>/) เรียกฟังก์ชันเดิมของสคริปต์นี้ผ่าน POST แทน google.script.run
+ * __page = ส่ง Index.html ไปให้หน้า GitHub Pages (ส่ง hash มาตรงกัน = ไม่ส่งซ้ำ) · ลิงก์ /exec เดิมยังเปิดได้เหมือนเดิม
+ * เรียกได้เฉพาะชื่อที่ google.script.run เรียกได้อยู่แล้ว และกันชื่องานหลังบ้าน (setup / store / sync / migrate / trigger …) ออกเพิ่ม */
+var GLOBAL__ = this;
+function doPost(e) {
+  var out;
+  try {
+    var b = JSON.parse((e && e.postData && e.postData.contents) || '{}');
+    var fn = String(b.fn || '');
+    if (fn === '__page') {
+      var html = HtmlService.createHtmlOutputFromFile('Index').getContent();
+      var hsh = Utilities.base64EncodeWebSafe(Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, html, Utilities.Charset.UTF_8));
+      out = { ok: true, v: b.hash === hsh ? { same: true, hash: hsh } : { html: html, hash: hsh } };
+    } else {
+      if (!/^[A-Za-z][A-Za-z0-9]*$/.test(fn) || /^(do|on)[A-Z]/.test(fn) ||
+          /^(setup|store|sync|install|migrate|debug|test|cron|seed|reset|purge|wipe|backfill)/i.test(fn) || /(Trigger|Now)$/.test(fn) ||
+          typeof GLOBAL__[fn] !== 'function' || !Object.prototype.propertyIsEnumerable.call(GLOBAL__, fn)) throw new Error('API: ไม่มีฟังก์ชัน ' + fn);
+      out = { ok: true, v: GLOBAL__[fn].apply(null, b.args || []) };
+    }
+  } catch (err) {
+    out = { ok: false, e: String((err && err.message) || err) };
+  }
+  return ContentService.createTextOutput(JSON.stringify(out)).setMimeType(ContentService.MimeType.JSON);
+}
