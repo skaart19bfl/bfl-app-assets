@@ -298,7 +298,29 @@ const ACT = {
 };
 async function loadAdmin() { const r = await rpc('hub_user_list', { p_token: tok() }); if (!r.ok) { if (r.error === 'AUTH') return expired(); return toast(r.error, true); } S.admin = r; render(); }
 async function loadApps() { const r = await rpc('hub_apps', { p_token: tok() }); if (!r.ok) return expired(); S.apps = r.apps; }
-async function enter() { await loadApps(); S.tab = 'home'; go('app'); }
+async function enter() { await loadApps(); S.tab = 'home'; go('app'); setTimeout(warmApps, 1500); }
+/* GitHub Pages apps (user 10 Nov 2026): after login, quietly fetch each app's page into this browser (same store gas/boot.js reads,
+ * gasp-page-<app>) and wake its Apps Script, so the first tap on an app does not wait ~2 s for the page or a cold script.
+ * One app at a time; an app whose page has not changed costs one small request. */
+let warming = false;
+async function warmApps() {
+  if (warming) return; warming = true;
+  const base = new URL('../', location.href).href;
+  try {
+    for (const a of S.apps) {
+      if (!a.url || a.url.indexOf(base) !== 0) continue;
+      try {
+        const html = await (await fetch(a.url.split('?')[0], { cache: 'no-cache' })).text();
+        const key = (/data-key="([^"]+)"/.exec(html) || [])[1], exec = (/data-exec="([^"]+)"/.exec(html) || [])[1];
+        if (!key || !exec) continue;
+        const lsk = 'gasp-page-' + key; let old = null; try { old = JSON.parse(localStorage.getItem(lsk) || 'null'); } catch (e) {}
+        const r = await fetch(exec, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ fn: '__page', hash: old && old.hash }) });
+        const j = await r.json();
+        if (j.ok && j.v && j.v.html) { try { localStorage.setItem(lsk, JSON.stringify({ hash: j.v.hash, html: j.v.html, at: Date.now() })); } catch (e) {} }
+      } catch (e) { /* the app still loads its page itself when opened */ }
+    }
+  } finally { warming = false; }
+}
 
 document.addEventListener('click', (ev) => {
   const el = ev.target.closest('[data-act]'); if (!el || el.tagName === 'INPUT') return;
