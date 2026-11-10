@@ -317,6 +317,8 @@ async function warmApps() {
         const r = await fetch(exec, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ fn: '__page', hash: old && old.hash }) });
         const j = await r.json();
         if (j.ok && j.v && j.v.html) { try { localStorage.setItem(lsk, JSON.stringify({ hash: j.v.hash, html: j.v.html, at: Date.now() })); } catch (e) {} }
+        // apps with a read cache (Production) fill it now, while nobody waits; the others answer "no such function"
+        fetch(exec, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ fn: '__warm' }) }).catch(() => {});
       } catch (e) { /* the app still loads its page itself when opened */ }
     }
   } finally { warming = false; }
