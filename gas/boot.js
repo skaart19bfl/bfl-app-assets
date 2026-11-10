@@ -73,7 +73,9 @@
     var C = { exec: EXEC, key: cfg.key, title: TITLE, lsk: LSK, hash: page.hash, check: check };
     var head = '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">'
       + '<script>(' + shim.toString() + ')(' + JSON.stringify(C).replace(/</g, '\\u003c') + ');<\/script>';
-    var h = page.html, m;
+    // libraries from a CDN (e.g. xlsx for Excel export) load without blocking: Chrome may refuse a blocking cross-site script
+    // written by document.write on a slow connection, and these are only used when someone presses a button
+    var h = page.html.replace(/<script(\s+src=["']https?:\/\/[^"']+["'])\s*>/gi, '<script$1 async>'), m;
     if ((m = /<head[^>]*>/i.exec(h))) h = h.slice(0, m.index + m[0].length) + head + h.slice(m.index + m[0].length);
     else if ((m = /^\s*<!doctype[^>]*>/i.exec(h))) h = m[0] + head + h.slice(m[0].length);
     else h = '<!DOCTYPE html>' + head + h;
