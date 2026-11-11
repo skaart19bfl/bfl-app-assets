@@ -18,8 +18,9 @@ function gas_(api, args) {
 // ไม่มี Sheet ให้อ่าน: ข้อมูลใหม่จาก AppSheet/แอปอื่นเข้า Supabase จากงานทุก 5 นาทีของ Apps Script แทน
 function sheetTail_(name, max) { return { lr: max, head: [], rows: [] }; }
 function now_() { return new Date(Date.now() + (CUR.offset || 0)); }
-function sampleTime_(dateStr, hour, minute) {
-  var m = Number(minute); if (m !== 0 && m !== 30) throw new Error('เวลาเก็บต้องเป็น :00 หรือ :30');
+function sampleTime_(dateStr, hour, minute, free) {   // free = เลือกนาทีได้เอง (Extruder)
+  var m = Number(minute);
+  if (free ? !(m >= 0 && m <= 59 && Math.floor(m) === m) : (m !== 0 && m !== 30)) throw new Error(free ? 'นาทีไม่ถูกต้อง' : 'เวลาเก็บต้องเป็น :00 หรือ :30');
   var h = Number(hour); if (!(h >= 0 && h <= 23)) throw new Error('ชั่วโมงไม่ถูกต้อง');
   var p = String(dateStr).split('-');
   return new Date(Date.UTC(Number(p[0]), Number(p[1]) - 1, Number(p[2]), h - 7, m, 0));
@@ -37,7 +38,7 @@ function loginResult_(r) {
 }
 function api_bootstrap() {
   var u = rpc_('qc_users_public');
-  return { needSetup: !!u.needSetup, users: u.users || [], forms: FORM_INFO, specItems: SPEC_ITEMS, masterTypes: MASTER_TYPES };
+  return { needSetup: !!u.needSetup, users: u.users || [], forms: FORM_INFO, specItems: SPEC_ITEMS, qcSpecItems: QC_SPEC_ITEMS, masterTypes: MASTER_TYPES };
 }
 function api_login(userId, pin, remember) { return loginResult_(rpc_('qc_login', { p_user: String(userId || ''), p_pin: String(pin || ''), p_remember: !!remember })); }
 function api_setupAdmin(name, pin) { return loginResult_(rpc_('qc_setup_admin', { p_name: String(name || ''), p_pin: String(pin || '') })); }

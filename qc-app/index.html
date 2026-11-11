@@ -217,7 +217,7 @@ let loadN=0;
 function loading(on){loadN+=on?1:-1;if(loadN<0)loadN=0;$('#loader').classList.toggle('show',loadN>0)}
 function toast(m,err){const t=$('#toast');t.textContent=m;t.className=err?'err':'';t.style.display='block';clearTimeout(t._h);t._h=setTimeout(()=>t.style.display='none',err?6000:2800)}
 /* เวอร์ชันเว็บ: ตรรกะเดิมรันใน Web Worker (worker.js) แล้วคุยกับ Supabase ตรง — ไม่ผ่าน Apps Script */
-const W=new Worker('worker.js?v=202611100945');let _wid=0;const _wp={};
+const W=new Worker('worker.js?v=202611110205');let _wid=0;const _wp={};
 W.onmessage=e=>{const m=e.data,p=_wp[m.id];if(p){delete _wp[m.id];p(m)}};
 W.onerror=e=>{toast('โหลดตัวประมวลผลไม่สำเร็จ — กดรีเฟรช',1)};
 function call(fn,...args){
@@ -228,6 +228,9 @@ function call(fn,...args){
     W.postMessage({id,fn,args,session:ss})})}
 const canWrite=()=>['QC','QC-Lead','Admin'].includes(S.user&&S.user.role);
 const isLead=()=>['QC-Lead','Admin'].includes(S.user&&S.user.role);
+/* QC ปรับสเปก %MC + ขนาดเม็ดได้ (รายการอื่น QC-Lead / Admin) */
+const qcSpecOk=k=>isLead()||(canWrite()&&((S.boot&&S.boot.qcSpecItems)||[]).includes(k));
+const canSpec=g=>(SPEC_GROUPS[g]||[]).some(qcSpecOk);
 function modal(html){$('#modal').innerHTML=html;$('#mask').classList.add('show')}
 function closeModal(){$('#mask').classList.remove('show')}
 $('#mask').addEventListener('click',e=>{if(e.target.id==='mask')closeModal()});
@@ -325,15 +328,18 @@ async function addPerson(selId){
 const extSpec=sp=>({MC_LCL:sp.E_MC_LCL,MC_CL:sp.E_MC_CL,MC_UCL:sp.E_MC_UCL});
 
 /* time picker (:00 / :30) */
-function timePicker(prefix){
+function timePicker(prefix,free){
   const m=S.minNow>=30?30:0;
+  if(free)return `<div class="row" style="gap:6px;flex-wrap:nowrap"><input type="date" class="inp" id="${prefix}Date" value="${S.today}" style="flex:1 1 130px;min-width:0;max-width:170px">
+   <select class="inp num" id="${prefix}Hour" style="width:74px">${Array.from({length:24},(_,h)=>`<option ${h===S.hourNow?'selected':''}>${String(h).padStart(2,'0')}</option>`).join('')}</select><b>:</b>
+   <select class="inp num" id="${prefix}Min" style="width:74px">${Array.from({length:60},(_,x)=>`<option value="${x}" ${x===S.minNow?'selected':''}>${String(x).padStart(2,'0')}</option>`).join('')}</select></div>`;
   return `<div class="row" style="gap:6px;flex-wrap:nowrap"><input type="date" class="inp" id="${prefix}Date" value="${S.today}" style="flex:1 1 130px;min-width:0;max-width:170px">
    <select class="inp num" id="${prefix}Hour" style="width:74px">${Array.from({length:24},(_,h)=>`<option ${h===S.hourNow?'selected':''}>${String(h).padStart(2,'0')}</option>`).join('')}</select>
    <div class="seg" id="${prefix}Min"><button data-m="0" class="${m===0?'on':''}">:00</button><button data-m="30" class="${m===30?'on':''}">:30</button></div></div>`;
 }
 function bindSeg(root){root.querySelectorAll('.seg').forEach(sg=>{if(sg.dataset.multi)return;sg.querySelectorAll('button').forEach(b=>b.onclick=e=>{e.preventDefault();sg.querySelectorAll('button').forEach(x=>x.classList.remove('on'));b.classList.add('on');sg.dispatchEvent(new Event('change'))})})}
 const segVal=id=>{const b=document.querySelector(`#${id} button.on`);return b?(b.dataset.v!==undefined?b.dataset.v:b.dataset.m!==undefined?b.dataset.m:b.textContent.trim()):''};
-function timeVal(p){return {date:$('#'+p+'Date').value,hour:Number($('#'+p+'Hour').value),minute:Number(segVal(p+'Min'))}}
+function timeVal(p){const me=document.getElementById(p+'Min');return {date:$('#'+p+'Date').value,hour:Number($('#'+p+'Hour').value),minute:Number(me&&me.tagName==='SELECT'?me.value:segVal(p+'Min'))}}
 const val=id=>{const e=document.getElementById(id);return e?e.value.trim():''};
 /* เติมค่าเดิมตอนแก้ไข */
 function setSeg(id,v){const sg=document.getElementById(id);if(!sg||v===''||v===undefined||v===null)return;const bs=[...sg.querySelectorAll('button')];
@@ -470,13 +476,13 @@ function vMoisture(){
    ${!l?'<div class="card empty">เลือก Lot ก่อน</div>':`
    <div class="card row"><div><span class="lab">Lot</span><span class="mono" style="font-size:20px;color:var(--navy)">${esc(l.lot)}</span></div>
     <div class="note" style="border-left:1px solid var(--line);padding-left:14px"><b style="color:var(--ink)">${esc(l.productName)}</b><br>${esc(l.ext)} · <span class="tag">${esc(l.state)}</span></div>
-    <div class="note" style="margin-left:auto;text-align:right">สเปก %MC${EX?' Extruder':''} ${isLead()?`<a href="#" style="color:var(--blue);font-weight:600" onclick="specModal(event,'${EX?'EMC':'MC'}')">✎ ปรับ</a>`:''}<br><span class="mono" style="color:var(--ink)">LCL ${fmtNum(spec.MC_LCL)} · CL ${fmtNum(spec.MC_CL)} · UCL ${fmtNum(spec.MC_UCL)}</span>${P==='COOLER'&&spec.C_MC_MAX!==undefined&&spec.C_MC_MAX!==''?`<br>Cooler %MC ≤ ${fmtNum(spec.C_MC_MAX)}`:''}</div></div>
+    <div class="note" style="margin-left:auto;text-align:right">สเปก %MC${EX?' Extruder':''} ${canSpec(EX?'EMC':'MC')?`<a href="#" style="color:var(--blue);font-weight:600" onclick="specModal(event,'${EX?'EMC':'MC'}')">✎ ปรับ</a>`:''}<br><span class="mono" style="color:var(--ink)">LCL ${fmtNum(spec.MC_LCL)} · CL ${fmtNum(spec.MC_CL)} · UCL ${fmtNum(spec.MC_UCL)}</span>${P==='COOLER'&&spec.C_MC_MAX!==undefined&&spec.C_MC_MAX!==''?`<br>Cooler %MC ≤ ${fmtNum(spec.C_MC_MAX)}`:''}</div></div>
    ${ME?editBanner(`รายการ ${esc(ME.time)} · ${esc(ME.process==='Dyer'?'Dryer':ME.process)}`,'cancelEditMoist()'):''}
    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr))">
-    <div class="card"><span class="lab">%MC — ค่าที่วัดได้</span>
+    <div class="card"><span class="lab">%MC — ${EX?'ใส่เมื่อตรวจจริง (ไม่บังคับ · ไม่ต้องวัดตามรอบ)':'ค่าที่วัดได้'}</span>
      <div class="row" style="align-items:flex-end;gap:14px"><input class="big" id="mMC" inputmode="decimal" placeholder="0.00" autocomplete="off"><span class="tag n" id="mStat">—</span><span class="note">%</span></div>
      <div id="mBand">${band(spec,'')}</div>
-     <div class="grid" style="grid-template-columns:1fr;margin-top:16px"><div><span class="lab">เวลาเก็บ (ลงทุก :00 / :30)</span>${timePicker('m')}</div></div>
+     <div class="grid" style="grid-template-columns:1fr;margin-top:16px"><div><span class="lab">${EX?'เวลาตรวจ':'เวลาเก็บ (ลงทุก :00 / :30)'}</span>${timePicker('m',EX)}</div></div>
      <div class="grid" style="grid-template-columns:1fr 1fr;margin-top:10px">
       <div><span class="lab">ความชื้นห้อง</span><div class="unit"><input class="inp num" id="mHum" inputmode="decimal" value="${esc(lastHum)}"><i>%</i></div></div>
       ${P==='COOLER'?`<div><span class="lab">aw</span><input class="inp num" id="mAW" inputmode="decimal"></div>`:EX?`<div><span class="lab">Extruder</span><input class="inp" value="${esc(l.ext)}" disabled></div>`:`<div><span class="lab">Dryer No.</span><input class="inp num" id="mDryer" value="${esc(String(l.ext).replace(/\D/g,''))}"></div>`}
@@ -484,12 +490,12 @@ function vMoisture(){
      <div style="margin-top:10px">${inspectorSel('mInsp')}</div></div>
     ${EX?`<div class="card"><span class="lab">Appearance · Die</span><div class="grid" style="gap:8px">${appearanceSeg('mColor','EXTRUDER','Color')}
       <div class="grid" style="grid-template-columns:1fr 1fr;gap:8px"><div><span class="lab">Die</span><input class="inp" id="mDie" placeholder="เช่น 3.0"></div><div><span class="lab">Density ${spec0.E_DENSITY!==undefined&&spec0.E_DENSITY!==''?'· สเปก '+fmtNum(spec0.E_DENSITY,0):''}</span><div class="unit"><input class="inp num" id="mDensity" inputmode="decimal"><i>g/L</i></div></div></div></div>
-      <span class="lab" style="margin-top:14px">Size (mm) ${spec0.E_DIM!==undefined||spec0.E_LEN!==undefined?`<span class="mono">· สเปก ${fmtNum(spec0.E_DIM,1)} / ${fmtNum(spec0.E_LEN,1)} / ${fmtNum(spec0.E_THICK,1)}</span>`:''}</span>
+      <span class="lab" style="margin-top:14px">Size (mm) ${spec0.E_DIM!==undefined||spec0.E_LEN!==undefined?`<span class="mono">· สเปก ${fmtNum(spec0.E_DIM,1)} / ${fmtNum(spec0.E_LEN,1)} / ${fmtNum(spec0.E_THICK,1)}</span>`:''}${canSpec('EXTRUDER')?` <a href="#" style="color:var(--blue);font-weight:600" onclick="specModal(event,'EXTRUDER')">✎ สเปก</a>`:''}</span>
       <div class="grid" style="grid-template-columns:1fr 1fr 1fr;gap:8px"><div class="unit"><input class="inp num" id="mDim" inputmode="decimal"><i>Dim.</i></div><div class="unit"><input class="inp num" id="mLen" inputmode="decimal"><i>Length</i></div><div class="unit"><input class="inp num" id="mThick" inputmode="decimal"><i>Thick.</i></div></div>
       ${kibBlock()}${shapesBlock('m',true,l.productionId)}</div>`:`
     <div class="card"><span class="lab">Appearance</span><div class="grid" style="gap:8px">
      ${appearanceSeg('mShape',P,'Shape')}${appearanceSeg('mColor',P,'Color')}${P==='COOLER'?appearanceSeg('mOdor',P,'Odor'):''}${appearanceSeg('mTexture',P,'Texture')}</div>
-     ${P==='DRYER'?`<span class="lab" style="margin-top:14px">Size (mm) ${spec.DIM!==undefined||spec.LEN!==undefined?`<span class="mono">· สเปก ${fmtNum(spec.DIM,1)} / ${fmtNum(spec.LEN,1)} / ${fmtNum(spec.THICK,1)}</span>`:''}</span>
+     ${P==='DRYER'?`<span class="lab" style="margin-top:14px">Size (mm) ${spec.DIM!==undefined||spec.LEN!==undefined?`<span class="mono">· สเปก ${fmtNum(spec.DIM,1)} / ${fmtNum(spec.LEN,1)} / ${fmtNum(spec.THICK,1)}</span>`:''}${canSpec('DRYER')?` <a href="#" style="color:var(--blue);font-weight:600" onclick="specModal(event,'DRYER')">✎ สเปก</a>`:''}</span>
       <div class="grid" style="grid-template-columns:1fr 1fr 1fr;gap:8px"><div class="unit"><input class="inp num" id="mDim" inputmode="decimal"><i>Dim.</i></div><div class="unit"><input class="inp num" id="mLen" inputmode="decimal"><i>Length</i></div><div class="unit"><input class="inp num" id="mThick" inputmode="decimal"><i>Thick.</i></div></div>`:''}
      <div class="grid" style="grid-template-columns:1fr 1fr;gap:8px;margin-top:10px"><div><span class="lab">Density</span><div class="unit"><input class="inp num" id="mDensity" inputmode="decimal"><i>g/L</i></div></div>
      ${P==='COOLER'?`<div><span class="lab">ระบบลำเลียง</span><select class="inp" id="mConv"><option value=""></option>${masterOf('CONVEYOR').map(m=>`<option>${esc(m.code)}</option>`).join('')}</select></div>`:'<div></div>'}</div>
@@ -558,12 +564,12 @@ function renderMoistRail(list){
     chart=`<svg viewBox="0 0 ${W} ${H}" width="100%">${lim(spec.MC_UCL,'#E5484D','UCL')}${lim(spec.MC_LCL,'#E5484D','LCL')}${lim(spec.MC_CL,'#8FA0C8','CL')}${line(pts.DRYER.filter(x=>x.mc!==''),'#268AFA')}${line(pts.COOLER.filter(x=>x.mc!==''),'#162C9A')}${line(pts.EXTRUDER.filter(x=>x.mc!==''),'#0E9F6E')}</svg>
      <div class="row note">${EX?'<span><span class="dot" style="background:#0E9F6E"></span> Extruder</span>':'<span><span class="dot" style="background:#268AFA"></span> Dryer</span><span><span class="dot" style="background:#162C9A"></span> Cooler</span>'}</div>`;
   }
-  const rows=list.slice().reverse().slice(0,40).map(x=>`<div class="li"><span class="mono note" style="width:76px">${x.time}</span><span class="dot d${x.status}"></span><span>${x.process==='Dyer'?'Dryer':x.process}</span>${x.shs&&x.shs.length>1?`<span class="tag n" title="Die ${x.shs.length} in 1">${esc(x.shs.join('/'))}</span>`:''}${x.src==='AppSheet'?'<span class="tag n">AppSheet</span>':x.inspector?`<span class="note">${esc(x.inspector)}</span>`:''}<span class="v">${fmtNum(x.mc)}</span>${canWrite()?`<button class="btn g" style="height:24px;padding:0 5px${S.mEdit&&S.mEdit.id===x.id?';background:#FFE7B8':''}" title="แก้ไข" onclick="editMoist('${x.id}')">✎</button>`:''}${isLead()?`<button class="btn g" style="height:24px;padding:0 4px" title="ยกเลิก" onclick="cancelMoist('${x.id}')">✕</button>`:''}</div>`).join('');
+  const rows=list.slice().reverse().slice(0,40).map(x=>`<div class="li"><span class="mono note" style="width:76px">${x.time}</span><span class="dot d${x.status}"></span><span>${x.process==='Dyer'?'Dryer':x.process}</span>${x.shs&&x.shs.length>1?`<span class="tag n" title="Die ${x.shs.length} in 1">${esc(x.shs.join('/'))}</span>`:''}${x.src==='AppSheet'?'<span class="tag n">AppSheet</span>':x.inspector?`<span class="note">${esc(x.inspector)}</span>`:''}<span class="v">${x.mc===''?'<span class="note">ไม่มี %MC</span>':fmtNum(x.mc)}</span>${canWrite()?`<button class="btn g" style="height:24px;padding:0 5px${S.mEdit&&S.mEdit.id===x.id?';background:#FFE7B8':''}" title="แก้ไข" onclick="editMoist('${x.id}')">✎</button>`:''}${isLead()?`<button class="btn g" style="height:24px;padding:0 4px" title="ยกเลิก" onclick="cancelMoist('${x.id}')">✕</button>`:''}</div>`).join('');
   $('#mRail').innerHTML=`<div class="card"><div class="h3">ค่าของ Lot นี้<span class="r">${list.length} ตัวอย่าง</span></div><div style="margin:10px 0">${chart}</div>${rows||'<div class="empty">ยังไม่มีค่า</div>'}</div>`;
 }
 async function saveMoisture(allowDup){
   const l=curLot(),P=S.point,t=timeVal('m');
-  if(val('mMC')==='')return toast('กรุณาใส่ %MC',1);
+  if(val('mMC')===''&&P!=='EXTRUDER')return toast('กรุณาใส่ %MC',1);
   const req={productionId:l.productionId,point:P,...t,mc:val('mMC'),hum:val('mHum'),aw:val('mAW'),dryerNo:val('mDryer'),
     shape:segVal('mShape'),color:segVal('mColor'),odor:P==='COOLER'?segVal('mOdor'):'',texture:segVal('mTexture'),
     dimension:val('mDim'),length:val('mLen'),thickness:val('mThick'),density:val('mDensity'),conveyorSystem:val('mConv'),
@@ -576,11 +582,11 @@ async function saveMoisture(allowDup){
   if(req.hum!=='')LS.set('qc_hum',req.hum);
   try{const r=await call('api_saveMoisture',S.token,req);const st=STAT[r.status]||STAT[''];
     if(r.edited){toast('แก้ไขแล้ว · '+st[1]+(r.kibble==='updated'?' · แก้ค่าใน Kibble ด้วย':r.kibble==='added'?' · ส่งขนาด/Density ไป Kibble':''));S.mEdit=null;vMoisture();return}
-    toast('บันทึกแล้ว · '+st[1]+(r.kibble==='added'?' · ส่งขนาด/Density ไป Kibble':''));
+    toast('บันทึกแล้ว · '+(P==='EXTRUDER'&&req.mc===''?'ไม่มี %MC':st[1])+(r.kibble==='added'?' · ส่งขนาด/Density ไป Kibble':''));
     $('#mMC').value='';['mDim','mLen','mThick','mDensity','mAW','mUpper','mLower','mZ1','mZ2','mZ3','mPT','mAT','mFloat','mDec1','mDec2','mDec3','mDec4','mDec5','mProt','mFat','mFib','mAsh',...[2,3,4].flatMap(k=>['mDen'+k,'mDim'+k,'mLen'+k,'mThick'+k])].forEach(id=>{const e=document.getElementById(id);if(e)e.value=''});
     $('#mBand').innerHTML=band(P==='EXTRUDER'?extSpec(l.spec):l.spec,'');$('#mStat').className='tag n';$('#mStat').textContent='—';
     // เลื่อนเวลาไป +30 นาที
-    let h=Number($('#mHour').value),m=Number(segVal('mMin'));m+=30;if(m>=60){m=0;h=(h+1)%24}$('#mHour').value=String(h).padStart(2,'0');$$('#mMin button').forEach(b=>b.classList.toggle('on',Number(b.dataset.m)===m));
+    if(P!=='EXTRUDER'){let h=Number($('#mHour').value),m=Number(segVal('mMin'));m+=30;if(m>=60){m=0;h=(h+1)%24}$('#mHour').value=String(h).padStart(2,'0');$$('#mMin button').forEach(b=>b.classList.toggle('on',Number(b.dataset.m)===m))}
     renderMoistRail(r.list);$('#mMC').focus();
   }catch(e){if(e.message.startsWith('DUP:')){if(confirm(e.message.slice(4)+'\nต้องการบันทึกซ้ำหรือไม่?'))saveMoisture(true)}else toast(e.message,1)}
 }
@@ -590,7 +596,7 @@ async function editMoist(id){
 function cancelEditMoist(){S.mEdit=null;vMoisture()}
 function fillMoist(r){
   const d=r.d||{};setVal('mMC',r.mc);setVal('mAW',r.aw);setVal('mHum',r.hum);
-  if(r.date)$('#mDate').value=r.date;$('#mHour').value=String(r.hour).padStart(2,'0');setSeg('mMin',r.minute>=30?'30':'0');
+  if(r.date)$('#mDate').value=r.date;$('#mHour').value=String(r.hour).padStart(2,'0');const mm=document.getElementById('mMin');if(mm&&mm.tagName==='SELECT')mm.value=String(r.minute);else setSeg('mMin',r.minute>=30?'30':'0');
   const map={mDryer:'Dryer_No',mConv:'Conveyor_System',mNIR:'NIR',mUpper:'Conveyor_Upper',mLower:'Conveyor_Lower',mZ1:'Temp_Z1',mZ2:'Temp_Z2',mZ3:'Temp_Z3',
     mPT:'Product_Temp',mAT:'Ambient_Temp',mBin:'Bin',mFloat:'Floating_Rate',mDensity:'Density',mDim:'Dimension',mLen:'Length',mThick:'Thickness',mInsp:'Inspector',
     mDie:'Die',mFeed:'Feed_Rate',mStroke:'Stroke_Hz',mPre:'PreCond_Temp',mSteam:'Steam_PreCond',mWater:'Water_PreCond',mCap:'Capacity',
@@ -693,7 +699,7 @@ const SPEC_GROUPS={PACK:['P_DENSITY','P_DIM','P_LEN','P_THICK','P_NET','P_TOTAL'
 function specModal(e,group,productId,productName,onDone){
   if(e)e.preventDefault();const l0=curLot(),l=productId&&(!l0||l0.productId!==productId)?null:l0;productId=productId||l0.productId;productName=productName||l0.productName;
   const showSpec=sp=>modal(`<h2>✎ ปรับสเปก · ${esc(productName)}</h2>
-   <div class="grid" style="grid-template-columns:repeat(${Math.min(3,SPEC_GROUPS[group].length)},1fr);gap:8px">${SPEC_GROUPS[group].map(k=>`<div><span class="lab">${esc(S.boot.specItems[k])}</span><input class="inp num" id="sp_${k}" value="${n(sp[k])}" inputmode="decimal"></div>`).join('')}</div>
+   <div class="grid" style="grid-template-columns:repeat(${Math.min(3,SPEC_GROUPS[group].length)},1fr);gap:8px">${SPEC_GROUPS[group].map(k=>`<div><span class="lab">${esc(S.boot.specItems[k])}</span><input class="inp num" id="sp_${k}" value="${n(sp[k])}" inputmode="decimal" ${qcSpecOk(k)?'':'disabled title="QC-Lead / Admin"'}></div>`).join('')}</div>${isLead()?'':'<div class="note" style="margin-top:6px">QC ปรับได้เฉพาะ %MC และขนาดเม็ด (Dimension / Length / Thickness) · ช่องสีเทาให้ QC-Lead / Admin</div>'}
    <div style="margin-top:12px"><span class="lab">ใช้กับ</span><div class="seg" id="spScope"><button data-v="PRODUCT" class="on">สินค้านี้ทุก Lot</button>${l?`<button data-v="LOT">เฉพาะ Lot ${esc(l.lot)}</button>`:''}</div></div>
    <div style="margin-top:12px"><span class="lab">เหตุผล (บังคับ)</span><input class="inp" id="spReason" placeholder="เช่น ลูกค้าขอสเปกใหม่ / ปรับตามสูตร"></div>
    <div class="note" style="margin-top:8px">${group==='MC'?'สินค้าทุก Lot → เขียน Moisture_LCL/CL/UCL ใน Product_Detail (AppSheet เห็นด้วย) · เฉพาะ Lot → QC_Spec':'เก็บใน QC_Spec'} · ทุกการแก้มีประวัติ</div>
@@ -760,7 +766,7 @@ function renderHeader(){
   const multi=F==='MILLING'||F==='COOLER',selW=String(h.Weight_No||'').split(/[,\s]+/).filter(String);
   const lbl={MILLING:['รหัสเครื่องชั่งน้ำหนัก','ตุ้มน้าหนักมาตรฐาน 50g, 500g เลขที่','น้ำหนักที่ชั่งได้ (ไม่เกิน±1.00g)'],DRYER:['รหัสเครื่อง Moisture Balance','ตุ้มน้ำหนักมาตรฐาน 5 g เลขที่','น้ำหนักที่ชั่งได้ (ไม่เกิน ± 0.010g)'],COOLER:['รหัสเครื่องชั่งน้ำหนัก','ตุ้มน้ำหนักมาตรฐาน 50g, 500g เลขที่','น้ำหนักที่ชั่งได้ (ไม่เกิน±1.00g)'],EXTRUDER:['รหัสเครื่องชั่งน้ำหนัก','ตุ้มน้ำหนักมาตรฐาน 500g เลขที่','น้ำหนักที่ชั่งได้ (ไม่เกิน±1.00g)']}[F];
   const lbl2=['รหัสเครื่อง Moisture Balance','ตุ้มน้ำหนักมาตรฐาน 5 g เลขที่','น้ำหนักที่ชั่งได้ (ไม่เกิน ± 0.010g)'];
-  const addHint=(t,what)=>`<div class="note" style="margin-top:4px;color:var(--amber)">ยังไม่มี${what} · ${isLead()?`<a href="#" style="color:var(--blue);font-weight:600" onclick="S.mType='${t}';go('master');return false">＋ เพิ่มที่ ข้อมูลหลัก</a>`:'แจ้ง QC-Lead / Admin เพิ่มที่ ข้อมูลหลัก'}</div>`;
+  const addHint=(t,what)=>`<div class="note" style="margin-top:4px;color:var(--amber)">ยังไม่มี${what} · ${canWrite()?`<a href="#" style="color:var(--blue);font-weight:600" onclick="S.mType='${t}';go('master');return false">＋ เพิ่มที่ ข้อมูลหลัก</a>`:'แจ้ง QC เพิ่มที่ ข้อมูลหลัก'}</div>`;
   const selInst=(id,v)=>`<select class="inp" id="${id}"><option value=""></option>${inst.map(m=>`<option ${m.code===v?'selected':''}>${esc(m.code)}</option>`).join('')}</select>${inst.length?'':addHint('INSTRUMENT','รหัสเครื่องของฟอร์มนี้')}`;
   const selW1=(id,v)=>`<select class="inp" id="${id}"><option value=""></option>${wts.map(m=>`<option ${m.code===v?'selected':''}>${esc(m.code)}</option>`).join('')}</select>${wts.length?'':addHint('WEIGHT','ตุ้มน้ำหนักของฟอร์มนี้')}`;
   const passTag=p=>p?`<span class="tag ${p==='PASS'?'g':'r'}" style="margin-top:6px">${p==='PASS'?'ผ่าน':'ไม่ผ่าน'}</span>`:'';
@@ -970,7 +976,7 @@ async function vSpec(){
    <div class="card" style="margin-top:12px"><div class="h3">ประวัติการแก้สเปก</div><div id="spLog" class="note">…</div></div>`;
   $('#spP').onchange=()=>{S.specPid=$('#spP').value;vSpec()};
   try{const [sp,log]=await Promise.all([call('api_spec',S.token,pid,''),call('api_specLog',S.token,pid)]);
-    const box=(g,t)=>`<div class="card"><div class="h3">${t}${isLead()?`<a href="#" class="r" style="color:var(--blue);font-weight:600" onclick="specModal(event,'${g}','${esc(pid)}','${esc(p.name).replace(/'/g,'')}',vSpec)">✎ ปรับ</a>`:''}</div>${SPEC_GROUPS[g].map(k=>`<div class="li"><span>${esc(S.boot.specItems[k])}</span><span class="v">${fmtNum(sp[k])}</span><span class="tag n">${esc((sp.src||{})[k]||'—')}</span></div>`).join('')}</div>`;
+    const box=(g,t)=>`<div class="card"><div class="h3">${t}${canSpec(g)?`<a href="#" class="r" style="color:var(--blue);font-weight:600" onclick="specModal(event,'${g}','${esc(pid)}','${esc(p.name).replace(/'/g,'')}',vSpec)">✎ ปรับ</a>`:''}</div>${SPEC_GROUPS[g].map(k=>`<div class="li"><span>${esc(S.boot.specItems[k])}</span><span class="v">${fmtNum(sp[k])}</span><span class="tag n">${esc((sp.src||{})[k]||'—')}</span></div>`).join('')}</div>`;
     $('#spBody').innerHTML=box('MC','Moisture %MC (Product_Detail)')+box('FINE','Grinding Fineness')+box('EMC','Extruder %MC')+box('EXTRUDER','Extruder · Size / Density / Floating')+box('PACK','Packing · ขนาด / น้ำหนัก / อุณหภูมิ')+box('PACKDEF','Packing · Defect (%)')+box('DRYER','Dryer · Size (mm)')+box('COOLER','Cooler')+box('NUTR','Cooler · Nutrition (ฟอร์ม BFL-PC)');
     $('#spLog').innerHTML=log.length?`<table class="t"><tr><th>เวลา</th><th>ผู้แก้</th><th>ขอบเขต</th><th>รายการ</th><th>เดิม → ใหม่</th><th>เหตุผล</th></tr>${log.map(x=>`<tr><td class="mono">${esc(x.time)}</td><td>${esc(x.user)}</td><td>${esc(x.scope)}${x.lot?' '+esc(x.lot):''}</td><td>${esc(x.item)}</td><td class="mono">${esc(x.old)} → ${esc(x.val)}</td><td style="white-space:normal">${esc(x.reason)}</td></tr>`).join('')}</table>`:'ยังไม่มีการแก้';
   }catch(e){toast(e.message,1)}
@@ -982,9 +988,9 @@ function vMaster(){
   const T=S.mType||'INSTRUMENT',list=S.master.filter(m=>m.type===T);
   $('#view').innerHTML=`<div class="cols2 c250"><div class="card" style="padding:6px">${Object.keys(MT).map(k=>`<button class="nav ${k===T?'on':''}" onclick="S.mType='${k}';vMaster()"><span style="flex:1">${MT[k]}</span><span class="mono note">${S.master.filter(m=>m.type===k&&m.active).length}</span></button>`).join('')}
     <div class="note" style="padding:10px">เก็บในแท็บ QC_Master · ประวัติใน QC_Master_Log · ไม่ลบ ใช้ปิดใช้งานแทน</div></div>
-   <div class="card"><div class="row"><div class="h3">${MT[T]}</div><span style="margin-left:auto"></span>${isLead()?`<button class="btn p" onclick="masterForm('${T}')">＋ เพิ่ม</button>`:''}</div>
+   <div class="card"><div class="row"><div class="h3">${MT[T]}</div><span style="margin-left:auto"></span>${canWrite()?`<button class="btn p" onclick="masterForm('${T}')">＋ เพิ่ม</button>`:''}</div>
     <div style="overflow:auto;margin-top:8px"><table class="t"><tr><th>รหัส</th><th>ชื่อ / รายละเอียด</th><th>ใช้กับฟอร์ม</th>${T==='INSTRUMENT'||T==='TOLERANCE'?'<th>ค่ายอมรับ</th>':''}${T==='INSTRUMENT'?'<th>ตุ้มที่ใช้คู่</th>':''}<th>สถานะ</th><th>แก้ล่าสุด</th><th></th></tr>
-    ${list.map(m=>`<tr style="${m.active?'':'opacity:.5'}"><td class="mono">${esc(m.code)}</td><td>${esc(m.name)}</td><td>${esc(m.forms||'ทุกฟอร์ม')}</td>${T==='INSTRUMENT'||T==='TOLERANCE'?`<td class="mono">${m.tol!==''?'± '+esc(m.tol)+' g':''}</td>`:''}${T==='INSTRUMENT'?`<td class="mono">${esc(m.pair)}</td>`:''}<td>${m.active?'<span class="tag g">ใช้งาน</span>':'<span class="tag n">ปิดใช้</span>'}</td><td class="note">${esc(m.updated)}</td><td>${isLead()?`<button class="btn g" style="height:28px" onclick="masterForm('${T}','${m.id}')">แก้</button>`:''}</td></tr>`).join('')||'<tr><td colspan="8" class="empty">ยังไม่มีรายการ</td></tr>'}</table></div></div></div>`;
+    ${list.map(m=>`<tr style="${m.active?'':'opacity:.5'}"><td class="mono">${esc(m.code)}</td><td>${esc(m.name)}</td><td>${esc(m.forms||'ทุกฟอร์ม')}</td>${T==='INSTRUMENT'||T==='TOLERANCE'?`<td class="mono">${m.tol!==''?'± '+esc(m.tol)+' g':''}</td>`:''}${T==='INSTRUMENT'?`<td class="mono">${esc(m.pair)}</td>`:''}<td>${m.active?'<span class="tag g">ใช้งาน</span>':'<span class="tag n">ปิดใช้</span>'}</td><td class="note">${esc(m.updated)}</td><td>${canWrite()?`<button class="btn g" style="height:28px" onclick="masterForm('${T}','${m.id}')">แก้</button>`:''}</td></tr>`).join('')||'<tr><td colspan="8" class="empty">ยังไม่มีรายการ</td></tr>'}</table></div></div></div>`;
 }
 function masterForm(T,id){
   const m=S.master.find(x=>x.id===id)||{type:T,code:'',name:'',forms:'',tol:'',pair:'',note:'',active:true};
@@ -1034,7 +1040,7 @@ function renderPack(){
     <div><div class="note">FG Lot</div><div class="mono" style="font-size:22px;color:var(--navy);font-weight:600">${esc(f.lot)}</div></div>
     <div style="flex:1;min-width:200px"><div style="font-weight:600;font-size:13.5px">${esc(f.fgName)}</div><div class="note">${esc(f.pack)} · ${esc(c.ext||'')} · ${esc(f.fgId)} · ถุงละ ${fmtNum(f.std,0)} kg · <span class="tag n">${esc(f.status)}</span></div>
      <div class="note">MFG ${esc(c.parsed.mfg||'—')} · EXP ${esc(c.parsed.exp||'—')}${c.parsed.codes.length?' · '+esc(c.parsed.codes.join(' / ')):''}</div></div>
-    <div class="note" style="text-align:right">สเปก ${isLead()?`<a href="#" style="color:var(--blue);font-weight:600" onclick="specModal(event,'PACK','${esc(f.productId)}','${esc(f.fgName).replace(/'/g,'')}',reloadPack)">✎ ปรับ</a> · <a href="#" style="color:var(--blue);font-weight:600" onclick="specModal(event,'PACKDEF','${esc(f.productId)}','${esc(f.fgName).replace(/'/g,'')}',reloadPack)">Defect</a>`:''}<br>
+    <div class="note" style="text-align:right">สเปก ${canSpec('PACK')?`<a href="#" style="color:var(--blue);font-weight:600" onclick="specModal(event,'PACK','${esc(f.productId)}','${esc(f.fgName).replace(/'/g,'')}',reloadPack)">✎ ปรับ</a>`:''}${isLead()?` · <a href="#" style="color:var(--blue);font-weight:600" onclick="specModal(event,'PACKDEF','${esc(f.productId)}','${esc(f.fgName).replace(/'/g,'')}',reloadPack)">Defect</a>`:''}<br>
      <span class="mono" style="color:var(--ink)">Density ${fmtNum(sp.P_DENSITY,0)} · Net ${fmtNum(sp.P_NET,2)} kg</span></div></div></div>`;
   $('#pkRail').innerHTML=`<div class="row"><div class="h3">พาเลท</div><span class="note" style="margin-left:auto">QC แล้ว ${done}/${c.pallets.length}</span></div>
    <div style="margin-top:8px">${c.pallets.map(p=>`<div class="li" style="cursor:pointer;${p.pallet===S.palSel?'background:var(--soft2);border-radius:8px':''}" onclick="selPallet('${esc(p.pallet)}')">
@@ -1115,7 +1121,7 @@ async function cancelPack(id){if(!confirm('ยกเลิกผล QC ของ
 function renderPackHeader(){
   const h=DOC.header||{},fg=DOC.fg||{},hv=DOC.headVals||{},inst=masterOf('INSTRUMENT','PACKING'),wts=masterOf('WEIGHT','PACKING');
   const sel=(id,list,v)=>`<select class="inp" id="${id}"><option value=""></option>${list.map(m=>`<option ${m.code===v?'selected':''}>${esc(m.code)}</option>`).join('')}</select>`;
-  const hint=(t,list,what)=>list.length?'':`<div class="note" style="margin-top:4px;color:var(--amber)">ยังไม่มี${what} · ${isLead()?`<a href="#" style="color:var(--blue);font-weight:600" onclick="S.mType='${t}';go('master');return false">＋ เพิ่มที่ ข้อมูลหลัก</a>`:'แจ้ง QC-Lead / Admin'}</div>`;
+  const hint=(t,list,what)=>list.length?'':`<div class="note" style="margin-top:4px;color:var(--amber)">ยังไม่มี${what} · ${canWrite()?`<a href="#" style="color:var(--blue);font-weight:600" onclick="S.mType='${t}';go('master');return false">＋ เพิ่มที่ ข้อมูลหลัก</a>`:'แจ้ง QC'}</div>`;
   const selW=String(h.Weight2_No||'').split(/[,\s]+/).filter(String),fl=String(h.Flavors||'').split(/[,\s]+/);
   const pass=p=>p?`<span class="tag ${p==='PASS'?'g':'r'}" style="margin-top:6px">${p==='PASS'?'ผ่าน':'ไม่ผ่าน'}</span>`:'';
   const inp=(id,lab,v,ph)=>`<div><span class="lab">${lab}</span><input class="inp" id="${id}" value="${esc(v||'')}" placeholder="${esc(ph||'')}"></div>`;
@@ -1192,13 +1198,14 @@ ${sec(2,'เข้าสู่ระบบ & สิทธิ์ผู้ใช�
 <ul><li>เลือกชื่อ → ใส่ PIN 4 หลัก ระบบเข้าให้อัตโนมัติ</li><li>ติ๊ก <b>จำการเข้าระบบ 30 วัน</b> เฉพาะเครื่องประจำจุด · เครื่องส่วนกลางให้เอาติ๊กออก และกด ออกจากระบบ ทุกครั้ง</li><li>ลืม PIN → ให้ Admin เข้าเมนู ผู้ใช้ → แก้ / รีเซ็ต PIN</li><li><b>ชื่อ QC</b> — ช่อง <b>QC ผู้ตรวจ</b> (หน้าบันทึก) และ <b>Report by</b> (หัวกระดาษ) เลือกจากผู้ใช้ทุกคน + ชื่อในข้อมูลหลัก · ชื่อยังไม่มี กด <b>＋ ชื่อ</b> เพิ่มได้ทันที (สิทธิ์ QC ขึ้นไป) · เครื่องส่วนกลางใช้ล็อกอินเดียวแล้วเลือกชื่อคนตรวจได้</li></ul>
 <table><tr><th>Role</th><th>ทำได้</th></tr>
 <tr><td>Viewer</td><td>ดูข้อมูล / ดูตัวอย่างเอกสาร / พิมพ์ / ส่งออก .xlsx</td></tr>
-<tr><td>QC</td><td>+ บันทึก Moisture, Fineness, หัวกระดาษ</td></tr>
-<tr><td>QC-Lead</td><td>+ ยกเลิกรายการ, Review เอกสาร, ปรับสเปก, แก้ข้อมูลหลัก, ตรวจแบบฟอร์ม</td></tr>
+<tr><td>QC</td><td>+ บันทึก Moisture, Fineness, หัวกระดาษ · ปรับสเปก %MC / ขนาดเม็ด · เพิ่ม/แก้ข้อมูลหลัก</td></tr>
+<tr><td>QC-Lead</td><td>+ ยกเลิกรายการ, Review เอกสาร, ปรับสเปกทุกรายการ, ตรวจแบบฟอร์ม</td></tr>
 <tr><td>Admin</td><td>+ จัดการผู้ใช้</td></tr></table>`)}
 ${sec(3,'บันทึก Moisture (Extruder / Dryer / Cooler)',`
 <ol>
 <li>เมนู <b>Moisture</b> → เลือกจุดเก็บ <b>Extruder</b> / <b>Dryer</b> / <b>Cooler</b> → เลือก <b>Production Lot</b> → เลือก <b>QC ผู้ตรวจ</b></li>
-<li><b>เวลาเก็บ</b> เลือกได้เฉพาะ <b>:00</b> หรือ <b>:30</b> (ตรงกับช่องเวลาในฟอร์ม) · หลังบันทึก ระบบเลื่อนเวลาให้ +30 นาที</li>
+<li><b>เวลาเก็บ</b> Dryer / Cooler เลือกได้เฉพาะ <b>:00</b> หรือ <b>:30</b> (ตรงกับช่องเวลาในฟอร์ม) · หลังบันทึก ระบบเลื่อนเวลาให้ +30 นาที</li>
+<li><b>Extruder</b> ไม่ต้องวัด %MC ตามรอบ — บันทึกสภาวะ / Die / ขนาดได้โดยเว้น %MC ว่าง · ใส่ %MC เมื่อตรวจจริง · เวลาเลือกนาทีได้เอง</li>
 <li>ใส่ <b>%MC</b> — แถบสีบอกสถานะทันที: <span class="tag g">อยู่ในสเปก</span> <span class="tag a">ใกล้ขอบ</span> <span class="tag r">หลุดสเปก</span></li>
 <li>ใส่ <b>ความชื้นห้อง</b> (จำค่าล่าสุดให้) · Cooler ใส่ <b>aw</b> · Dryer ตรวจ <b>Dryer No.</b> (ดึงจากเลข Extruder)</li>
 <li>เลือก Appearance (Shape / Color / Texture / Odor) และค่าขนาด / Density / อุณหภูมิ ตามฟอร์ม</li>
@@ -1257,12 +1264,13 @@ ${sec('PC','ชุดเอกสาร BFL / BFL-PC (เลือกตาม�
 <li><b>BFL-PC</b> (BLUEFALO PETCARE) มี 5 ฟอร์ม: <b>กลิ่นผง</b> F-WI04-QAL01-04 rev.00 · <b>Extruder</b> F-WI04-QAL01-01 rev.00 · <b>Dryer</b> F-WI04-QAL01-02 rev.00 · <b>Cooler</b> F-WI04-QAL01-03 rev.00 · <b>Packing PC</b> F-WI05-QAL01-01 (Milling ยังใช้ฟอร์ม BFL)</li>
 <li><b>Packing</b>: ชุดเอกสารเลือกตาม <b>FG Lot</b> ที่เลือก (Form_Type ใน FG_Detail หรือ Lot ลงท้าย <span class="mono">-PC</span>) · ข้อมูลพาเลท/หัวกระดาษใช้ชุดเดียวกับ Packing BFL · ฟอร์ม PC 21 แถว/หน้า ใช้ / แทน ✓ และสเปก Net/Total ใช้ขนาดบรรจุของ FG ถ้ายังไม่ตั้ง</li>
 <li>Extruder / Dryer / Cooler แบบ PC ใช้ข้อมูล Moisture ชุดเดียวกับ BFL และ<b>หัวกระดาษร่วมกัน</b> — บันทึกครั้งเดียวใช้ได้ทั้งสองชุด</li>
-<li>รูปแบบตามไฟล์บันทึกจริง: เวลาแบบ <span class="mono">9.30</span> · วันที่ พ.ศ. · Appearance ปกติ = <b>N</b> · ชื่อสินค้า Extruder ใส่แถวแรก</li>
+<li>รูปแบบตามไฟล์บันทึกจริง: เวลาแบบ <span class="mono">9.30</span> · วันที่ พ.ศ. · Appearance ปกติ = <b>N</b> · ผิดปกติ = <b>AB</b> (ทุกฟอร์ม) · ชื่อสินค้า Extruder ใส่แถวแรก</li>
 <li>Dryer PC มี <b>Dryer Time (S) Dec.1–5</b> และ Zone1–2 · Cooler PC มีสเปก <b>Nutrition</b> (Protein / Fat / Fiber / Ash) — ใส่ค่าได้ที่หน้า Moisture</li>
 <li><b>กลิ่นผง</b>: เลือกฟอร์มกลิ่นผง → เพิ่มรายการ (Formulation Code, จำนวนตัน, ชุดสารเสริม, Lot สารเสริม, ถูกต้อง/ไม่ถูกต้อง) · แตะรายการเพื่อแก้ไข</li>
 </ul>`)}
-${sec(7,'ปรับสเปก (QC-Lead)',`
+${sec(7,'ปรับสเปก',`
 <ul>
+<li>QC ปรับได้: <b>%MC</b> (Moisture / Extruder) และ <b>ขนาดเม็ด</b> Dimension / Length / Thickness (Extruder / Dryer / Packing) · รายการอื่น QC-Lead / Admin</li>
 <li>ปรับได้จากหน้า <b>สเปกสินค้า</b> หรือลิงก์ <b>✎ ปรับ</b> ในหน้าบันทึก</li>
 <li>ช่อง <b>ใช้กับ</b>: <b>สินค้านี้ทุก Lot</b> หรือ <b>เฉพาะ Lot</b> ที่เลือก</li>
 <li>ต้องใส่ <b>เหตุผล</b> ทุกครั้ง · ประวัติการแก้ดูได้ที่หน้าสเปก</li>
@@ -1305,7 +1313,7 @@ async function vUsers(){
   try{const list=await call('api_users',S.token);
     $('#view').innerHTML=`<div class="card"><div class="row"><div class="h3">ผู้ใช้ QC App</div><span style="margin-left:auto"></span><button class="btn p" onclick="userForm()">＋ เพิ่มผู้ใช้</button></div>
      <table class="t" style="margin-top:8px"><tr><th>ชื่อ</th><th>Role</th><th>สถานะ</th><th></th></tr>${list.map(u=>`<tr><td>${esc(u.name)}</td><td>${esc(u.role)}</td><td>${u.active?'<span class="tag g">ใช้งาน</span>':'<span class="tag n">ปิด</span>'}</td><td><button class="btn g" style="height:28px" onclick='userForm(${JSON.stringify(u).replace(/'/g,"&#39;")})'>แก้ / รีเซ็ต PIN</button></td></tr>`).join('')}</table>
-     <div class="note" style="margin-top:10px">QC = บันทึก · QC-Lead = บันทึก + Review + ปรับสเปก + ข้อมูลหลัก · Admin = ทั้งหมด + ผู้ใช้ · Viewer = ดูอย่างเดียว</div></div>
+     <div class="note" style="margin-top:10px">QC = บันทึก + สเปก %MC/ขนาดเม็ด + ข้อมูลหลัก · QC-Lead = + Review + ปรับสเปกทุกรายการ · Admin = ทั้งหมด + ผู้ใช้ · Viewer = ดูอย่างเดียว</div></div>
      <div class="card" style="margin-top:12px"><div class="row"><div class="h3">ข้อมูลลง Google Sheet</div><span style="margin-left:auto"></span><button class="btn s" id="flushBtn" onclick="flushNow()">ส่งลง Sheet ตอนนี้</button></div>
       <div class="note" style="margin-top:6px">แอปบันทึกลง Supabase ทันที · คัดลอกลง Sheet (Moisture / Kibble / Grinding_Fineness / Product_Detail / แท็บ QC_*) อัตโนมัติทุก 1 ชม. · <span id="obCount">กำลังนับรายการที่รอ…</span></div></div>`;
     call('api_outboxCount',S.token).then(n=>{const e=document.getElementById('obCount');if(e)e.textContent=n<0?'นับรายการที่รอไม่ได้':'รอลง Sheet '+n+' รายการ (แท็บหลัก)'}).catch(()=>{});
