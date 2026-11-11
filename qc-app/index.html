@@ -182,7 +182,7 @@ body.dark .paperwrap{background:#0B1120}
   <div class="navh">ช่วยเหลือ</div>
   <button class="nav" data-v="help"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .8-1 1.5V14M12 17.5v.01"/></svg>คู่มือการใช้งาน</button>
   <div class="me"><div class="av" id="meAv">QC</div><div style="min-width:0"><b id="meName"></b><small id="meRole"></small></div>
-   <button class="btn g" style="margin-left:auto;padding:0 6px;height:28px" title="ออกจากระบบ" onclick="logout()">⎋</button></div>
+   <button class="btn g" style="margin-left:auto;padding:0 6px;height:28px" title="เปลี่ยน PIN" onclick="pinForm()">🔑</button><button class="btn g" style="padding:0 6px;height:28px" title="ออกจากระบบ" onclick="logout()">⎋</button></div>
  </aside>
  <section class="main">
   <div class="top"><h1 id="title">หน้าหลัก</h1><span class="note hide-m" id="crumb"></span>
@@ -217,7 +217,7 @@ let loadN=0;
 function loading(on){loadN+=on?1:-1;if(loadN<0)loadN=0;$('#loader').classList.toggle('show',loadN>0)}
 function toast(m,err){const t=$('#toast');t.textContent=m;t.className=err?'err':'';t.style.display='block';clearTimeout(t._h);t._h=setTimeout(()=>t.style.display='none',err?6000:2800)}
 /* เวอร์ชันเว็บ: ตรรกะเดิมรันใน Web Worker (worker.js) แล้วคุยกับ Supabase ตรง — ไม่ผ่าน Apps Script */
-const W=new Worker('worker.js?v=202611110205');let _wid=0;const _wp={};
+const W=new Worker('worker.js?v=202611110213');let _wid=0;const _wp={};
 W.onmessage=e=>{const m=e.data,p=_wp[m.id];if(p){delete _wp[m.id];p(m)}};
 W.onerror=e=>{toast('โหลดตัวประมวลผลไม่สำเร็จ — กดรีเฟรช',1)};
 function call(fn,...args){
@@ -233,7 +233,7 @@ const qcSpecOk=k=>isLead()||(canWrite()&&((S.boot&&S.boot.qcSpecItems)||[]).incl
 const canSpec=g=>(SPEC_GROUPS[g]||[]).some(qcSpecOk);
 function modal(html){$('#modal').innerHTML=html;$('#mask').classList.add('show')}
 function closeModal(){$('#mask').classList.remove('show')}
-$('#mask').addEventListener('click',e=>{if(e.target.id==='mask')closeModal()});
+$('#mask').addEventListener('click',e=>{if(e.target.id==='mask'&&!S.modalLock)closeModal()});
 function n(v){return v===''||v===null||v===undefined?'':v}
 function fmtNum(v,d){return v===''||v===null||v===undefined||isNaN(v)?'—':Number(v).toFixed(d===undefined?2:d)}
 const STAT={OK:['g','อยู่ในสเปก'],NEAR:['a','ใกล้ขอบ'],OUT:['r','หลุดสเปก'],NOSPEC:['n','ไม่มีสเปก'],'':['n','—']};
@@ -274,6 +274,7 @@ $('#loginBtn').onclick=async()=>{
     const r=S.boot.needSetup?await call('api_setupAdmin',$('#adminName').value.trim()||'Admin',pin):await call('api_login',$('#loginUser').value,pin,rem);
     S.token=r.token;S.user=r.user;S.offset=r.offset||0;LS.set('qc_lastUser',r.user.id);
     LS.set('qc_session',{token:r.token,user:r.user,exp:r.exp||Date.now()+(rem?30*24:14)*3600e3,offset:S.offset});startApp();
+    if(r.mustChange)pinForm(pin,true);   // ผู้ใช้ใหม่ / Admin รีเซ็ต PIN → ตั้ง PIN ของตัวเอง
   }catch(e){toast(e.message,1);pins().forEach(p=>p.value='');pins()[0].focus()}
 };
 function logout(silent){if(!silent&&S.token)call('api_logout',S.token).catch(()=>{});S.token=null;LS.set('qc_session',null);if(S.boot)showLogin();}
@@ -305,7 +306,7 @@ async function reloadInit(){
 $$('.nav,.bnav button').forEach(b=>b.addEventListener('click',()=>go(b.dataset.v)));
 const TITLES={packing:'QC Packing',help:'คู่มือการใช้งาน',home:'หน้าหลัก',moisture:'บันทึก Moisture',fineness:'Grinding Fineness',docs:'สร้างเอกสารระบบ',spec:'สเปกสินค้า',master:'ข้อมูลหลัก · เพิ่มค่า',users:'ผู้ใช้'};
 function go(v){
-  if(v==='more'){return modal(`<h2>เมนูอื่น ๆ</h2><div class="grid">${['help','spec','master'].concat(S.user.role==='Admin'?['users']:[]).map(k=>`<button class="btn s" onclick="closeModal();go('${k}')">${TITLES[k]}</button>`).join('')}<button class="btn g" onclick="toggleTheme()">สลับ Light / Dark</button><button class="btn d" onclick="closeModal();logout()">ออกจากระบบ</button></div>`)}
+  if(v==='more'){return modal(`<h2>เมนูอื่น ๆ</h2><div class="grid">${['help','spec','master'].concat(S.user.role==='Admin'?['users']:[]).map(k=>`<button class="btn s" onclick="closeModal();go('${k}')">${TITLES[k]}</button>`).join('')}<button class="btn s" onclick="pinForm()">🔑 เปลี่ยน PIN</button><button class="btn g" onclick="toggleTheme()">สลับ Light / Dark</button><button class="btn d" onclick="closeModal();logout()">ออกจากระบบ</button></div>`)}
   S.view=v;LS.set('qc_view',v);$('#view').scrollTop=0;$('#title').textContent=TITLES[v]||'';$('#crumb').textContent='';
   $$('.nav,.bnav button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
   ({home:vHome,moisture:vMoisture,fineness:vFineness,docs:vDocs,spec:vSpec,master:vMaster,users:vUsers,help:vHelp,packing:vPacking}[v]||vHome)();
@@ -1312,7 +1313,7 @@ async function vUsers(){
   if(S.user.role!=='Admin'){$('#view').innerHTML='<div class="card empty">เฉพาะ Admin</div>';return}
   try{const list=await call('api_users',S.token);
     $('#view').innerHTML=`<div class="card"><div class="row"><div class="h3">ผู้ใช้ QC App</div><span style="margin-left:auto"></span><button class="btn p" onclick="userForm()">＋ เพิ่มผู้ใช้</button></div>
-     <table class="t" style="margin-top:8px"><tr><th>ชื่อ</th><th>Role</th><th>สถานะ</th><th></th></tr>${list.map(u=>`<tr><td>${esc(u.name)}</td><td>${esc(u.role)}</td><td>${u.active?'<span class="tag g">ใช้งาน</span>':'<span class="tag n">ปิด</span>'}</td><td><button class="btn g" style="height:28px" onclick='userForm(${JSON.stringify(u).replace(/'/g,"&#39;")})'>แก้ / รีเซ็ต PIN</button></td></tr>`).join('')}</table>
+     <table class="t" style="margin-top:8px"><tr><th>ชื่อ</th><th>Role</th><th>สถานะ</th><th></th></tr>${list.map(u=>`<tr><td>${esc(u.name)}</td><td>${esc(u.role)}</td><td>${u.active?'<span class="tag g">ใช้งาน</span>':'<span class="tag n">ปิด</span>'}${u.mustChange?' <span class="tag a">รอตั้ง PIN ใหม่</span>':''}</td><td><button class="btn g" style="height:28px" onclick='userForm(${JSON.stringify(u).replace(/'/g,"&#39;")})'>แก้ / รีเซ็ต PIN</button></td></tr>`).join('')}</table>
      <div class="note" style="margin-top:10px">QC = บันทึก + สเปก %MC/ขนาดเม็ด + ข้อมูลหลัก · QC-Lead = + Review + ปรับสเปกทุกรายการ · Admin = ทั้งหมด + ผู้ใช้ · Viewer = ดูอย่างเดียว</div></div>
      <div class="card" style="margin-top:12px"><div class="row"><div class="h3">ข้อมูลลง Google Sheet</div><span style="margin-left:auto"></span><button class="btn s" id="flushBtn" onclick="flushNow()">ส่งลง Sheet ตอนนี้</button></div>
       <div class="note" style="margin-top:6px">แอปบันทึกลง Supabase ทันที · คัดลอกลง Sheet (Moisture / Kibble / Grinding_Fineness / Product_Detail / แท็บ QC_*) อัตโนมัติทุก 1 ชม. · <span id="obCount">กำลังนับรายการที่รอ…</span></div></div>`;
@@ -1324,11 +1325,33 @@ function userForm(u){
   modal(`<h2>${u.id?'แก้ผู้ใช้':'เพิ่มผู้ใช้'}</h2><div class="grid" style="gap:10px">
    <div><span class="lab">ชื่อ</span><input class="inp" id="ufName" value="${esc(u.name)}"></div>
    <div><span class="lab">Role</span><div class="seg" id="ufRole">${['QC','QC-Lead','Admin','Viewer'].map(r=>`<button data-v="${r}" class="${r===u.role?'on':''}">${r}</button>`).join('')}</div></div>
-   <div><span class="lab">PIN 4 หลัก ${u.id?'(ว่าง = ไม่เปลี่ยน)':''}</span><input class="inp num" id="ufPin" maxlength="4" inputmode="numeric"></div>
+   <div><span class="lab">PIN 4 หลัก ${u.id?'(ว่าง = ไม่เปลี่ยน)':''}</span><input class="inp num" id="ufPin" maxlength="4" inputmode="numeric"><div class="note" style="margin-top:4px">PIN ที่ Admin ตั้ง = PIN ชั่วคราว · ผู้ใช้จะถูกให้ตั้ง PIN ของตัวเองตอนเข้าระบบครั้งแรก</div></div>
    ${u.id?`<div class="row" style="padding:10px 12px;border-radius:9px;background:var(--soft)"><span>ใช้งาน</span><button class="tg ${u.active?'on':''}" id="ufAct" style="margin-left:auto"></button></div>`:''}
    <div class="row" style="justify-content:flex-end"><button class="btn g" onclick="closeModal()">ยกเลิก</button><button class="btn p" id="ufSave">บันทึก</button></div></div>`);
   bindSeg($('#modal'));if($('#ufAct'))$('#ufAct').onclick=e=>e.target.classList.toggle('on');
   $('#ufSave').onclick=async()=>{try{await call('api_saveUser',S.token,{id:u.id,name:val('ufName'),role:segVal('ufRole'),pin:val('ufPin'),active:u.id?$('#ufAct').classList.contains('on'):true});closeModal();toast('บันทึกแล้ว');vUsers()}catch(e){toast(e.message,1)}};
+}
+
+/* เปลี่ยน PIN ของตัวเอง · force = ผู้ใช้ใหม่ / ถูกรีเซ็ต PIN (ต้องตั้งก่อนใช้งาน · PIN เดิม = ที่เพิ่งใส่ตอนเข้าระบบ) */
+function pinForm(oldPin,force){
+  S.modalLock=!!force;
+  modal(`<h2>🔑 ${force?'ตั้ง PIN ของคุณ':'เปลี่ยน PIN'}</h2>
+   ${force?`<div class="note" style="margin-bottom:10px">PIN นี้ Admin ตั้งให้ชั่วคราว — ตั้ง PIN 4 หลักของคุณเองก่อนเริ่มใช้งาน (คนอื่นจะไม่รู้ PIN ของคุณ)</div>`:''}
+   <div class="grid" style="gap:10px">
+    ${force?'':`<div><span class="lab">PIN เดิม</span><input class="inp num" id="pnOld" type="password" maxlength="4" inputmode="numeric" autocomplete="current-password"></div>`}
+    <div><span class="lab">PIN ใหม่ 4 หลัก</span><input class="inp num" id="pnNew" type="password" maxlength="4" inputmode="numeric" autocomplete="new-password"></div>
+    <div><span class="lab">ยืนยัน PIN ใหม่</span><input class="inp num" id="pnNew2" type="password" maxlength="4" inputmode="numeric" autocomplete="new-password"></div>
+    <div class="note">ห้ามใช้เลขซ้ำ / เรียง เช่น 0000, 1111, 1234</div>
+    <div class="row" style="justify-content:flex-end">${force?'<button class="btn g" onclick="S.modalLock=false;closeModal();logout()">ออกจากระบบ</button>':'<button class="btn g" onclick="closeModal()">ยกเลิก</button>'}<button class="btn p" id="pnSave">บันทึก PIN</button></div></div>`);
+  ['pnOld','pnNew','pnNew2'].forEach(id=>{const e=document.getElementById(id);if(e)e.addEventListener('input',()=>e.value=e.value.replace(/\D/g,''))});
+  setTimeout(()=>{const e=document.getElementById(force?'pnNew':'pnOld');if(e)e.focus()},50);
+  $('#pnSave').onclick=async()=>{
+    const o=force?String(oldPin):val('pnOld'),n=val('pnNew'),n2=val('pnNew2');
+    if(!/^\d{4}$/.test(o))return toast('ใส่ PIN เดิมให้ครบ 4 หลัก',1);
+    if(!/^\d{4}$/.test(n))return toast('PIN ใหม่ต้องเป็นตัวเลข 4 หลัก',1);
+    if(n!==n2)return toast('ยืนยัน PIN ใหม่ไม่ตรงกัน',1);
+    try{await call('api_changePin',S.token,o,n);S.modalLock=false;closeModal();toast('เปลี่ยน PIN แล้ว · ครั้งหน้าใช้ PIN ใหม่')}catch(e){toast(e.message,1)}
+  };
 }
 
 boot();

@@ -34,7 +34,7 @@ function session_(token, needRoles) {
 function loginResult_(r) {
   if (!r || !r.ok) throw new Error((r && r.error) || 'เข้าสู่ระบบไม่สำเร็จ');
   CUR.token = r.token; CUR.user = r.user; CUR.offset = (r.now || Date.now()) - Date.now();
-  return { token: r.token, exp: r.exp, user: r.user, offset: CUR.offset };
+  return { token: r.token, exp: r.exp, user: r.user, offset: CUR.offset, mustChange: !!r.mustChange };
 }
 function api_bootstrap() {
   var u = rpc_('qc_users_public');
@@ -45,6 +45,7 @@ function api_setupAdmin(name, pin) { return loginResult_(rpc_('qc_setup_admin', 
 function api_hubLogin(ticket) { var r = loginResult_(rpc_('qc_hub_login', { p_ticket: String(ticket || '') })); r.hubUser = ''; return r; }
 function api_logout(token) { try { rpc_('qc_logout', { p_token: token || CUR.token }); } catch (e) {} CUR.token = ''; CUR.user = null; return true; }
 function api_users(token) { session_(token, ['Admin']); return rpc_('qc_users', { p_token: token }); }
+function api_changePin(token, oldPin, newPin) { session_(token); return rpc_('qc_change_pin', { p_token: token, p_old: String(oldPin || ''), p_new: String(newPin || '') }); }
 function api_saveUser(token, u) { session_(token, ['Admin']); return rpc_('qc_user_save', { p_token: token, p_u: u }); }
 function api_exportXlsx(token, form, productionId) { session_(token); return gas_('xlsx', { form: form, productionId: productionId }); }
 function api_checkTemplate(token, form) { session_(token); return gas_('check', { form: form }); }
