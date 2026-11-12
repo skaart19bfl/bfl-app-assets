@@ -140,7 +140,7 @@ const rid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 
 // Supabase bfl-production (12 Nov 2026): the Apps Script call api(fn, token, ...args) is now rpc stock_<fn>(p_token, p_args = the other args).
 const SB_URL = 'https://kdytxuufvigwjccebrki.supabase.co', SB_KEY = 'sb_publishable_IYCMIaN7tJleWINprA42CQ_dX10sXFF';
 const HUB_URL = 'https://skaart19bfl.github.io/bfl-app-assets/hub/';
-const RPC = {"home": "stock_home", "lineData": "stock_line_data", "pendingPD": "stock_pending_pd", "receivePD": "stock_receive_pd", "stock": "stock_stock", "lotCard": "stock_lot_card", "listUsers": "stock_list_users", "saveUser": "stock_save_user", "issueData": "stock_issue_data", "issue": "stock_issue", "saveOrder": "stock_save_order", "loadList": "stock_load_list", "loadConfirm": "stock_load_confirm", "mergeDocs": "stock_merge_docs", "retagDoc": "stock_retag_doc", "cancelDoc": "stock_cancel_doc", "movePallets": "stock_move_pallets", "editWindow": "stock_edit_window", "scanRules": "stock_scan_rules", "editQty": "stock_edit_qty", "editDoc": "stock_edit_doc", "voidLoad": "stock_void_load", "receiveManual": "stock_receive_manual", "recvMData": "stock_recv_m_data", "recvInfo": "stock_recv_info", "editRecv": "stock_edit_recv", "cancelRecv": "stock_cancel_recv", "changeStatus": "stock_change_status", "editMoveTime": "stock_edit_move_time", "stockAt": "stock_stock_at", "lotCardXL": "stock_lot_card_xl", "productList": "stock_product_list", "saveProduct": "stock_save_product", "moveList": "stock_move_list", "reportData": "stock_report_data", "stockCard": "stock_stock_card", "formData": "stock_form_data", "dbStatus": "stock_db_status", "packCancel": "stock_pack_cancel", "receiveReturn": "stock_receive_return"};
+const RPC = {"home": "stock_home", "lineData": "stock_line_data", "pendingPD": "stock_pending_pd", "receivePD": "stock_receive_pd", "stock": "stock_stock", "lotCard": "stock_lot_card", "listUsers": "stock_list_users", "saveUser": "stock_save_user", "issueData": "stock_issue_data", "issue": "stock_issue", "saveOrder": "stock_save_order", "loadList": "stock_load_list", "loadConfirm": "stock_load_confirm", "mergeDocs": "stock_merge_docs", "retagDoc": "stock_retag_doc", "cancelDoc": "stock_cancel_doc", "movePallets": "stock_move_pallets", "editWindow": "stock_edit_window", "scanRules": "stock_scan_rules", "editQty": "stock_edit_qty", "editDoc": "stock_edit_doc", "voidLoad": "stock_void_load", "receiveManual": "stock_receive_manual", "recvMData": "stock_recv_m_data", "recvInfo": "stock_recv_info", "editRecv": "stock_edit_recv", "cancelRecv": "stock_cancel_recv", "changeStatus": "stock_change_status", "editMoveTime": "stock_edit_move_time", "stockAt": "stock_stock_at", "lotCardXL": "stock_lot_card_xl", "productList": "stock_product_list", "saveProduct": "stock_save_product", "moveList": "stock_move_list", "reportData": "stock_report_data", "stockCard": "stock_stock_card", "formData": "stock_form_data", "dbStatus": "stock_db_status", "packCancel": "stock_pack_cancel", "receiveReturn": "stock_receive_return", "expList": "stock_exp_list"};
 function rpc(name, body) {
   return fetch(SB_URL + '/rest/v1/rpc/' + name, { method: 'POST', headers: { apikey: SB_KEY, 'Content-Type': 'application/json' }, body: JSON.stringify(body), cache: 'no-store' })
     .catch(() => { throw new Error('ต่อเน็ตไม่ได้ — ลองใหม่อีกครั้ง'); })
@@ -250,7 +250,8 @@ function homeSum(d) {
     dup && row('amber', `รถคันเดียวกันมีหลายใบโหลด ${dup} ใบ`, 'ดูรายการรถด้านล่าง แล้วรวมเป็นใบเดียวที่หน้าใบ (admin)', ''),
     m.editUntil && c.Master && row('amber', `เปิดสิทธิ์แก้ข้อมูลย้อนหลังถึง ${dtm(m.editUntil)}`, `โดย ${esc(m.editBy || 'admin')} · แก้รายการเก่ากว่า 7 วันได้ชั่วคราว · ปิดได้ที่หน้า ผู้ใช้และสิทธิ์`, null),
     m.semiTemp && c.Master && row('amber', 'คลัง SEMI (WH-SEMI) ยังใช้ช่องเก็บชั่วคราว', 'ใส่ช่องเก็บจริงในแท็บ Location ของไฟล์ BFL Stock (Warehouse = WH-SEMI) · ช่องชั่วคราวมีหมายเหตุ "ชั่วคราว" ลบหรือแก้ได้', null),
-    m.exp.n && row(m.exp.gone ? 'red' : 'amber', `ใกล้หมดอายุ ${fmt(m.exp.n)} พาเลท · ${fmt(m.exp.kg)} kg`, (m.exp.gone ? `หมดอายุแล้ว ${m.exp.gone} พาเลท · ` : '') + 'อายุเหลือไม่ถึง 1/3 ของอายุสินค้า (ไม่มีวันผลิต: เหลือไม่ถึง ' + m.days.EXP_DAYS + ' วัน)', hgo('report', { rk: 'bal', rsrc: 'app', from: d.today, to: d.today })),
+    m.exp.n && row(m.exp.gone ? 'red' : 'amber', `ใกล้หมดอายุ ${fmt(m.exp.n)} พาเลท · ${fmt(m.exp.kg)} kg`, (m.exp.stampN ? `<b style="color:var(--red)">ในนี้วันที่บนถุงน่าจะผิด ${fmt(m.exp.stampN)} พาเลท · ${fmt(m.exp.stampKg)} kg (ไม่ใช่ใกล้หมดอายุจริง)</b> · ` : '') + (m.exp.gone ? `หมดอายุแล้ว ${m.exp.gone} พาเลท · ` : '') + 'แตะเพื่อดูทีละล็อตว่าใกล้หมดอายุจริง หรือวันที่บนถุงผิด', hgo('exp')),
+    m.exp.badLots && m.exp.badLots > (m.exp.stampN ? 1 : 0) && row('red', `วันที่บนถุงน่าจะผิด ${fmt(m.exp.badLots)} ล็อต`, `${esc((m.exp.badLotNos || []).slice(0, 6).join(' · '))} — ให้ Sup แก้ที่แอปแพค`, hgo('exp')),
     m.old.n && row('navy', `FG ค้างคลังเกิน ${m.days.OLD_DAYS} วัน ${fmt(m.old.n)} พาเลท · ${fmt(m.old.kg)} kg`, 'นับจากวันผลิต — ดูรายงานคงเหลือ (อายุเกิน)', hgo('report', { rk: 'bal', rsrc: 'app', from: d.today, to: d.today, rage: String(m.days.OLD_DAYS) }))].filter(Boolean);
   return `<div class="row" style="gap:6px;flex-wrap:wrap"><button class="pill ${day === d.today ? 'on' : ''}" data-act="hday" data-arg="">วันนี้</button><button class="pill ${day === yd ? 'on' : ''}" data-act="hday" data-arg="${yd}">เมื่อวาน</button><input type="date" class="date" data-date="hday" value="${esc(day)}" max="${esc(d.today)}" aria-label="เลือกวันผลิต"></div>
   <div class="sum3">
@@ -383,7 +384,7 @@ function lineImages(D) {
   // 3) quality & risk
   P = lnPage('คุณภาพ · อายุสินค้า · เรื่องที่ต้องติดตาม', sub);
   const fgKg = A.wh[0][1];
-  lnKpis(P, [['Hold (kg)', kgf(A.wh[1][1]), pct(A.wh[1][1], tot) + ' ของคงคลัง', LC.hold], ['ใกล้หมดอายุ (kg)', kgf(A.near), A.gone ? 'หมดอายุแล้ว ' + kgf(A.gone) + ' kg' : 'อายุเหลือ < 1/3', A.near || A.gone ? LC.red : LC.green], ['FG เกิน 90 วัน (kg)', kgf(A.age[3][1]), pct(A.age[3][1], fgKg) + ' ของ FG', A.age[3][1] ? LC.red : LC.green]]);
+  lnKpis(P, [['Hold (kg)', kgf(A.wh[1][1]), pct(A.wh[1][1], tot) + ' ของคงคลัง', LC.hold], ['ใกล้หมดอายุ (kg)', kgf(A.near), H.mon.exp.stampKg ? 'วันที่บนถุงผิด ' + kgf(H.mon.exp.stampKg) + ' kg (รอแก้)' : A.gone ? 'หมดอายุแล้ว ' + kgf(A.gone) + ' kg' : 'อายุเหลือ < 1/3', A.near || A.gone ? LC.red : LC.green], ['FG เกิน 90 วัน (kg)', kgf(A.age[3][1]), pct(A.age[3][1], fgKg) + ' ของ FG', A.age[3][1] ? LC.red : LC.green]]);
   lnH(P, 'Hold แยกตามเหตุผล (kg)'); if (A.holds.length) lnBars(P, A.holds, LC.hold, 'kg'); else { P.c.fillStyle = LC.mute; P.c.font = '400 24px "IBM Plex Sans Thai"'; P.c.fillText('ไม่มีสินค้า Hold', 48, P.y + 24); P.y += 50; }
   lnH(P, 'อายุสินค้า FG นับจากวันผลิต (kg)'); lnBars(P, A.age.filter((a, i) => i < 4 || a[1]).map((a, i) => [a[0], a[1], [LC.green, LC.fg, LC.dfeed, LC.red, LC.mute][i]]), null, 'kg');
   lnH(P, 'สินค้าคงคลังมากสุด 10 อันดับ (kg)'); lnBars(P, A.top.map((t) => [t.name, t.kg, t.seg === 'FISH' ? LC.dfeed : LC.dfood]), null, 'kg');
@@ -403,11 +404,38 @@ function lineText(D) {
   L.push(`• คลัง FG ${kgf(A.wh[0][1])} kg (${pct(A.wh[0][1], tot)}) · Hold ${kgf(A.wh[1][1])} kg (${pct(A.wh[1][1], tot)}) · WIP ${kgf(A.wip)} kg (${pct(A.wip, tot)})`);
   L.push(`• PET ${kgf(A.C.pet.reduce((t, x) => t + x[1], 0))} kg · FISH ${kgf(A.C.fish.reduce((t, x) => t + x[1], 0))} kg`);
   L.push(`🚚 รับเข้า ${kgf(H.rc.reduce((t, r) => t + r.kg, 0))} kg · จ่ายออก ${kgf(H.iss.reduce((t, r) => t + r.kg, 0))} kg · โหลด ${new Set(H.loaded.map((x) => x.veh).filter(Boolean)).size} คัน / ${H.loaded.length} ใบ`);
-  if (A.near || A.gone) L.push(`⚠️ ใกล้หมดอายุ ${kgf(A.near)} kg${A.gone ? ' · หมดอายุ ' + kgf(A.gone) + ' kg' : ''}`);
+  if (A.near || A.gone) L.push(`⚠️ ใกล้หมดอายุ ${kgf(A.near)} kg${H.mon.exp.stampKg ? ' (ในนี้วันที่บนถุงผิด ' + kgf(H.mon.exp.stampKg) + ' kg รอแก้)' : ''}${A.gone ? ' · หมดอายุ ' + kgf(A.gone) + ' kg' : ''}`);
   if (A.age[3][1]) L.push(`⚠️ FG เกิน 90 วัน ${kgf(A.age[3][1])} kg`);
   if (H.mon.wait.docs) L.push(`⏳ รอโหลด ${H.mon.wait.docs} ใบ`);
   return L.join('\n');
 }
+/* ---------- ตรวจวันหมดอายุ (user 12 Nov 2026) ----------
+   Lots in stock near / past EXP, or whose MFG / EXP on the bag looks wrong (stock_exp_list · _stk_stamp_check):
+   EXP not after MFG · MFG more than 10 days from the real production day · shelf life ≠ the product's usual one (±7 days).
+   A wrong stamp is fixed by Sup in the packing app (ข้อมูล → FG Lot → แก้ไขล็อต → ลักษณะบรรจุภัณฑ์) — the pallets here follow at once. */
+V.exp = () => {
+  const d = S.data.exp, dd = (v) => v ? v.slice(8, 10) + '/' + v.slice(5, 7) + '/' + v.slice(0, 4) : '-';
+  const head = topBar() + `<main><div class="row" style="justify-content:space-between;flex-wrap:wrap"><h1>ตรวจวันหมดอายุ</h1><button class="sm" data-act="go" data-arg="home">‹ หน้าแรก</button></div>`;
+  if (!d) return head + '<div class="card muted">กำลังโหลด…</div></main>';
+  const kv = (k, v) => `<span style="display:flex;flex-direction:column;min-width:0"><span class="muted" style="font-size:12px">${k}</span><b class="mono">${v}</b></span>`;
+  const nos = (a) => a.length > 1 && a[a.length - 1] - a[0] === a.length - 1 ? '#' + a[0] + '–' + a[a.length - 1] : a.map((n) => '#' + n).join(' ');
+  const card = (x) => {
+    const tag = x.stamp ? '<span class="chip c-hold">วันที่บนถุงน่าจะผิด</span>' : x.gone ? '<span class="chip c-hold">หมดอายุแล้ว</span>' : '<span class="chip c-warn">ใกล้หมดอายุจริง</span>';
+    const real = x.stamp && x.prodShelf != null ? `<div class="li" style="background:var(--sky)">นับจากวันผลิตจริง ${dd(x.prod)} ถึง EXP ${dd(x.exp)} = อายุ ${fmt(x.prodShelf)} วัน · เหลือ ${fmt(x.left)} วัน → <b>${x.prodNear ? 'ใกล้หมดอายุจริงด้วย' : 'ยังไม่ใกล้หมดอายุ'}</b></div>` : '';
+    const fix = x.stamp ? `<div class="li" style="flex-direction:column;align-items:stretch;gap:4px;background:var(--soft)"><b>ให้ Sup แก้ที่แอปแพค</b><span style="font-size:13px">ข้อมูล → FG Lot → ค้นหา <b class="mono">${esc(x.lot)}</b> (${esc(x.pack || '-')}${x.lotStatus ? ' · ' + esc(x.lotStatus) : ''}) → แก้ไขล็อต → ลักษณะบรรจุภัณฑ์ ให้ตรงกับที่พิมพ์บนถุงจริง</span>`
+      + `<span class="muted" style="font-size:12px">ที่บันทึกไว้ตอนนี้:</span><pre class="mono" style="margin:0;white-space:pre-wrap;font-size:13px">${esc(x.packaging || x.stampText || '-')}</pre>`
+      + `<span class="muted" style="font-size:12px">ถ้าบนถุงพิมพ์ผิดจริง (ไม่ใช่แค่พิมพ์ข้อมูลผิด) แจ้ง QC · แก้ในแอปแพคแล้ว พาเลทในคลังเปลี่ยนตามทันที — กด ↻ เพื่อดูใหม่</span></div>` : '';
+    return `<div class="card" style="display:flex;flex-direction:column;gap:8px">
+      <div class="row" style="gap:8px;flex-wrap:wrap;align-items:center">${tag}<span class="chip c-sky">${esc(x.status)}</span><b class="mono tap" data-act="lot" data-arg="${esc(x.lot)}" data-item="${esc(x.item)}" style="cursor:pointer;text-decoration:underline">${esc(x.lot)}</b><span style="flex:1;min-width:160px">${esc(x.name)}</span></div>
+      <span class="muted" style="font-size:13px">${fmt(x.pallets)} พาเลท ${esc(nos(x.nos || []))} · ${fmt(x.qty)} หน่วย · ${fmt(x.kg)} kg</span>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px">${kv('วันผลิตจริง', dd(x.prod))}${kv('MFG บนถุง', dd(x.mfg))}${kv('EXP บนถุง', dd(x.exp))}${kv('อายุบนถุง', x.shelf != null ? fmt(x.shelf) + ' วัน' : '-')}${kv('ปกติของสินค้านี้', x.typical != null ? fmt(x.typical) + ' วัน' : '-')}${kv('เหลือ', fmt(x.left) + ' วัน')}</div>
+      ${x.stamp ? `<div style="color:var(--red);font-size:14px;font-weight:600">⚠ ${(x.why || []).map(esc).join('<br>⚠ ')}</div>` : ''}${real}${fix}</div>`;
+  };
+  const lots = d.lots || [], bad = lots.filter((x) => x.stamp), near = lots.filter((x) => !x.stamp);
+  return head + `<div class="card muted" style="font-size:13px">ใกล้หมดอายุ = อายุเหลือน้อยกว่า 1/3 ของอายุสินค้า (ไม่มีวันผลิตบนถุง: เหลือไม่ถึง 30 วัน) · <b>วันที่บนถุงน่าจะผิด</b> = EXP ไม่อยู่หลัง MFG, MFG ห่างจากวันผลิตจริงเกิน 10 วัน หรืออายุบนถุงไม่ตรงอายุปกติของสินค้านั้น (±7 วัน)</div>`
+    + (bad.length ? `<h2 style="margin:8px 0 0">วันที่บนถุงน่าจะผิด ${bad.length} ล็อต</h2>` + bad.map(card).join('') : '')
+    + `<h2 style="margin:8px 0 0">ใกล้หมดอายุจริง / หมดอายุแล้ว ${near.length} ล็อต</h2>` + (near.map(card).join('') || '<div class="card muted">ไม่มี</div>') + '</main>';
+};
 V.line = () => {
   const d = S.data.line;
   const head = topBar() + `<main><div class="row" style="justify-content:space-between;flex-wrap:wrap"><h1>รูปสรุปส่ง LINE</h1><button class="sm" data-act="go" data-arg="home">‹ หน้าแรก</button></div>
@@ -1452,7 +1480,7 @@ function render() {
 function load(view) {
   const m = { dbsetup: ['dbStatus'], home: ['home', S.f.hday || ''], line: ['lineData', S.f.lday || ''], recv: ['pendingPD', !!S.f.fresh], stock: S.f.sv === 'mv' ? ['moveList', { src: 'app', dir: 'all', from: S.f.from, to: S.f.to || S.f.from }] : ['stockAt', { src: 'app', from: S.f.from, to: S.f.to || S.f.from }], users: ['listUsers'], issue: ['issueData'], status: ['issueData'], recvM: ['recvMData'], load: ['loadList'], map: ['stockAt', { src: 'app' }],
     report: ['reportData', { kind: S.f.rk || 'in', src: 'app', from: S.f.from, to: S.f.to || S.f.from, dir: S.f.rk, lot: S.f.rlot, item: S.f.ritem }],
-    forms: ['formData', { day: S.f.fd }], doc: ['formData', { doc: S.f.dno }], products: ['productList'], relo: ['issueData'] }[view];
+    forms: ['formData', { day: S.f.fd }], doc: ['formData', { doc: S.f.dno }], products: ['productList'], relo: ['issueData'], exp: ['expList'] }[view];
   if (!m) return;
   S.f.fresh = 0;
   if (view === 'dbsetup' && !(S.me && S.me.caps.Manage_Users)) { render(); return; }
@@ -1460,7 +1488,7 @@ function load(view) {
   S.data[view] = null; render();
   api(m[0], S.token, ...m.slice(1)).then((r) => { S.data[view] = r; S.at = Date.now(); if (view === 'home') S.me = r.me; if (view === 'users' || (view === 'home' && r.me && r.me.caps.Master && !r.me.caps.Manage_Users)) api('editWindow', S.token).then((w) => { S.ew = w; if (S.view === view) render(); }).catch(() => {}); if (view === 'line') { r.yd = new Date(new Date(r.today + 'T12:00:00Z').getTime() - 864e5).toISOString().slice(0, 10); lineBuild(); } if (S.view === view || (view === 'recv' && S.view === 'recvLot')) render(); }).catch(fail);
 }
-const LOADED = ['relo', 'products', 'line', 'dbsetup', 'recv', 'home', 'stock', 'map', 'report', 'forms', 'users', 'issue', 'status', 'recvM', 'load', 'doc'];
+const LOADED = ['relo', 'products', 'line', 'dbsetup', 'recv', 'home', 'stock', 'map', 'report', 'forms', 'users', 'issue', 'status', 'recvM', 'load', 'doc', 'exp'];
 function go(v) { if (v !== S.view) { S.pick = {}; S.open = {}; S.drop = {}; S.tag = {}; } S.view = v; window.scrollTo(0, 0); if (LOADED.indexOf(v) >= 0) load(v); else render(); }
 function need(c, m) { if (!c) { toast(m, true); throw new Error('need:' + m); } }
 function loadLogin() { S.view = 'login'; render(); }
