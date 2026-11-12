@@ -40,6 +40,7 @@ header .title span{font-size:13px;opacity:.85}
 header .sp{flex:1}
 header button{background:transparent;border-color:var(--bar-line);color:#fff;padding:5px 11px;font-weight:500;min-height:34px}
 .hchip{background:rgba(255,255,255,.16);border-radius:99px;padding:3px 10px;font-size:13px;white-space:nowrap}
+button.hchip{border:0;color:inherit;cursor:pointer;min-height:0;font-weight:500}
 nav{display:flex;gap:2px;padding:6px 12px 0;overflow-x:auto;background:var(--card);border-bottom:1px solid var(--line)}
 nav button{background:none;color:var(--muted);border:0;border-bottom:3px solid transparent;border-radius:0;padding:10px 12px;white-space:nowrap;font-weight:500}
 nav button[aria-current=page]{color:var(--blue);border-bottom-color:var(--blue);font-weight:700}
@@ -158,6 +159,16 @@ html[data-theme=dark] .prev{background:#0b111c}
 #login{max-width:380px;margin:9vh auto;padding:24px;display:flex;flex-direction:column;gap:12px}
 #login .logo{background:transparent;justify-content:center} #login .logo img{height:96px}
 #login h2{text-align:center;margin:0}
+/* PIN login (ผู้ใช้ 12 พ.ย. 2026): เลือกชื่อ → กด PIN 4 หลัก */
+#login .unames{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;max-height:52vh;overflow:auto}
+#login .unames button{background:var(--card);color:var(--ink);border:1px solid var(--line);min-height:52px;font-weight:600;text-align:left;padding:8px 12px;display:flex;flex-direction:column;align-items:flex-start;gap:2px}
+#login .unames button small{font-weight:400;color:var(--muted);font-size:12px}
+#login .unames button.last{border-color:var(--blue);box-shadow:0 0 0 1px var(--blue) inset}
+.pdots{display:flex;gap:14px;justify-content:center;margin:6px 0}.pdots i{width:18px;height:18px;border-radius:50%;border:2px solid var(--ink)}.pdots i.on{background:var(--ink)}
+.pinpad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.pinpad button{min-height:60px;font-size:24px;font-weight:600;background:var(--card);color:var(--ink);border:1px solid var(--line)}
+.pinpad button.fn{font-size:15px;font-weight:500;color:var(--muted)}
+#login .lgtop{display:flex;justify-content:space-between;align-items:center;gap:8px}
 </style>
 <style id="lbcss"></style>
 </head>
@@ -167,6 +178,7 @@ html[data-theme=dark] .prev{background:#0b111c}
   <video id="camv" playsinline muted style="max-width:100%;max-height:70vh;border-radius:12px;background:#000"></video>
   <span id="cammsg" style="color:#fff"></span><button type="button" id="camx" style="min-width:140px">ปิดกล้อง</button></div>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+<script src="i18n-en.js?v=20261112"></script>
 <script>
 'use strict';
 const SB_URL = 'https://kdytxuufvigwjccebrki.supabase.co';
@@ -278,7 +290,7 @@ const modBtn = (g, id, l, tag, cls) => id === 'ncp' ? `<button type="button" cla
 // หน้าเลือก module กลางจอ (แทน side bar)
 function viewMenu(d) {
   const me = S.snap.me;
-  return `<div><h1>สวัสดี ${esc(me.name)}</h1><p class="lead">เลือกส่วนงาน · รอบวัน ${dmy(S.snap.biz_day)} (08:00–07:59)</p></div>
+  return `<div><h1>สวัสดี <span data-noi18n>${esc(me.name)}</span></h1><p class="lead">เลือกส่วนงาน · รอบวัน ${dmy(S.snap.biz_day)} (08:00–07:59)</p></div>
     <div class="mods">${myMods().map((g) => `<section class="mod" aria-label="${esc(g.g)}"><div class="mh"><span class="mi" aria-hidden="true">${g.ic}</span><div><b>${g.g}</b><span>${g.desc}</span></div></div>
       <div class="ml">${g.items.map(([id, l, tag]) => modBtn(g, id, l, tag, 'mb')).join('')}</div></section>`).join('')}</div>`;
 }
@@ -290,6 +302,7 @@ const repScreen = (sc) => !!REP_KIND[sc] || sc === 'reports';
 const TABS = [['home', 'ภาพรวม'], ['recv', 'รับเข้า'], ['grind', 'บด TC'], ['issue', 'จ่ายออก'], ['stock', 'คงเหลือ / Stock card'], ['count', 'ตรวจนับ'], ['loc', 'Location'], ['docs', 'แบบฟอร์ม']];
 
 const S = {
+  lg: { names: null, loading: false, pick: '', pin: '' }, cp: null, lastPin: '',
   tok: sessionStorage.getItem('rm_tok') || '', snap: null, screen: 'menu', mod: '', toast: '', toastErr: false, busy: false,
   f: { source: 'purchase', plant: 'BFL-PC', lot: '', tdoc: '', slot: '', item: '', itemText: '', pack: 'BAG', cont: '', supKg: '', sup: '', supText: '', plate: '', exp: '', ticket: '', weighIn: '', delivery: '', po: '', province: '', qci: '', qcin: '', per: '', labels: '', bigbags: '', location: 'S-01', vehN: '1', vehU: 'คัน', method: '', tStart: '', tEnd: '', note: '' },
   net: {}, ud: {}, wo: {}, rt: { plant: 'BFL-PC', key: '', tdoc: '', pack: 'BAG', n: '', per: '', last: '', big: '', net: '', loc: 'S-01', note: '' }, rtc: { doc: '', reason: '' }, lotTab: 'label', le: { lot: '' }, holdReason: '', rw: { net: '', reason: '' },
@@ -321,6 +334,54 @@ const store = (k, v) => { try { if (v === undefined) return localStorage.getItem
 
 function setTheme(t) { document.documentElement.setAttribute('data-theme', t); store('ncp_theme', t); }
 setTheme(store('ncp_theme') === 'dark' ? 'dark' : 'light');
+
+// ---------- ภาษา ไทย / English (ผู้ใช้ 12 พ.ย. 2026) ----------
+// หน้าจอสร้างเป็นภาษาไทยเหมือนเดิม · โหมด EN แปลข้อความบนจอหลัง render ด้วยพจนานุกรม i18n-en.js (คำไทย → อังกฤษ)
+// ไม่แปล: ป้าย/แบบฟอร์มที่พิมพ์ (.lb และหน้าต่างพิมพ์) · ช่องกรอกข้อมูล · ข้อมูลที่ผู้ใช้พิมพ์ (ไม่ตรงพจนานุกรม)
+let LANG = store('rm_lang') === 'en' ? 'en' : 'th';
+const I18N = window.RM_I18N_EN || {};
+const I18N_SKIP = 'script,style,textarea,.lb,[data-noi18n]';
+const hasTh = (t) => /[฀-๿]/.test(t);
+let i18nRe = null, i18nRe2 = null;
+const reEsc = (x) => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+function trS(t) {
+  if (LANG !== 'en' || !t || !hasTh(t)) return t;
+  const k = t.trim(); if (I18N[k] !== undefined) return t.replace(k, I18N[k]);
+  if (!i18nRe) { const ks = Object.keys(I18N).filter((x) => x).sort((a, b) => b.length - a.length);
+    i18nRe = new RegExp('(?<![\\u0E00-\\u0E7F])(' + ks.map(reEsc).join('|') + ')(?![\\u0E00-\\u0E7F])', 'g');
+    i18nRe2 = new RegExp('(' + ks.filter((x) => x.length >= 8).map(reEsc).join('|') + ')', 'g'); } // รอบ 2: วลียาว (≥ 8 ตัว) ที่ติดกับคำไทยอื่น เช่น ข้อความ + ค่าที่เป็นภาษาไทย · วลีสั้นไม่ทำ กันแปลชื่อ/ข้อมูล
+  const r = t.replace(i18nRe, (m) => I18N[m]); if (!hasTh(r)) return r;
+  const pad = (m, off, str) => (off > 0 && /\S/.test(str[off - 1]) && !/[(\/]/.test(str[off - 1]) ? ' ' : '') + I18N[m] + (/[^\s).,:/]/.test(str[off + m.length] || ' ') ? ' ' : '');
+  const r2 = t.replace(i18nRe2, (m, g, off, str) => pad(m, off, str)).replace(i18nRe, (m) => I18N[m]); // วลียาวก่อน แล้วคำสั้นที่ตอนนี้มีขอบเป็นอังกฤษ
+  const thN = (x) => (x.match(/[\u0E00-\u0E7F]/g) || []).length;
+  return thN(r2) < thN(r) ? r2 : r;
+}
+const i18nSkip = (n) => { const e = n.nodeType === 1 ? n : n.parentElement; return !e || !!e.closest(I18N_SKIP); };
+function trText(n) { const v = n.nodeValue; if (!hasTh(v)) return; const t = trS(v); if (t !== v) { if (n.__th === undefined) n.__th = v; n.nodeValue = t; } }
+function trAttrs(el) {
+  if (el.dataset && el.dataset.en !== undefined && el.textContent !== el.dataset.en) { if (el.__tht === undefined) el.__tht = el.textContent; el.textContent = el.dataset.en; } // ข้อความอังกฤษเฉพาะจุด
+  for (const a of ['placeholder', 'title', 'aria-label']) { const v = el.getAttribute(a); if (v && hasTh(v)) { const t = trS(v); if (t !== v) { el.__tha = el.__tha || {}; if (el.__tha[a] === undefined) el.__tha[a] = v; el.setAttribute(a, t); } } }
+}
+function trDom(root) {
+  if (LANG !== 'en' || !root) return;
+  if (root.nodeType === 3) { if (!i18nSkip(root)) trText(root); return; }
+  if (root.nodeType !== 1 || i18nSkip(root)) return;
+  trAttrs(root);
+  const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT, { acceptNode: (n) => n.nodeType === 1 && n.matches(I18N_SKIP) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT });
+  let n; while ((n = w.nextNode())) { if (n.nodeType === 3) trText(n); else trAttrs(n); }
+}
+function unTrDom(root) { // กลับเป็นภาษาไทย: คืนค่าเดิมของส่วนที่ไม่ถูก render ใหม่ (เช่น กล่องกล้อง)
+  const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT);
+  let n; while ((n = w.nextNode())) { if (n.nodeType === 3) { if (n.__th !== undefined) { n.nodeValue = n.__th; n.__th = undefined; } } else { if (n.__tha) { for (const a in n.__tha) n.setAttribute(a, n.__tha[a]); n.__tha = null; } if (n.__tht !== undefined) { n.textContent = n.__tht; n.__tht = undefined; } } }
+}
+new MutationObserver((ms) => { if (LANG !== 'en') return; for (const m of ms) { if (m.type === 'characterData') { if (!i18nSkip(m.target)) trText(m.target); } else m.addedNodes.forEach(trDom); } })
+  .observe(document.body, { childList: true, subtree: true, characterData: true });
+const langBtn = (hdr) => `<button type="button" class="${hdr ? '' : 'ghost sm'}" data-lang="${LANG === 'en' ? 'th' : 'en'}" data-noi18n="1" title="ภาษา / Language">${LANG === 'en' ? 'ไทย' : 'EN'}</button>`;
+function setLang(l) {
+  LANG = l === 'en' ? 'en' : 'th'; store('rm_lang', LANG); document.documentElement.lang = LANG;
+  if (LANG === 'th') unTrDom(document.body); render(); if (LANG === 'en') trDom(document.body);
+}
+document.documentElement.lang = LANG; if (LANG === 'en') trDom(document.body);
 if (['IN1', 'IN2', 'IN3', 'HAND'].includes(store('rm_ik_point'))) S.ik.point = store('rm_ik_point');
 
 async function rpc(fn, args) {
@@ -352,7 +413,7 @@ async function load() { S.snap = await rpc('rm_snapshot', { p_token: S.tok }); i
 function logout(silent) {
   if (typeof camStop === 'function' && camStream) camStop();
   if (S.tok && !silent) rpc('rm_logout', { p_token: S.tok }).catch(() => {});
-  S.tok = ''; S.snap = null; S.roleInit = false; S.pd.data = null; sessionStorage.removeItem('rm_tok'); render();
+  S.tok = ''; S.snap = null; S.roleInit = false; S.pd.data = null; S.cp = null; S.lastPin = ''; S.lg = { names: null, loading: false, pick: '', pin: '' }; sessionStorage.removeItem('rm_tok'); render();
 }
 
 // ---------- derived data ----------
@@ -826,17 +887,17 @@ const roleName = (r) => (ROLES.find((x) => x[0] === r) || [r, r])[1];
 function viewUsers(d) {
   const us = Array.isArray(S.users) ? S.users : S.users === null ? null : []; const f = S.uf; const me = d.s.me.username; const isNew = f.mode === 'new';
   const okU = /^[a-z0-9._-]{3,32}$/.test(f.username.trim().toLowerCase()) && f.name.trim();
-  const rows = (us || []).map((x) => `<tr class="${x.active ? '' : 'void'}"><td class="mono">${esc(x.username)}</td><td>${esc(x.name)}</td><td>${esc(roleName(x.role))}</td>
-      <td>${x.active ? '<span class="tag ok">ใช้งาน</span>' : '<span class="tag bad">ปิด</span>'}${x.must_change ? ' <span class="tag warn">รอเปลี่ยนรหัส</span>' : ''}</td><td class="smt">${x.last_login ? esc(dtShow(x.last_login)) : '–'}</td>
-      <td style="white-space:nowrap"><button type="button" class="ghost sm" data-uedit="${esc(x.username)}">แก้ไข</button>${x.username !== me ? ` <button type="button" class="ghost sm" data-upw="${esc(x.username)}">ตั้งรหัสใหม่</button>` : ''}</td></tr>
-      ${S.upw.user === x.username ? `<tr><td colspan="6"><div class="note" style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end"><label class="fld" style="flex:1 1 220px">รหัสผ่านชั่วคราวของ ${esc(x.username)} (อย่างน้อย 8 ตัว · ผู้ใช้ต้องเปลี่ยนตอนเข้าครั้งแรก)<input type="password" data-bind="upw.pw" value="${esc(S.upw.pw)}" autocomplete="new-password"></label>
-        <button type="button" data-upwdo="1" ${!S.busy ? '' : 'disabled'}>บันทึกรหัสใหม่</button><button type="button" class="ghost" data-upw="">ปิด</button></div></td></tr>` : ''}`).join('');
+  const rows = (us || []).map((x) => `<tr class="${x.active ? '' : 'void'}"><td class="mono">${esc(x.username)}</td><td data-noi18n>${esc(x.name)}</td><td>${esc(roleName(x.role))}</td>
+      <td>${x.active ? '<span class="tag ok">ใช้งาน</span>' : '<span class="tag bad">ปิด</span>'}${x.must_change ? ' <span class="tag warn">รอตั้ง PIN</span>' : ''}</td><td class="smt">${x.last_login ? esc(dtShow(x.last_login)) : '–'}</td>
+      <td style="white-space:nowrap"><button type="button" class="ghost sm" data-uedit="${esc(x.username)}">แก้ไข</button>${x.username !== me ? ` <button type="button" class="ghost sm" data-upw="${esc(x.username)}">รีเซ็ต PIN</button>` : ''}</td></tr>
+      ${S.upw.user === x.username ? `<tr><td colspan="6"><div class="note" style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end"><span style="flex:1 1 220px">รีเซ็ต PIN ของ <b data-noi18n>${esc(x.name)}</b> เป็น 1234 · ผู้ใช้ต้องตั้ง PIN ใหม่ตอนเข้าครั้งถัดไป และถูกออกจากระบบทันที</span>
+        <button type="button" data-upwdo="1" ${!S.busy ? '' : 'disabled'}>ยืนยันรีเซ็ต PIN</button><button type="button" class="ghost" data-upw="">ปิด</button></div></td></tr>` : ''}`).join('');
   return `<div class="card" style="display:flex;flex-direction:column;gap:12px"><div class="fc"><h2 style="margin:0">ผู้ใช้</h2><button type="button" class="ghost sm" data-unew="1">+ เพิ่มผู้ใช้</button></div>
     ${us === null ? '<p class="muted">กำลังโหลด…</p>' : `<div class="tw"><table><thead><tr><th>ชื่อผู้ใช้</th><th>ชื่อ</th><th>สิทธิ์</th><th>สถานะ</th><th>เข้าล่าสุด</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`}
     <div class="note" style="display:flex;flex-direction:column;gap:10px"><b>${isNew ? 'เพิ่มผู้ใช้ใหม่' : 'แก้ไข ' + esc(f.username)}</b>
       <div class="grid4"><label class="fld">ชื่อผู้ใช้ (a-z 0-9 . _ -)<input data-bind="uf.username" value="${esc(f.username)}" maxlength="32" autocomplete="off" ${isNew ? '' : 'readonly'}></label>
         <label class="fld">ชื่อ-นามสกุล<input data-bind="uf.name" value="${esc(f.name)}" maxlength="80" autocomplete="off"></label>
-        ${isNew ? `<label class="fld">รหัสผ่านเริ่มต้น (≥ 8 ตัว)<input type="password" data-bind="uf.password" value="${esc(f.password)}" autocomplete="new-password"></label>` : `<div class="fld">สถานะ<span class="chips"><button type="button" class="tg" aria-pressed="${f.active}" data-uact="1">ใช้งาน</button><button type="button" class="tg" aria-pressed="${!f.active}" data-uact="0">ปิดบัญชี</button></span></div>`}</div>
+        ${isNew ? `<div class="fld">PIN เริ่มต้น<span class="smt"><b>1234</b> · ผู้ใช้ตั้ง PIN ของตัวเองตอนเข้าครั้งแรก</span></div>` : `<div class="fld">สถานะ<span class="chips"><button type="button" class="tg" aria-pressed="${f.active}" data-uact="1">ใช้งาน</button><button type="button" class="tg" aria-pressed="${!f.active}" data-uact="0">ปิดบัญชี</button></span></div>`}</div>
       <div class="chips" role="group" aria-label="สิทธิ์">สิทธิ์ ${ROLES.map(([id, l]) => `<button type="button" class="tg" aria-pressed="${f.role === id}" data-set="uf.role" data-val="${id}">${l}</button>`).join('')}</div>
       <p class="muted smt" style="margin:0">คลัง (WH): รับ ชั่ง QC บด จ่าย ย้าย นับ · แก้ไข/ยกเลิกได้เฉพาะรายการวันนี้ · ปรับยอดจากตรวจนับ ยอดยกมา และงานย้อนหลังเป็นของ admin · ปิดบัญชีแล้วผู้ใช้ถูกออกจากระบบทันที</p>
       <div class="chips"><button type="button" data-usave="1" ${okU && !S.busy ? '' : 'disabled'}>${isNew ? 'เพิ่มผู้ใช้' : 'บันทึก'}</button>${isNew ? '' : '<button type="button" class="ghost" data-unew="1">ยกเลิกการแก้ไข</button>'}</div></div></div>`;
@@ -1348,27 +1409,78 @@ function viewStockRep(d) {
 }
 
 // ---------- screens ----------
+// PIN 4 หลัก (ผู้ใช้ 12 พ.ย. 2026): เลือกชื่อผู้ใช้ → กด PIN · ผู้ใช้ใหม่/รีเซ็ต = 1234 แล้วต้องตั้ง PIN ใหม่หลังเข้า
+const pinDots = (n) => `<div class="pdots" aria-label="ใส่แล้ว ${n} จาก 4 หลัก">${[0, 1, 2, 3].map((i) => `<i class="${i < n ? 'on' : ''}"></i>`).join('')}</div>`;
+const pinPad = () => `<div class="pinpad">${['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((k) => `<button type="button" data-pk="${k}" ${S.busy ? 'disabled' : ''}>${k}</button>`).join('')}
+  <button type="button" class="fn" data-pk="clr" ${S.busy ? 'disabled' : ''}>ล้าง</button><button type="button" data-pk="0" ${S.busy ? 'disabled' : ''}>0</button><button type="button" class="fn" data-pk="del" aria-label="ลบ" ${S.busy ? 'disabled' : ''}>⌫</button></div>`;
+const lgMsg = () => S.toast ? `<p role="alert" class="${S.toastErr ? 'err' : ''}" style="margin:0;text-align:center">${esc(S.toast)}</p>` : '';
+async function loadNames() {
+  if (S.lg.loading) return; S.lg.loading = true;
+  try { S.lg.names = await rpc('rm_login_names', {}); } catch (e) { S.lg.names = []; S.toast = e.message; S.toastErr = true; }
+  S.lg.loading = false; render();
+}
 function viewLogin() {
-  return `<form id="login" class="card" data-form="login">
-    <div class="logo"><img src="${LOGO}" alt="Bluefalo"></div>
-    <h2>BFL Raw Material System</h2><p class="muted" style="margin:-6px 0 4px">เข้าสู่ระบบ</p>
-    <label class="fld">ชื่อผู้ใช้<input name="u" autocomplete="username" required></label>
-    <label class="fld">รหัสผ่าน<input name="p" type="password" autocomplete="current-password" required></label>
-    <button type="submit" ${S.busy ? 'disabled' : ''}>เข้าสู่ระบบ</button>
-    ${S.toast ? `<p role="alert" class="err" style="margin:0">${esc(S.toast)}</p>` : ''}
-  </form>`;
+  const lg = S.lg; if (lg.names === null && !lg.loading) setTimeout(loadNames, 0);
+  const last = store('rm_last_user') || ''; const who = (lg.names || []).find((x) => x.u === lg.pick);
+  const head = `<div class="lgtop"><span></span>${langBtn()}</div><div class="logo"><img src="${LOGO}" alt="Bluefalo"></div><h2>BFL Raw Material System</h2>`;
+  if (!lg.pick || !who) {
+    const ns = (lg.names || []).slice().sort((x, y) => (y.u === last) - (x.u === last));
+    return `<div id="login" class="card">${head}<p class="muted" style="margin:-6px 0 4px;text-align:center">เลือกชื่อผู้ใช้</p>
+      ${lg.names === null ? '<p class="muted" style="text-align:center">กำลังโหลด…</p>' : ns.length ? `<div class="unames">${ns.map((x) => `<button type="button" data-lgpick="${esc(x.u)}" class="${x.u === last ? 'last' : ''}"><span data-noi18n>${esc(x.n)}</span><small class="mono">${esc(x.u)}</small></button>`).join('')}</div>`
+        : '<p class="muted" style="text-align:center">ไม่มีรายชื่อผู้ใช้</p><button type="button" class="ghost" data-lgreload="1">ลองใหม่</button>'}
+      ${lgMsg()}</div>`;
+  }
+  return `<div id="login" class="card">${head}<p style="margin:-4px 0 0;text-align:center"><b data-noi18n>${esc(who.n)}</b> <span class="muted mono smt">${esc(who.u)}</span></p>
+    <p class="muted smt" style="margin:0;text-align:center">ใส่ PIN 4 หลัก</p>${pinDots(lg.pin.length)}${lgMsg()}${pinPad()}
+    <button type="button" class="ghost" data-lgback="1">← เปลี่ยนผู้ใช้</button></div>`;
+}
+async function loginPin() {
+  const lg = S.lg; if (S.busy || lg.pin.length !== 4) return;
+  S.busy = true; S.toast = ''; render();
+  try { const r = await rpc('rm_login', { p_username: lg.pick, p_password: lg.pin });
+    if (!r.ok) throw new Error(r.error); S.tok = r.token; sessionStorage.setItem('rm_tok', r.token); store('rm_last_user', lg.pick); S.lastPin = lg.pin; S.lg.pin = ''; await load(); S.toast = ''; }
+  catch (err) { S.toast = err.message; S.toastErr = true; S.lg.pin = ''; }
+  S.busy = false; render();
 }
 
-function viewChangePw() {
-  return `<form id="login" class="card" data-form="pw">
-    <div class="logo"><img src="${LOGO}" alt="Bluefalo"></div>
-    <h2>ตั้งรหัสผ่านใหม่</h2><p class="muted" style="margin:0;text-align:center">ต้องเปลี่ยนรหัสผ่านก่อนใช้งาน (อย่างน้อย 8 ตัว)</p>
-    <label class="fld">รหัสผ่านเดิม<input name="o" type="password" autocomplete="current-password" required></label>
-    <label class="fld">รหัสผ่านใหม่<input name="n" type="password" autocomplete="new-password" minlength="8" required></label>
-    <label class="fld">ยืนยันรหัสผ่านใหม่<input name="n2" type="password" autocomplete="new-password" minlength="8" required></label>
-    <button type="submit">บันทึกรหัสผ่าน</button>
-    ${S.toast ? `<p role="alert" class="${S.toastErr ? 'err' : ''}" style="margin:0">${esc(S.toast)}</p>` : ''}
-  </form>`;
+// ตั้ง / เปลี่ยน PIN: บังคับเมื่อ must_change (PIN เริ่มต้น 1234) · ผู้ใช้กดเปลี่ยนเองได้ที่ชื่อมุมขวาบน
+const cpInit = (voluntary) => ({ voluntary: !!voluntary, old: voluntary ? '' : S.lastPin, n1: '', pin: '' });
+function viewChangePin() {
+  if (!S.cp) S.cp = cpInit(false);
+  const c = S.cp; const me = S.snap.me;
+  const step = !c.old ? 'old' : !c.n1 ? 'n1' : 'n2';
+  const title = me.must_change ? 'ตั้ง PIN ใหม่' : 'เปลี่ยน PIN';
+  const hint = step === 'old' ? (me.must_change ? 'ใส่ PIN ปัจจุบัน (ค่าเริ่มต้น 1234)' : 'ใส่ PIN ปัจจุบัน') : step === 'n1' ? 'ตั้ง PIN ใหม่ 4 หลัก (ห้ามใช้ 1234)' : 'ใส่ PIN ใหม่อีกครั้ง';
+  return `<div id="login" class="card"><div class="lgtop"><span></span>${langBtn()}</div><div class="logo"><img src="${LOGO}" alt="Bluefalo"></div>
+    <h2>${title}</h2><p style="margin:-4px 0 0;text-align:center"><b data-noi18n>${esc(me.name)}</b> <span class="muted mono smt">${esc(me.username)}</span></p>
+    ${me.must_change ? '<p class="muted smt" style="margin:0;text-align:center">ต้องตั้ง PIN ของตัวเองก่อนใช้งาน</p>' : ''}
+    <p class="smt" style="margin:0;text-align:center">${hint}</p>${pinDots(c.pin.length)}${lgMsg()}${pinPad()}
+    ${me.must_change ? '<button type="button" class="ghost" data-logout="1">ออกจากระบบ</button>' : '<button type="button" class="ghost" data-cpcancel="1">ยกเลิก</button>'}</div>`;
+}
+async function cpDigit() {
+  const c = S.cp; if (c.pin.length !== 4 || S.busy) return;
+  const v = c.pin; c.pin = ''; S.toast = '';
+  if (!c.old) { c.old = v; render(); return; }
+  if (!c.n1) {
+    if (v === '1234') { S.toast = 'PIN 1234 เป็นค่าเริ่มต้น ตั้ง PIN อื่น'; S.toastErr = true; render(); return; }
+    if (v === c.old) { S.toast = 'PIN ใหม่ต้องไม่ซ้ำ PIN เดิม'; S.toastErr = true; render(); return; }
+    c.n1 = v; render(); return;
+  }
+  if (v !== c.n1) { S.toast = 'PIN ใหม่ทั้งสองครั้งไม่ตรงกัน ตั้งใหม่อีกครั้ง'; S.toastErr = true; c.n1 = ''; render(); return; }
+  S.busy = true; render(); const u = S.snap.me.username;
+  try {
+    await rpc('rm_change_password', { p_token: S.tok, p_old: c.old, p_new: c.n1 });
+    const r = await rpc('rm_login', { p_username: u, p_password: c.n1 }); // เปลี่ยน PIN แล้ว session เดิมถูกปิด → เข้าใหม่ให้อัตโนมัติ
+    if (!r.ok) throw new Error(r.error);
+    S.tok = r.token; sessionStorage.setItem('rm_tok', r.token); S.lastPin = c.n1; S.cp = null; await load(); S.toast = 'เปลี่ยน PIN แล้ว'; S.toastErr = false;
+  } catch (err) { S.toast = err.message; S.toastErr = true; c.old = c.old && /เดิม/.test(err.message) ? '' : c.old; c.n1 = ''; if (!S.tok || /เข้าสู่ระบบ/.test(err.message)) { S.cp = null; } }
+  S.busy = false; render();
+}
+function pinKey(k) {
+  const tgt = !S.tok ? S.lg : S.cp; if (!tgt || S.busy) return;
+  if (k === 'del') tgt.pin = tgt.pin.slice(0, -1); else if (k === 'clr') tgt.pin = ''; else if (tgt.pin.length < 4) tgt.pin += k;
+  render();
+  if (tgt.pin.length === 4) { if (!S.tok) loginPin(); else cpDigit(); }
 }
 
 function viewHome(d) {
@@ -2204,13 +2316,13 @@ function viewAdmin(d) {
   return `<div><h1>ระบบ</h1><p class="lead">ขนาดฐานข้อมูล bfl-production (รวมทุกตาราง) · เตือนที่ 300 MB · เตือนแรงที่ 400 MB</p></div>
     <div class="card" style="display:flex;flex-direction:column;gap:10px;align-items:flex-start">${a ? `<div class="kpi" style="border-left-color:var(--blue)"><span class="l">ขนาดฐานข้อมูล</span><span class="v">${(a.db_bytes / 1048576).toFixed(1)} <small>MB จาก 500 MB</small></span>
       <span class="s">รายการเคลื่อนไหว rm ${fmt(a.rm_moves)} แถว · หน่วยจัดเก็บ ${fmt(a.rm_units)} แถว</span></div>` : '<p class="muted">กำลังโหลด…</p>'}
-      <button type="button" class="ghost" data-changepw="1">เปลี่ยนรหัสผ่าน</button></div>` + viewUsers(d) + viewOpening(d);
+      <button type="button" class="ghost" data-changepw="1">เปลี่ยน PIN</button></div>` + viewUsers(d) + viewOpening(d);
 }
 
 function render() {
   const app = document.getElementById('app');
   if (!S.tok || !S.snap) { app.innerHTML = viewLogin(); return; }
-  if (S.snap.me.must_change) { app.innerHTML = viewChangePw(); return; }
+  if (S.snap.me.must_change || S.cp) { app.innerHTML = viewChangePin(); return; }
   const d = D();
   const me = S.snap.me;
   const tabs = TABS.concat(me.role === 'admin' ? [['admin', 'ระบบ']] : []);
@@ -2225,8 +2337,9 @@ function render() {
       <button type="button" data-scanopen="1" title="สแกน QR หรือค้นหาพาเลท">📷 สแกน</button>
       <button type="button" data-refresh="1" title="โหลดข้อมูลใหม่">⟳ โหลดใหม่</button>
       <button type="button" data-theme-t="1" title="สลับโหมดสว่าง / มืด" aria-label="สลับโหมดสว่าง / มืด">${dark ? '☀️' : '🌙'}</button>
-      <span class="hchip">${esc(me.name)} · ${esc(me.role)}</span>
-      <button type="button" data-logout="1">ออก</button></header>
+      ${langBtn(true)}
+      <button type="button" class="hchip" data-changepw="1" title="เปลี่ยน PIN"><span data-noi18n>${esc(me.name)}</span> · ${esc(me.role)}</button>
+      <button type="button" data-logout="1" data-en="Sign out">ออก</button></header>
     <div class="shell"><main>${modBar()}${S.toast ? `<div role="status" class="msg ${S.toastErr ? 'bad' : ''}">${esc(S.toast)}</div>` : ''}${S.scan.open ? viewScan(d) : ''}${(screens[S.screen] || viewHome)(d)}</main></div>
     <datalist id="dl-prov">${PROVINCES.map((m) => `<option value="${m}"></option>`).join('')}</datalist>`;
 }
@@ -2277,11 +2390,10 @@ document.addEventListener('click', async (e) => {
   if (ds.uedit) { const x = (S.users || []).find((y) => y.username === ds.uedit); if (x) S.uf = { mode: 'edit', username: x.username, name: x.name, role: x.role, active: x.active, password: '' }; render(); return; }
   if (ds.uact !== undefined) { S.uf.active = ds.uact === '1'; render(); return; }
   if (ds.usave) { const f = S.uf; S.keepScroll = true;
-    if (f.mode === 'new' && String(f.password).length < 8) { S.toast = 'รหัสผ่านเริ่มต้นต้องมีอย่างน้อย 8 ตัว'; S.toastErr = true; render(); return; }
-    act('rm_user_save', { p: { mode: f.mode, username: f.username.trim().toLowerCase(), name: f.name.trim(), role: f.role, active: f.active, password: f.mode === 'new' ? f.password : undefined } },
-      (r) => (r.new ? 'เพิ่มผู้ใช้ ' : 'บันทึกผู้ใช้ ') + r.username + ' แล้ว' + (r.new ? ' · ผู้ใช้ต้องเปลี่ยนรหัสตอนเข้าครั้งแรก' : ''), () => { S.uf = { mode: 'new', username: '', name: '', role: 'wh', active: true, password: '' }; setTimeout(loadAdmin, 0); }); return; }
+    act('rm_user_save', { p: { mode: f.mode, username: f.username.trim().toLowerCase(), name: f.name.trim(), role: f.role, active: f.active } },
+      (r) => (r.new ? 'เพิ่มผู้ใช้ ' : 'บันทึกผู้ใช้ ') + r.username + ' แล้ว' + (r.new ? ' · PIN เริ่มต้น 1234 ผู้ใช้ต้องตั้ง PIN ใหม่ตอนเข้าครั้งแรก' : ''), () => { S.uf = { mode: 'new', username: '', name: '', role: 'wh', active: true, password: '' }; setTimeout(loadAdmin, 0); }); return; }
   if (ds.upw !== undefined) { S.upw = { user: ds.upw, pw: '' }; render(); return; }
-  if (ds.upwdo) { S.keepScroll = true; if (String(S.upw.pw).length < 8) { S.toast = 'รหัสผ่านต้องมีอย่างน้อย 8 ตัว'; S.toastErr = true; render(); return; } act('rm_user_reset_pw', { p_username: S.upw.user, p_password: S.upw.pw }, 'ตั้งรหัสใหม่ให้ ' + S.upw.user + ' แล้ว · ผู้ใช้ต้องเปลี่ยนรหัสตอนเข้าครั้งแรก', () => { S.upw = { user: '', pw: '' }; setTimeout(loadAdmin, 0); }); return; }
+  if (ds.upwdo) { S.keepScroll = true; act('rm_user_reset_pw', { p_username: S.upw.user, p_password: null }, 'รีเซ็ต PIN ของ ' + S.upw.user + ' เป็น 1234 แล้ว · ผู้ใช้ต้องตั้ง PIN ใหม่ตอนเข้าครั้งถัดไป', () => { S.upw = { user: '', pw: '' }; setTimeout(loadAdmin, 0); }); return; }
   if (ds.menu) { S.menuOpen = !S.menuOpen; render(); return; }
   if (ds.ncp) { window.open(NCP_URL, '_blank', 'noopener'); S.menuOpen = false; render(); return; }
   if (ds.repk) { S.repKind = ds.repk; S.fx = { doc: '' }; render(); return; }
@@ -2366,6 +2478,11 @@ document.addEventListener('click', async (e) => {
   if (ds.refresh) { try { await load(); if (pdScreen(S.screen)) await loadPD(true); if (S.bcard.bin && S.screen === 'bins') loadBinCard(S.bcard.bin); S.toast = ''; } catch (err) { S.toast = err.message; S.toastErr = true; } render(); return; }
   if (ds.themeT) { setTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'); render(); return; }
   if (ds.logout) { logout(); return; }
+  if (ds.pk) { pinKey(ds.pk); return; }
+  if (ds.lang) { setLang(ds.lang); return; }
+  if (ds.lgpick) { S.lg.pick = ds.lgpick; S.lg.pin = ''; S.toast = ''; render(); return; }
+  if (ds.lgback) { S.lg.pick = ''; S.lg.pin = ''; S.toast = ''; render(); return; }
+  if (ds.lgreload) { S.lg.names = null; S.toast = ''; render(); return; }
   if (ds.labelp) { S.labelP = ds.labelp; render(); return; }
   if (ds.pf) { printForm(ds.pf); return; }
   if (ds.plabel) { const ps = ds.ps ? ds.ps.split(',') : ds.sel ? Object.keys(S.lsel.ps).filter((k) => S.lsel.ps[k]) : ds.range !== undefined ? parsePs(S.docPs) : null; printLabels(D(), ds.plabel, ps, int(ds.from)); return; }
@@ -2449,7 +2566,8 @@ document.addEventListener('click', async (e) => {
   if (ds.count) { const cur = S.snap.counted[ds.count]; act('rm_count_mark', { p_unit: ds.count, p_result: cur === ds.res ? '' : ds.res }, ''); return; }
   if (ds.slot) { S.selSlot = ds.slot; render(); return; }
   if (ds.locdel) { act('rm_loc_delete', { p_code: ds.locdel }, 'ลบช่อง ' + ds.locdel + ' แล้ว'); return; }
-  if (ds.changepw) { S.snap.me.must_change = true; S.toast = ''; render(); return; }
+  if (ds.changepw) { S.cp = cpInit(true); S.toast = ''; render(); return; }
+  if (ds.cpcancel) { S.cp = null; S.toast = ''; render(); return; }
 });
 
 // ช่องกรอก: อัปเดตสถานะทุกครั้งที่พิมพ์ แล้ววาดใหม่โดยคงโฟกัสและตำแหน่งเคอร์เซอร์
@@ -2507,6 +2625,10 @@ document.addEventListener('change', (e) => {
 
 // ช่องค้นหาวัตถุดิบ: Enter = เลือกรายการแรก (ไม่ส่งฟอร์ม)
 document.addEventListener('keydown', (e) => {
+  if ((!S.tok || S.cp || (S.snap && S.snap.me.must_change)) && !isTyping(e.target) && !e.ctrlKey && !e.metaKey && !e.altKey) { // แป้น PIN จากคีย์บอร์ด
+    const k = /^[0-9]$/.test(e.key) ? e.key : e.key === 'Backspace' ? 'del' : e.key === 'Escape' ? 'clr' : '';
+    if (k && (S.tok || S.lg.pick)) { e.preventDefault(); pinKey(k); return; }
+  }
   if (e.key === 'Escape' && S.bsel && S.screen === 'bins') { S.bsel = ''; S.bcard = { bin: '', rows: null }; render(); return; }
   const el = e.target; if (e.key === 'Enter' && (el.id === 'scanq' || el.id === 'ikq')) { e.preventDefault(); el.select(); return; }
   if (e.key !== 'Enter' || !el.dataset || !el.dataset.ikey) return;
@@ -2519,19 +2641,6 @@ document.getElementById('camx').addEventListener('click', () => camStop());
 
 document.addEventListener('submit', async (e) => {
   e.preventDefault(); const form = e.target; const fd = new FormData(form);
-  if (form.dataset.form === 'login') {
-    S.busy = true; S.toast = ''; render();
-    try { const r = await rpc('rm_login', { p_username: fd.get('u'), p_password: fd.get('p') });
-      if (!r.ok) throw new Error(r.error); S.tok = r.token; sessionStorage.setItem('rm_tok', r.token); await load(); S.toast = ''; }
-    catch (err) { S.toast = err.message; S.toastErr = true; }
-    S.busy = false; render(); return;
-  }
-  if (form.dataset.form === 'pw') {
-    if (fd.get('n') !== fd.get('n2')) { S.toast = 'รหัสผ่านใหม่ทั้งสองช่องไม่ตรงกัน'; S.toastErr = true; render(); return; }
-    try { await rpc('rm_change_password', { p_token: S.tok, p_old: fd.get('o'), p_new: fd.get('n') }); S.toast = 'เปลี่ยนรหัสผ่านแล้ว กรุณาเข้าสู่ระบบใหม่'; S.toastErr = false; S.tok = ''; S.snap = null; sessionStorage.removeItem('rm_tok'); }
-    catch (err) { S.toast = err.message; S.toastErr = true; }
-    render(); return;
-  }
   if (form.dataset.form === 'recv') {
     const f = S.f; const it = S.snap.items.find((i) => i.code === f.item);
     if (!it) { S.toast = 'เลือกวัตถุดิบจากรายการ'; S.toastErr = true; render(); return; }
@@ -2566,7 +2675,7 @@ document.addEventListener('submit', async (e) => {
 async function loadAdmin() { S.adminInfo = null; S.users = null; try { S.adminInfo = await rpc('rm_admin_info', { p_token: S.tok }); S.users = await rpc('rm_user_list', { p_token: S.tok }); } catch (err) { S.toast = err.message; S.toastErr = true; } render(); }
 
 // BFL Hub (9 Nov 2026): opened from the Hub with ?hub=<one-time ticket> → sign in as the account the Hub names (rm_hub_login).
-// Opened directly → unchanged (username + password as before).
+// Opened directly → pick name + 4-digit PIN (12 Nov 2026).
 (async () => {
   const hub = new URLSearchParams(location.search).get('hub');
   if (hub) {
