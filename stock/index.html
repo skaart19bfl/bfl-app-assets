@@ -488,6 +488,7 @@ V.recv = () => {
   return topBar() + `<main>
   <div class="row" style="justify-content:space-between;flex-wrap:wrap"><h1>รับจาก PD</h1><span class="muted">${d.lots.length} Lot · ${cnt('')} พาเลท · ตั้งแต่วันผลิต ${thd(d.from)}</span></div>
   ${syncNote(d.sync)}
+  ${(() => { const b = d.lots.filter((l) => l.chk && l.chk.stamp); return b.length ? `<div class="card" style="border:2px solid var(--red);display:flex;flex-direction:column;gap:4px"><b style="color:var(--red)">⚠ วันที่บนถุงน่าจะผิด ${b.length} Lot: ${b.map((l) => esc(l.lot)).join(', ')}</b><span class="muted" style="font-size:13px">ดูถุงจริงก่อนรับ — ถ้าข้อมูลในแอปแพคพิมพ์ผิด ให้ Sup แก้ที่แอปแพค (กดที่ Lot เพื่อดูเหตุผล)</span></div>` : ''; })()}
   <div class="pills">${[['', 'ทั้งหมด'], ['FG', 'FG'], ['WIP', 'WIP'], ['SEMI', 'SEMI'], ['HOLD', 'Hold']].filter((x) => !x[0] || cnt(x[0])).map((x) => `<button class="pill ${ft === x[0] ? 'on' : ''}" data-act="rt" data-arg="${x[0]}">${x[1]} ${cnt(x[0])}</button>`).join('')}
   <button class="pill on" data-act="scan">📷 สแกนรับ</button><button class="pill" data-act="reload" data-arg="recv">↻ โหลดใหม่</button></div>
   ${(d.returns || []).length ? `<div class="card" style="display:flex;flex-direction:column;gap:8px;border:2px solid var(--red)"><b>WIP ที่แอปแพคทำ Return แล้ว ${d.returns.length} พาเลท · ${fmt(d.returns.reduce((s, x) => s + x.kg, 0))} kg</b>
@@ -499,12 +500,22 @@ V.recv = () => {
     return `<div class="lc t-${l.type.toLowerCase()} tap" data-act="recvLot" data-arg="${esc(l.key)}">
     <div class="lc-m"><div class="row" style="gap:8px">${chipT(l.type)}<b class="mono" style="font-size:17px">${esc(l.lot)}</b></div>
     <div class="lc-n">${esc(l.name)}</div>
+    ${l.chk && l.chk.stamp ? '<div><span class="chip c-hold">⚠ วันที่บนถุงน่าจะผิด — เช็คก่อนรับ</span></div>' : ''}
     <div class="rgs">${rngChips(l.pallets.map((p) => p.no), 4)}</div>
     <div class="muted" style="font-size:12px">ผลิต ${days.map(thd).join(', ')} · ${esc(l.pack)} · ทีม ${esc(l.team)}</div></div>
     <div class="lc-c"><b>${l.pallets.length}</b><span>พาเลท</span><span class="muted">${fmt(q)} ${esc(l.pallets[0].unit)}</span><span class="muted">${fmt(kg)} kg</span></div></div>`; }).join('') || '<div class="card muted">ไม่มีพาเลทรอรับ</div>'}</div>
   </main>` + bnav();
 };
 function curLot() { return (S.data.recv && S.data.recv.lots || []).find((l) => l.key === S.f.lot); }
+// stamp dates checked before receiving (same rules as ตรวจวันหมดอายุ) — warn + confirm, never blocks
+const recvStampBox = (l) => { const c = l.chk; if (!c || !c.stamp) return '';
+  return `<div class="card" style="border:2px solid var(--red);display:flex;flex-direction:column;gap:6px"><b style="color:var(--red)">⚠ วันที่บนถุงน่าจะผิด — เช็คถุงจริงก่อนรับ</b>
+  <div class="muted" style="font-size:13px">วันผลิตจริง ${thd(c.prod)} · MFG ${thd(c.mfg)} · EXP ${thd(c.exp)} · อายุบนถุง ${fmt(c.shelf)} วัน${c.typical ? ' (ปกติ ' + fmt(c.typical) + ' วัน)' : ''}</div>
+  <ul style="margin:0;padding-left:18px;font-size:14px">${(c.why || []).map((w) => `<li>${esc(w)}</li>`).join('')}</ul>
+  ${c.prodShelf != null ? `<div class="li" style="background:var(--sky);font-size:13px">นับจากวันผลิตจริงถึง EXP = ${fmt(c.prodShelf)} วัน → <b>${c.prodNear ? 'ใกล้หมดอายุจริง' : 'EXP ปกติ น่าจะผิดที่ MFG'}</b></div>` : ''}
+  <div class="li" style="flex-direction:column;align-items:stretch;gap:4px;background:var(--soft)"><b>ให้ Sup แก้ที่แอปแพค</b><span style="font-size:13px">ข้อมูล → FG Lot → ค้นหา <b class="mono">${esc(l.lot)}</b> (${esc(l.pack || '-')}) → แก้ไขล็อต → ลักษณะบรรจุภัณฑ์ ให้ตรงกับที่พิมพ์บนถุงจริง แล้วกด ↻ โหลดใหม่</span>
+  <span class="muted" style="font-size:12px">ที่บันทึกไว้ตอนนี้:</span><pre class="mono" style="margin:0;white-space:pre-wrap;font-size:13px">${esc(c.stampText || '-')}</pre>
+  <span class="muted" style="font-size:12px">ถ้าบนถุงพิมพ์ผิดจริง แจ้ง QC · รับเข้าไปก่อนก็ได้ — แก้ในแอปแพคทีหลัง พาเลทในคลังเปลี่ยนตามทันที</span></div></div>`; };
 V.recvLot = () => {
   if (!S.data.recv) return topBar() + '<div class="spin">กำลังโหลด…</div>' + bnav(); // ↻ reloading
   const l = curLot();
@@ -518,6 +529,7 @@ V.recvLot = () => {
       : `<button class="tile ${on ? 'on' : ''} ${bad ? 'bad' : ''}" data-act="tog" data-arg="${p.id}" aria-pressed="${on}" title="${new Date(p.at).toTimeString().slice(0, 5)} · ${fmt(p.w)} kg/${esc(p.unit)}${p.palt ? ' · พาเลท' + esc(p.palt) : ''}"><b>#${p.no}</b><span>${fmt(c)}${bad ? ' ≠ ' + fmt(p.bags) : ''}</span>${p.palt ? `<span style="font-size:10px;opacity:.85">${p.palt === 'เหล็ก' ? '▣ เหล็ก' : '▤ ไม้'}</span>` : ''}</button>`; };
   return topBar() + `<main>
   <div class="row"><button class="sm" data-act="go" data-arg="recv">‹ กลับ</button><span style="flex:1;display:flex;flex-direction:column"><b class="mono" style="font-size:18px">${esc(l.lot)} ${chipT(l.type)}</b><span>${esc(l.name)}</span><span class="muted">${esc(l.pack)} · ทีม ${esc(l.team)} · MFG ${thd(l.pallets[0].mfg)} ${l.pallets[0].exp ? '· EXP ' + thd(l.pallets[0].exp) : ''} · ${fmt(l.pallets[0].w)} kg/${esc(l.pallets[0].unit)}</span></span></div>
+  ${recvStampBox(l)}
   <div class="card" style="padding:0">
   ${scanOnly() ? '<div class="tbar" style="background:#FFF4E5"><b style="flex:1">🔒 ต้องสแกน QR ป้ายพาเลททุกพาเลทที่จะรับ — กด 📷 สแกน</b></div>' : ''}<div class="tbar"><b style="flex:1">เลือกแล้ว ${picked.length}/${l.pallets.length} พาเลท</b>
     <button class="sm on" data-act="scan">📷 สแกน</button><button class="sm" data-act="selAll" data-arg="1">ทั้งหมด</button><button class="sm" data-act="selAll" data-arg="0">ไม่เลือก</button>
@@ -1658,6 +1670,7 @@ const ACT = {
     const l = curLot(), d = S.data.recv, wh = WH_OF(l.type), used = (d.usedLocs[l.lot] || []).filter((x) => x.indexOf(wh) === 0);
     const ids = l.pallets.filter((p) => S.sel[p.id]).map((p) => p.id), counts = {};
     ids.forEach((id) => { if (S.cnt[id] != null) counts[id] = +S.cnt[id]; });
+    if (l.chk && l.chk.stamp && !confirm(`Lot ${l.lot} วันที่บนถุงน่าจะผิด:\n- ${(l.chk.why || []).join('\n- ')}\n\nเช็คถุงจริงแล้ว ยืนยันรับเข้า?`)) return;
     el.disabled = true;
     api('receivePD', S.token, { ids, counts, scanned: Object.keys(S.scanned || {}), loc: S.f.loc || used[0], holdReason: S.f.hr, wipType: S.f.wt, wipGroup: S.f.wg, note: S.f.note, at: ratISO(), reqId: S.f.req || (S.f.req = rid()) })
       .then((r) => { S.f.req = ''; S.f.rat = ''; toast(r.dup ? 'บันทึกไปแล้ว' : `รับเข้า ${r.n} พาเลท${r.mismatch ? ' · ยอดไม่ตรง ' + r.mismatch : ''} · ${dtm(r.at)} (วันผลิต ${thd(r.day)})`); go('recv'); })
