@@ -1731,13 +1731,13 @@ function psText(ps) {
 function leInit(lot) {
   const m = lot.meta || {};
   const it = S.snap.items.find((i) => i.code === lot.item);
-  return { lot: lot.lot, item: lot.item, itemText: it ? it.code + ' · ' + it.name : lot.item, iq: '', store: lot.store, recv: lot.recv_day || '', supplier: lot.supplier || '', plate: lot.plate || '', province: lot.province || '', exp: lot.exp || '', ticket: lot.ticket || '', delivery: lot.delivery || '',
+  return { lot: lot.lot, item: lot.item, itemText: it ? it.code + ' · ' + it.name : lot.item, iq: '', store: lot.store, recv: lot.recv_day || '', supplier: lot.supplier || '', plate: lot.plate || '', province: lot.province || '', exp: lot.exp || '', mfg: lot.mfg || '', ticket: lot.ticket || '', delivery: lot.delivery || '',
     po: lot.po || '', ref: lot.ref || '', win: toLocal(lot.win), wout: toLocal(lot.wout), qci: lot.qci || 'pass', qcin: lot.qcin || '', loc: lot.loc || '',
     per: lot.per == null ? '' : String(lot.per), labels: lot.labels == null ? '' : String(lot.labels),
     vehicle: m.vehicle || '', method: m.method || '', t_start: m.t_start || '', t_end: m.t_end || '', note: m.note || '',
     plant: lot.plant || '', tdoc: lot.tdoc || '', slot: lot.slot || '', supkg: lot.supkg == null ? '' : String(Number(lot.supkg)) };
 }
-const LE_KEYS = { item: 'item', recv: 'recv_day', supplier: 'supplier', plate: 'plate', province: 'province', exp: 'exp', ticket: 'ticket', delivery: 'delivery', po: 'po', ref: 'ref_receipt',
+const LE_KEYS = { item: 'item', recv: 'recv_day', supplier: 'supplier', plate: 'plate', province: 'province', exp: 'exp', mfg: 'mfg', ticket: 'ticket', delivery: 'delivery', po: 'po', ref: 'ref_receipt',
   win: 'weigh_in', wout: 'weigh_out', loc: 'location', per: 'per', labels: 'labels', vehicle: 'vehicle', method: 'method', t_start: 't_start', t_end: 't_end', note: 'note', tdoc: 'transfer_doc', slot: 'src_lot', plant: 'plant', supkg: 'sup_kg' };
 function leDiff(lot) {
   const a = leInit(lot), b = S.le, p = {};
@@ -1814,6 +1814,7 @@ function viewLotInfo(d, lot) {
   const le = S.le; const it = d.items[lot.item] || {}; const admin = S.snap.me.role === 'admin';
   const pre = lot.status === 'unload' || lot.status === 'weigh';
   const diff = leDiff(lot); const nd = Object.keys(diff).length;
+  const mfgBad = le.mfg && le.recv && le.mfg > le.recv; // วันที่ผลิตต้องไม่หลังวันที่รับเข้า (server ตรวจซ้ำ)
   const sups = [...new Set(d.s.suppliers.filter((x) => x.item === lot.item).map((x) => x.supplier))];
   const inp = (k, label, extra) => `<label class="fld">${label}<input data-bind="le.${k}" value="${esc(le[k])}" ${extra || ''} autocomplete="off"></label>`;
   const qcBtns = [['pass', 'ผ่าน'], ['cond', 'ผ่านโดยมีเงื่อนไข']].map(([id, t]) => `<button type="button" class="tg" aria-pressed="${le.qci === id}" data-set="le.qci" data-val="${id}">${t}</button>`).join('');
@@ -1822,6 +1823,7 @@ function viewLotInfo(d, lot) {
   const canCancel = pre || admin; const tr = lot.source === 'transfer';
   return `<div class="note smt" style="display:grid;grid-template-columns:auto 1fr;gap:2px 12px">
       ${tr ? `<span class="muted">ที่มา</span><b>รับโอนจาก ${esc(plantName(lot.plant))} · ${lot.plant === 'PD' ? 'เอกสารการผลิต' : 'ใบโอน'} ${esc(lot.tdoc || '-')} · Lot ${lot.plant === 'PD' ? 'ผลิต' : 'ต้นทาง'} ${esc(lot.slot || '-')}</b>` : ''}
+      ${lot.mfg ? `<span class="muted">วันที่ผลิต</span><span class="smt">${dfull(lot.mfg)}</span>` : ''}
       ${lot.exp ? `<span class="muted">หมดอายุ</span><span>${expTag(lot.exp)}</span>` : ''}
       <span class="muted">วัตถุดิบ</span><b>${esc(it.name)} <span class="mono muted" style="font-weight:400">${esc(lot.item)}</span></b>
       <span class="muted">สถานะ</span><span>${pill(lot.status)} ${hold ? `<span class="tag bad">Hold${lot.qcn ? ': ' + esc(lot.qcn) : ''}</span>` : ''}</span>
@@ -1842,6 +1844,7 @@ function viewLotInfo(d, lot) {
       ${inp('delivery', 'ใบส่งสินค้าหมายเลข', 'maxlength="40"')}
       ${inp('ref', 'อ้างอิงใบรับสินค้าเลขที่', 'maxlength="60" placeholder="เช่น RN2611-0006"')}
       <label class="fld">น้ำหนักตามใบส่งของ (กก.)<input data-bind="le.supkg" value="${esc(le.supkg)}" inputmode="decimal" autocomplete="off">${supDiff(num(le.supkg), lot.net) ? `<span class="muted smt" style="display:block">${supDiff(num(le.supkg), lot.net)}</span>` : ''}</label>`}
+      <label class="fld">วันที่ผลิต<input type="date" data-bind="le.mfg" value="${esc(le.mfg)}" max="${esc(le.recv || todayYmd())}">${le.mfg ? `<span class="smt ${mfgBad ? 'err' : 'muted'}" style="display:block;margin-top:2px">${mfgBad ? 'วันที่ผลิตต้องไม่หลังวันที่รับเข้า' : '= ' + dfull(le.mfg) + ' · ขึ้นบนป้าย'}</span>` : '<span class="muted smt" style="display:block;margin-top:2px">ว่างได้ · ใส่แล้วขึ้นบนป้าย</span>'}</label>
       <label class="fld">วันหมดอายุ<input data-bind="le.exp" value="${esc(le.exp)}" maxlength="20" autocomplete="off">${expHint(le.exp)}</label>
       ${inp('plate', 'ทะเบียนรถ', 'maxlength="20"')}
       ${inp('province', 'จังหวัด', 'maxlength="40" list="dl-prov"')}
@@ -1857,7 +1860,7 @@ function viewLotInfo(d, lot) {
     ${inp('note', 'หมายเหตุ', 'maxlength="200"')}
     ${tr ? '' : `<div class="chips">QC เบื้องต้น ${qcBtns}</div>
     ${le.qci === 'cond' ? inp('qcin', 'เงื่อนไขที่ QC ให้ผ่าน', 'maxlength="200"') : ''}`}
-    <div class="chips"><button type="button" data-lesave="1" ${nd && !S.busy && !(le.qci === 'cond' && !le.qcin.trim()) ? '' : 'disabled'}>บันทึกการแก้ไข${nd ? ` (${nd})` : ''}</button>${nd ? '<button type="button" class="ghost" data-lereset="1">คืนค่าเดิม</button>' : ''}</div>
+    <div class="chips"><button type="button" data-lesave="1" ${nd && !S.busy && !mfgBad && !(le.qci === 'cond' && !le.qcin.trim()) ? '' : 'disabled'}>บันทึกการแก้ไข${nd ? ` (${nd})` : ''}</button>${nd ? '<button type="button" class="ghost" data-lereset="1">คืนค่าเดิม</button>' : ''}</div>
     ${lotRenameBox(d, lot)}
     <datalist id="dl-sup-lot">${sups.map((x) => `<option value="${esc(x)}"></option>`).join('')}</datalist>
     <div class="sect">QC ขณะรับวัตถุดิบ</div>
