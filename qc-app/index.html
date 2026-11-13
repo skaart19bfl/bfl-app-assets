@@ -217,7 +217,7 @@ let loadN=0;
 function loading(on){loadN+=on?1:-1;if(loadN<0)loadN=0;$('#loader').classList.toggle('show',loadN>0)}
 function toast(m,err){const t=$('#toast');t.textContent=m;t.className=err?'err':'';t.style.display='block';clearTimeout(t._h);t._h=setTimeout(()=>t.style.display='none',err?6000:2800)}
 /* เวอร์ชันเว็บ: ตรรกะเดิมรันใน Web Worker (worker.js) แล้วคุยกับ Supabase ตรง — ไม่ผ่าน Apps Script */
-const W=new Worker('worker.js?v=202611110213');let _wid=0;const _wp={};
+const W=new Worker('worker.js?v=202611130948');let _wid=0;const _wp={};
 W.onmessage=e=>{const m=e.data,p=_wp[m.id];if(p){delete _wp[m.id];p(m)}};
 W.onerror=e=>{toast('โหลดตัวประมวลผลไม่สำเร็จ — กดรีเฟรช',1)};
 function call(fn,...args){
@@ -231,7 +231,7 @@ const isLead=()=>['QC-Lead','Admin'].includes(S.user&&S.user.role);
 /* QC ปรับสเปก %MC + ขนาดเม็ดได้ (รายการอื่น QC-Lead / Admin) */
 const qcSpecOk=k=>isLead()||(canWrite()&&((S.boot&&S.boot.qcSpecItems)||[]).includes(k));
 const canSpec=g=>(SPEC_GROUPS[g]||[]).some(qcSpecOk);
-function modal(html){$('#modal').innerHTML=html;$('#mask').classList.add('show')}
+function modal(html){$('#modal').style.width='';$('#modal').innerHTML=html;$('#mask').classList.add('show')}
 function closeModal(){$('#mask').classList.remove('show')}
 $('#mask').addEventListener('click',e=>{if(e.target.id==='mask'&&!S.modalLock)closeModal()});
 function n(v){return v===''||v===null||v===undefined?'':v}
@@ -549,6 +549,7 @@ async function loadMoistureList(){
   try{const list=await call('api_moistureList',S.token,l.productionId);renderMoistRail(list)}catch(e){toast(e.message,1)}
 }
 function renderMoistRail(list){
+  S.mList=list;
   const l=curLot(),EX=S.point==='EXTRUDER',spec=EX?extSpec(l.spec):l.spec;
   if(!shMem(l.productionId)){const h=list.slice().reverse().find(x=>x.shs&&x.shs.length>1);if(h){shSave(l.productionId,h.shs.length,h.shs);
     if(!S.mEdit&&document.getElementById('mDieN')&&Number(segVal('mDieN')||1)===1)setShapes('m',h.shs.length,h.shs,{})}}
@@ -566,7 +567,7 @@ function renderMoistRail(list){
      <div class="row note">${EX?'<span><span class="dot" style="background:#0E9F6E"></span> Extruder</span>':'<span><span class="dot" style="background:#268AFA"></span> Dryer</span><span><span class="dot" style="background:#162C9A"></span> Cooler</span>'}</div>`;
   }
   const rows=list.slice().reverse().slice(0,40).map(x=>`<div class="li"><span class="mono note" style="width:76px">${x.time}</span><span class="dot d${x.status}"></span><span>${x.process==='Dyer'?'Dryer':x.process}</span>${x.shs&&x.shs.length>1?`<span class="tag n" title="Die ${x.shs.length} in 1">${esc(x.shs.join('/'))}</span>`:''}${x.src==='AppSheet'?'<span class="tag n">AppSheet</span>':x.inspector?`<span class="note">${esc(x.inspector)}</span>`:''}<span class="v">${x.mc===''?'<span class="note">ไม่มี %MC</span>':fmtNum(x.mc)}</span>${canWrite()?`<button class="btn g" style="height:24px;padding:0 5px${S.mEdit&&S.mEdit.id===x.id?';background:#FFE7B8':''}" title="แก้ไข" onclick="editMoist('${x.id}')">✎</button>`:''}${isLead()?`<button class="btn g" style="height:24px;padding:0 4px" title="ยกเลิก" onclick="cancelMoist('${x.id}')">✕</button>`:''}</div>`).join('');
-  $('#mRail').innerHTML=`<div class="card"><div class="h3">ค่าของ Lot นี้<span class="r">${list.length} ตัวอย่าง</span></div><div style="margin:10px 0">${chart}</div>${rows||'<div class="empty">ยังไม่มีค่า</div>'}</div>`;
+  $('#mRail').innerHTML=`<div class="card"><div class="h3">ค่าของ Lot นี้<span class="r">${list.length} ตัวอย่าง</span>${all.length?`<button class="btn s" id="lineImg" style="height:28px;padding:0 10px" onclick="moistLineImage()" title="ทำรูปกราฟ + ค่าล่าสุด ส่ง LINE">📷 ส่ง LINE</button>`:''}</div><div style="margin:10px 0">${chart}</div>${rows||'<div class="empty">ยังไม่มีค่า</div>'}</div>`;
 }
 async function saveMoisture(allowDup){
   const l=curLot(),P=S.point,t=timeVal('m');
@@ -1330,6 +1331,99 @@ function userForm(u){
    <div class="row" style="justify-content:flex-end"><button class="btn g" onclick="closeModal()">ยกเลิก</button><button class="btn p" id="ufSave">บันทึก</button></div></div>`);
   bindSeg($('#modal'));if($('#ufAct'))$('#ufAct').onclick=e=>e.target.classList.toggle('on');
   $('#ufSave').onclick=async()=>{try{await call('api_saveUser',S.token,{id:u.id,name:val('ufName'),role:segVal('ufRole'),pin:val('ufPin'),active:u.id?$('#ufAct').classList.contains('on'):true});closeModal();toast('บันทึกแล้ว');vUsers()}catch(e){toast(e.message,1)}};
+}
+
+/* ===================== รูปส่ง LINE (Moisture) — แบบเดียวกับ Extruder Setup Log =====================
+   หัว: จุดเก็บ · Lot · ชื่อสินค้า · ProductID · Extruder · ช่วงเวลา · กราฟ %MC ตามเวลา (มีเวลาใต้แกน + ค่าบนจุด) · ค่าล่าสุดต่อจุดเก็บ */
+async function moistLineImage(){
+  const l=curLot(),EX=S.point==='EXTRUDER',spec=EX?extSpec(l.spec):l.spec,list=S.mList||[];
+  const SER=(EX?[['EXTRUDER','Extruder','#0E9F6E']]:[['DRYER','Dryer','#268AFA'],['COOLER','Cooler','#162C9A']])
+    .map(([k,n,c])=>({k,n,c,pts:list.filter(x=>x.point===k&&x.mc!==''&&x.ts).sort((a,b)=>a.ts-b.ts)})).filter(s=>s.pts.length);
+  const all=SER.flatMap(s=>s.pts);
+  if(!l||!all.length)return toast('Lot นี้ยังไม่มีค่า %MC ให้ทำรูป',1);
+  const btn=document.getElementById('lineImg');if(btn)btn.disabled=true;
+  try{
+    const F='"Leelawadee UI","Segoe UI",Tahoma,system-ui,sans-serif',W=1800,H=1660,cv=document.createElement('canvas');cv.width=W;cv.height=H;
+    const c=cv.getContext('2d'),INK='#14213D',MUTED='#5B6B80',LINE='#D8E0EA',SUNK='#F3F6FA',RED='#E5484D',AMB='#E8960C',GRN='#1FA971',NAVY='#162C9A';
+    const font=(w,px)=>{c.font=w+' '+px+'px '+F};
+    const text=(s,x,y,o)=>{o=o||{};font(o.w||400,o.px||24);c.fillStyle=o.color||INK;c.textAlign=o.align||'left';c.textBaseline=o.base||'alphabetic';c.fillText(String(s),x,y);return c.measureText(String(s)).width};
+    const rr=(x,y,w,h,r,fill,stroke,lw)=>{c.beginPath();c.roundRect(x,y,w,h,r);if(fill){c.fillStyle=fill;c.fill()}if(stroke){c.strokeStyle=stroke;c.lineWidth=lw||1.5;c.stroke()}};
+    const p2=n=>String(n).padStart(2,'0'),dd=t=>{const d=new Date(t);return p2(d.getDate())+'/'+p2(d.getMonth()+1)},hm=t=>{const d=new Date(t);return p2(d.getHours())+':'+p2(d.getMinutes())};
+    const num=v=>v===''||v===undefined||v===null?null:Number(v),f2=v=>Number(v).toFixed(2);
+    const LCL=num(spec.MC_LCL),CL=num(spec.MC_CL),UCL=num(spec.MC_UCL);
+    const stOf=v=>(LCL!==null&&v<LCL)||(UCL!==null&&v>UCL)?'OUT':'OK';
+    c.fillStyle='#fff';c.fillRect(0,0,W,H);rr(20,20,W-40,H-40,22,'#fff',LINE);
+    // ---- หัว
+    rr(20,20,W-40,300,[22,22,0,0],NAVY);
+    const badge=EX?'Extruder %MC':'Moisture';font(700,52);const bw=c.measureText(badge).width+52;
+    rr(56,56,bw,92,16,'#fff');text(badge,56+bw/2,120,{w:700,px:52,color:NAVY,align:'center'});
+    text('Lot '+l.lot,56+bw+36,124,{w:700,px:68,color:'#fff'});
+    const pn=l.productName||'';let px=40;font(600,px);while(c.measureText(pn).width>W-120&&px>26){px-=2;font(600,px)}
+    text(pn,56,206,{w:600,px,color:'#fff'});
+    const t0=all[0].ts,t1=all[all.length-1].ts;
+    const span='เริ่ม '+dd(t0)+' '+hm(t0)+'   ·   ล่าสุด '+(dd(t0)===dd(t1)?'':dd(t1)+' ')+hm(t1)+'   ·   '+all.length+' ตัวอย่าง';
+    text([l.productId,l.ext].filter(Boolean).join('   ·   ')+'   ·   '+span,56,274,{px:30,color:'rgba(255,255,255,.92)'});
+    // ---- กราฟ
+    text('%MC ตามเวลาเก็บตัวอย่าง',56,386,{w:700,px:32});
+    let lx=W-56;SER.slice().reverse().forEach(s=>{const w=text(s.n,lx,386,{px:28,align:'right',color:MUTED});c.fillStyle=s.c;c.beginPath();c.arc(lx-w-22,376,10,0,7);c.fill();lx-=w+64});
+    const L=120,T=430,PW=W-120-150,PH=640;
+    const vs=all.map(x=>Number(x.mc)).concat([LCL,UCL,CL].filter(v=>v!==null));
+    let lo=Math.min(...vs),hi=Math.max(...vs);if(hi-lo<0.6){hi+=0.3;lo-=0.3}const pad=(hi-lo)*.12;lo-=pad;hi+=pad;
+    const X=t=>L+(t1===t0?PW/2:(t-t0)/(t1-t0)*PW),Y=v=>T+PH-(v-lo)/(hi-lo)*PH;
+    rr(L,T,PW,PH,0,SUNK);
+    // แกนตั้ง
+    const step=[0.1,0.2,0.25,0.5,1,2,5].find(s=>(hi-lo)/s<=8)||5;
+    for(let v=Math.ceil(lo/step)*step;v<=hi+1e-9;v+=step){c.strokeStyle=LINE;c.lineWidth=1.5;c.beginPath();c.moveTo(L,Y(v));c.lineTo(L+PW,Y(v));c.stroke();text(v.toFixed(step<1?2:1),L-14,Y(v),{px:24,color:MUTED,align:'right',base:'middle'})}
+    // เส้นสเปก
+    const lim=(v,col,t)=>{if(v===null)return;c.setLineDash([16,12]);c.strokeStyle=col;c.lineWidth=3;c.beginPath();c.moveTo(L,Y(v));c.lineTo(L+PW,Y(v));c.stroke();c.setLineDash([]);text(t+' '+f2(v),L+PW+12,Y(v),{w:700,px:24,color:col,base:'middle'})};
+    lim(UCL,RED,'UCL');lim(CL,'#7D8FC0','CL');lim(LCL,RED,'LCL');
+    // เวลาใต้แกน (ทุกเวลาที่มีตัวอย่าง · มากไปเว้นระยะ)
+    const times=[...new Set(all.map(x=>x.ts))].sort((a,b)=>a-b),minGap=74;let lastX=-1e9,lastD='';
+    times.forEach((t,i)=>{const x=X(t);if(x-lastX<minGap&&i!==times.length-1)return;if(i===times.length-1&&x-lastX<minGap&&lastX>-1e9)return;
+      c.strokeStyle=LINE;c.lineWidth=1;c.beginPath();c.moveTo(x,T+PH);c.lineTo(x,T+PH+10);c.stroke();
+      text(hm(t),x,T+PH+38,{px:24,color:INK,align:'center',base:'middle'});
+      const d=dd(t);if(d!==lastD){text(d,x,T+PH+70,{px:21,color:MUTED,align:'center',base:'middle'});lastD=d}lastX=x});
+    // เส้น + จุด + ค่า
+    const label=all.length<=30;
+    SER.forEach((s,si)=>{c.strokeStyle=s.c;c.lineWidth=4.5;c.lineJoin='round';c.beginPath();s.pts.forEach((x,n)=>n?c.lineTo(X(x.ts),Y(x.mc)):c.moveTo(X(x.ts),Y(x.mc)));c.stroke();
+      s.pts.forEach((x,n)=>{const v=Number(x.mc),bad=stOf(v)==='OUT';c.beginPath();c.arc(X(x.ts),Y(v),bad?11:8,0,7);c.fillStyle=bad?RED:'#fff';c.fill();c.lineWidth=3.5;c.strokeStyle=bad?RED:s.c;c.stroke();
+        if(!(label||bad||n===s.pts.length-1))return;
+        // ค่าบนจุด: เวลาเดียวกันอีกจุดเก็บ → ค่าสูงอยู่บน ค่าต่ำอยู่ล่าง · ชนขอบกราฟ → กลับด้าน
+        const o=SER.filter(q=>q!==s).map(q=>q.pts.find(p=>p.ts===x.ts)).find(Boolean);
+        let up=o?v>=Number(o.mc):si===0;if(up&&Y(v)-T<34)up=false;if(!up&&T+PH-Y(v)<34)up=true;
+        text(f2(v),X(x.ts)+(bad?16:0),Y(v)+(up?-24:32),{w:700,px:22,color:bad?RED:s.c,align:bad?'left':'center',base:'middle'})})});
+    // ---- ค่าล่าสุด
+    const BX=56,BY=T+PH+110,BW=W-112,BH=H-BY-90;rr(BX,BY,BW,BH,18,SUNK);
+    text('ค่าล่าสุด',BX+34,BY+56,{w:700,px:34,base:'middle'});
+    text('สเปก %MC  '+(LCL!==null?f2(LCL):'—')+' – '+(UCL!==null?f2(UCL):'—')+(CL!==null?'  (CL '+f2(CL)+')':''),BX+BW-34,BY+56,{px:28,color:MUTED,align:'right',base:'middle'});
+    const tw=(BW-68-24*(SER.length-1))/SER.length,th=BH-126;
+    SER.forEach((s,i)=>{const x0=BX+34+i*(tw+24),y0=BY+96,last=s.pts[s.pts.length-1],v=Number(last.mc),st=stOf(v),ms=s.pts.map(p=>Number(p.mc)),out=ms.filter(m=>stOf(m)==='OUT').length;
+      rr(x0,y0,tw,th,12,'#fff',LINE);c.fillStyle=s.c;c.fillRect(x0,y0+18,8,th-36);
+      text(s.n+' · '+dd(last.ts)+' '+hm(last.ts),x0+34,y0+50,{w:600,px:28,color:MUTED,base:'middle'});
+      text(f2(v),x0+34,y0+128,{w:700,px:76,color:st==='OUT'?RED:INK,base:'middle'});
+      const sx=x0+34+(font(700,76),c.measureText(f2(v)).width)+24;
+      rr(sx,y0+104,st==='OUT'?150:170,46,23,st==='OUT'?'#FDE8E8':'#E6F6EE');text(st==='OUT'?'หลุดสเปก':'อยู่ในสเปก',sx+(st==='OUT'?75:85),y0+128,{w:700,px:24,color:st==='OUT'?RED:GRN,align:'center',base:'middle'});
+      text('เฉลี่ย '+f2(ms.reduce((a,b)=>a+b,0)/ms.length)+'  ·  ต่ำสุด '+f2(Math.min(...ms))+'  ·  สูงสุด '+f2(Math.max(...ms)),x0+34,y0+192,{px:25,color:MUTED,base:'middle'});
+      text(s.pts.length+' ตัวอย่าง'+(out?'  ·  หลุดสเปก '+out+' ครั้ง':''),x0+34,y0+232,{px:25,color:out?RED:MUTED,base:'middle'})});
+    const now=new Date();
+    text('BFL QC App · '+(S.user&&S.user.name||'')+' · สร้างรูป '+p2(now.getDate())+'/'+p2(now.getMonth()+1)+'/'+now.getFullYear()+' '+p2(now.getHours())+':'+p2(now.getMinutes()),W-56,H-50,{px:20,color:MUTED,align:'right',base:'middle'});
+    const blob=await new Promise(ok=>cv.toBlob(ok,'image/png'));
+    lineImageShow(blob,'MC_'+l.lot+'_'+dd(t1).replace('/','-')+'_'+hm(t1).replace(':','')+'.png','Lot '+l.lot);
+  }catch(e){toast('ทำรูปไม่ได้: '+(e&&e.message||e),1)}
+  if(btn)btn.disabled=false;
+}
+function lineImageShow(blob,name,title){
+  const url=URL.createObjectURL(blob),file=new File([blob],name,{type:'image/png'});
+  const canShare=!!(navigator.canShare&&navigator.canShare({files:[file]}));
+  S.modalLock=false;
+  modal(`<div class="row" style="margin-bottom:8px"><b style="flex:1">รูปส่ง LINE · ${esc(title)}</b><button class="btn g" id="liClose">ปิด</button></div>
+   <img src="${url}" alt="กราฟ %MC และค่าล่าสุดของ ${esc(title)}" style="display:block;width:100%;height:auto;border:1px solid var(--line);border-radius:8px">
+   <div class="row" style="margin-top:10px;gap:8px">${canShare?'<button class="btn p" id="liShare">แชร์ (LINE)</button>':''}<a class="btn ${canShare?'g':'p'}" href="${url}" download="${esc(name)}">บันทึกรูป</a></div>
+   <div class="note" style="margin-top:8px">มือถือ: แตะ "แชร์ (LINE)" แล้วเลือก LINE · หรือกดค้างที่รูปเพื่อบันทึก/แชร์</div>`);
+  $('#modal').style.width='min(760px,100%)';
+  const close=()=>{closeModal();setTimeout(()=>URL.revokeObjectURL(url),1000)};
+  $('#liClose').onclick=close;
+  if(canShare)$('#liShare').onclick=async()=>{try{await navigator.share({files:[file],title:name})}catch(e){if(!e||e.name!=='AbortError')toast('แชร์ไม่ได้ ใช้ปุ่ม "บันทึกรูป" แทน',1)}};
 }
 
 /* เปลี่ยน PIN ของตัวเอง · force = ผู้ใช้ใหม่ / ถูกรีเซ็ต PIN (ต้องตั้งก่อนใช้งาน · PIN เดิม = ที่เพิ่งใส่ตอนเข้าระบบ) */
