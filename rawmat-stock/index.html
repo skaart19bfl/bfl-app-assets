@@ -90,6 +90,7 @@ tr.cut td{background:var(--blue-weak)}
 .s-RM{background:var(--blue-weak);color:var(--navy)} .s-RM-G{background:var(--ok-weak);color:var(--ok)} .s-PX{background:var(--pur-weak);color:var(--pur)}
 .msg{padding:10px 14px;border-radius:9px;background:var(--ok-weak);color:var(--ok);font-weight:600}
 .msg.bad{background:var(--bad-weak);color:var(--bad)}
+.msg.warn{background:color-mix(in srgb,var(--warn) 14%,transparent);color:var(--warn)}
 .note{background:var(--card2);border:1px solid var(--line);border-radius:9px;padding:10px 12px;font-size:14px}
 .muted{color:var(--muted)} .err{color:var(--bad)} .smt{font-size:13px}
 .lrow{display:flex;align-items:center;gap:12px;padding:10px 2px;border-bottom:1px solid var(--line)}
@@ -178,7 +179,7 @@ html[data-theme=dark] .prev{background:#0b111c}
   <video id="camv" playsinline muted style="max-width:100%;max-height:70vh;border-radius:12px;background:#000"></video>
   <span id="cammsg" style="color:#fff"></span><button type="button" id="camx" style="min-width:140px">ปิดกล้อง</button></div>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
-<script src="i18n-en.js?v=20261113e"></script>
+<script src="i18n-en.js?v=20261113f"></script>
 <script>
 'use strict';
 const SB_URL = 'https://kdytxuufvigwjccebrki.supabase.co';
@@ -1418,19 +1419,21 @@ function viewDip(d) {
   const calc = (b) => { const v = D0.v[b.code]; if (v === undefined || String(v).trim() === '') return null; const e = num(v); const kg = binEst(b, e, Number(b.density || 0));
     return { e, kg, ok: e >= 0 && e <= Number(b.height || 0) + 0.5 && !isNaN(kg), diff: isNaN(kg) ? null : kg - Number(b.sys || 0) }; };
   const todo = bins.filter((b) => !b.dip && calc(b)); const bad = todo.filter((b) => !calc(b).ok);
-  const rows = (g) => bins.filter((b) => b.grp === g).map((b) => { const why = !b.item ? 'ยังไม่ตั้งวัตถุดิบ' : !(Number(b.density) > 0) ? 'ไม่มี density' : !b.cap_m3 || !b.height ? 'ไม่มีขนาดถัง' : ''; const c = calc(b); const x = b.dip; const cx = D0.cx;
+  const rows = (g) => bins.filter((b) => b.grp === g).map((b) => { const why = !b.item ? 'ยังไม่ตั้งวัตถุดิบ' : !(Number(b.density) > 0) ? 'ไม่มี density' : !b.cap_m3 || !b.height ? 'ไม่มีขนาดถัง' : b.lock ? 'มียอดตั้งต้น / นับถัง ' + dtm(b.lock) + ' หลังรอบนี้' : ''; const c = calc(b); const x = b.dip; const cx = D0.cx;
     return `<tr${x ? ' style="background:var(--card2)"' : ''}><td class="mono"><b>${esc(b.code)}</b></td><td>${b.item ? esc(inm(d, b.item)) : '<span class="muted">ว่าง</span>'}</td><td class="num">${fmt(x ? x.sys : b.sys)}</td>
       <td>${x ? `<span class="mono">${fmt(x.empty)}</span>` : why ? `<span class="muted smt">${why}</span>` : ctl ? `<input data-bind="dp.v.${esc(b.code)}" value="${esc(D0.v[b.code] ?? '')}" inputmode="decimal" style="width:90px" aria-label="ระยะว่าง ${esc(b.code)} (ม.)"> <span class="muted smt">/ ${fmt(b.height)}</span>` : ''}</td>
       <td class="num">${x ? `<b>${fmt(x.meas)}</b>` : c ? (c.ok ? `<b>${fmt(c.kg)}</b>` : '<span class="err">ระยะว่างไม่ถูกต้อง</span>') : ''}</td>
       <td class="num">${x ? dpDiff(Number(x.diff), Number(x.sys)) : c && c.ok ? dpDiff(c.diff, Number(b.sys)) : ''}</td>
-      <td>${x ? `<span class="tag st-ready">${x.first ? 'ตั้งยอดตั้งต้น' : 'ดิ่งแล้ว'}</span> <span class="muted smt">${esc(x.by || '')} ${hm(x.at)}</span>${ctl && !x.first ? (cx.id === x.id ? ` <span class="chips"><input data-bind="dp.cx.reason" value="${esc(cx.reason)}" placeholder="เหตุผล" maxlength="120" style="width:130px"><button type="button" class="sm" data-dpcxdo="${x.id}" ${cx.reason.trim().length >= 3 && !S.busy ? '' : 'disabled'}>ยืนยันยกเลิก</button><button type="button" class="ghost sm" data-dpcx="">ปิด</button></span>` : ` <button type="button" class="ghost sm" data-dpcx="${x.id}">ยกเลิก</button>`) : ''}` : ''}</td></tr>`; }).join('');
+      <td>${x ? `<span class="tag st-ready">${x.first ? 'ตั้งยอดตั้งต้น' : 'ดิ่งแล้ว'}</span> <span class="muted smt">${esc(x.by || '')} ${hm(x.at)} · ตอนนี้ ${fmt(b.now)} กก.</span>${ctl && !x.first ? (cx.id === x.id ? ` <span class="chips"><input data-bind="dp.cx.reason" value="${esc(cx.reason)}" placeholder="เหตุผล" maxlength="120" style="width:130px"><button type="button" class="sm" data-dpcxdo="${x.id}" ${cx.reason.trim().length >= 3 && !S.busy ? '' : 'disabled'}>ยืนยันยกเลิก</button><button type="button" class="ghost sm" data-dpcx="">ปิด</button></span>` : ` <button type="button" class="ghost sm" data-dpcx="${x.id}">ยกเลิก</button>`) : ''}` : ''}</td></tr>`; }).join('');
   const table = bins.length ? `<div style="overflow:auto"><table><thead><tr><th>ถัง</th><th>วัตถุดิบ</th><th class="num">ระบบ ณ รอบ (กก.)</th><th>ระยะว่าง (ม.)</th><th class="num">ดิ่งได้ (กก.)</th><th class="num">ส่วนต่าง ดิ่ง − ระบบ</th><th></th></tr></thead>
       <tbody>${PD_GRP.filter(([g]) => bins.some((b) => b.grp === g)).map(([g, l]) => `<tr><td colspan="7" style="background:var(--card2)"><b class="smt">${esc(l)}</b></td></tr>${rows(g)}`).join('')}</tbody></table></div>` : `<p class="muted">${D0.loading ? 'กำลังโหลด…' : 'เลือกวันและรอบ'}</p>`;
   const tot = todo.filter((b) => calc(b).ok).reduce((a, b) => a + calc(b).diff, 0);
+  const lagH = rd ? (Date.now() - new Date(rd + ':00+07:00').getTime()) / 3600000 : 0;
+  const lagMsg = ctl && lagH > 3 ? `<div class="msg warn" role="note">รอบที่เลือก ${esc(D0.time)} น. ห่างจากเวลาปัจจุบัน ${fmt(Math.floor(lagH))} ชม. · ระบบปรับยอด ณ เวลารอบ แล้วบวก/ลบการเทและตัดใช้หลังจากนั้น — เลือกรอบให้ตรงกับเวลาที่วัดจริง</div>` : '';
   const form = `<div class="card" style="display:flex;flex-direction:column;gap:10px">
       <div class="chips" style="align-items:flex-end;gap:10px"><label class="fld">วันที่<input type="date" data-bind="dp.day" value="${esc(D0.day)}"></label>
         <div class="fld">รอบ<span class="chips">${['08:00', '20:00'].map((t) => `<button type="button" class="tg" aria-pressed="${D0.time === t}" data-dpt="${t}">${t}</button>`).join('')}<input type="time" data-bind="dp.time" value="${esc(D0.time)}" aria-label="เวลาอื่น" style="width:110px"></span></div></div>
-      ${table}
+      ${lagMsg}${table}
       ${ctl && bins.length ? `<div class="grid2"><label class="fld">หมายเหตุ (ถ้ามี)<input data-bind="dp.note" value="${esc(D0.note)}" maxlength="200"></label>
         <div class="fld">รอบนี้จะบันทึก<b style="color:var(--ink)">${todo.length} ถัง · ส่วนต่างรวม ${tot > 0 ? '+' : ''}${fmt(tot)} กก.</b></div></div>
         <div><button type="button" data-dpdo="1" ${todo.length && !bad.length && !S.busy ? '' : 'disabled'}>บันทึกดิ่งถัง + ปรับยอด (${todo.length} ถัง)</button></div>` : !ctl ? '<p class="muted smt" style="margin:0">ดูอย่างเดียว — บันทึกได้เฉพาะ Control</p>' : ''}</div>`;

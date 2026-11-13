@@ -1614,5 +1614,13 @@ window.RM_I18N_EN = {
 ": ยังไม่ได้ตั้งวัตถุดิบในถัง": ": no material set in bin",
 ": ไม่มี density หรือขนาดถัง": ": no density or bin size",
 ": ดิ่งรอบนี้แล้ว": ": already dipped this round",
-": ระยะว่างไม่ถูกต้อง": ": invalid empty space"
+": ระยะว่างไม่ถูกต้อง": ": invalid empty space",
+"มียอดตั้งต้น / นับถัง ": "Starting balance / bin count ",
+"หลังรอบนี้": "after this round",
+" · ตอนนี้ ": " · now ",
+"รอบที่เลือก ": "Selected round ",
+" น. ห่างจากเวลาปัจจุบัน ": " is ",
+" ชม. · ระบบปรับยอด ณ เวลารอบ แล้วบวก/ลบการเทและตัดใช้หลังจากนั้น — เลือกรอบให้ตรงกับเวลาที่วัดจริง": " h before now · The balance is adjusted at the round time, then dumps and usage after it are added/deducted — choose the round that matches when you actually measured",
+": รอบดิ่งอยู่ก่อนยอดตั้งต้น / นับถัง ": ": dip round is before the starting balance / bin count ",
+" — เลือกรอบหลังจากนั้น": " — choose a later round"
 };
