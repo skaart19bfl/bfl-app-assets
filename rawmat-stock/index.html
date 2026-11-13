@@ -178,7 +178,7 @@ html[data-theme=dark] .prev{background:#0b111c}
   <video id="camv" playsinline muted style="max-width:100%;max-height:70vh;border-radius:12px;background:#000"></video>
   <span id="cammsg" style="color:#fff"></span><button type="button" id="camx" style="min-width:140px">ปิดกล้อง</button></div>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
-<script src="i18n-en.js?v=20261113d"></script>
+<script src="i18n-en.js?v=20261113e"></script>
 <script>
 'use strict';
 const SB_URL = 'https://kdytxuufvigwjccebrki.supabase.co';
@@ -279,7 +279,7 @@ const NCP_URL = 'https://script.google.com/macros/s/AKfycbwL2RlhYt3DsouOa2juTE48
 const MENU = [
   { id: 'wh', g: 'WH คลังสินค้า', ic: '🏭', desc: 'รับเข้า · จ่ายออก · ตรวจนับ · Location · ป้าย', roles: ['wh', 'view'], items: [['home', 'งานวันนี้'], ['recv', 'รับเข้า วัตถุดิบ'], ['ncp', 'ตรวจรับ NCP'], ['grind', 'บด TC'], ['issue', 'จ่ายออก / ส่ง BFL-PC'], ['count', 'ตรวจนับ'], ['loc', 'Location'], ['stock', 'คงเหลือ / Stock card'], ['docs', 'ป้าย / แบบฟอร์ม']] },
   { id: 'pd', g: 'PD ฝ่ายผลิต', ic: '⚙️', desc: 'สแกนเทเข้าถัง · ยอดในถัง · NCP', roles: ['intake', 'control', 'wh'], items: [['intake', 'Intake สแกนเท'], ['bins', 'ยอดในถัง'], ['binrep', 'ยอดในถัง ณ เวลา'], ['ncp', 'เบิก / ใช้ผลิต NCP']] },
-  { id: 'ctl', g: 'Control', ic: '🎛️', desc: 'สั่งเท · นับถัง · density · Plan batch', roles: ['control'], items: [['direct', 'เบิกเข้าถัง (ไม่ต้องสั่งเท)'], ['dumpctl', 'ใบสั่งเท'], ['bins', 'ยอดในถัง / นับถัง'], ['binrep', 'ยอดในถัง ณ เวลา'], ['useimp', 'Import ยอดใช้ (SCADA)'], ['master', 'Master วัตถุดิบ / NCP'], ['ncp', 'บอร์ด NCP'], ['soon', 'Plan batch', 'เฟส 3']] },
+  { id: 'ctl', g: 'Control', ic: '🎛️', desc: 'สั่งเท · นับถัง · density · Plan batch', roles: ['control'], items: [['direct', 'เบิกเข้าถัง (ไม่ต้องสั่งเท)'], ['dumpctl', 'ใบสั่งเท'], ['bins', 'ยอดในถัง / นับถัง'], ['binrep', 'ยอดในถัง ณ เวลา'], ['useimp', 'Import ยอดใช้ (SCADA)'], ['dip', 'ดิ่งถัง 08:00 / 20:00'], ['master', 'Master วัตถุดิบ / NCP'], ['ncp', 'บอร์ด NCP'], ['soon', 'Plan batch', 'เฟส 3']] },
   { id: 'rep', g: 'รายงาน', ic: '📊', desc: 'รายงานประจำวัน · คงเหลือ · ยอดในถัง', roles: ['wh', 'view', 'control', 'intake'], items: [['reports', 'รายงานประจำวัน'], ['stockrep', 'คงเหลือรายวัน / รายเดือน'], ['binrep', 'ยอดในถัง ณ เวลา'], ['ncp', 'รายงาน NCP / LINE']] },
   { id: 'sys', g: 'ระบบ', ic: '🛠️', desc: 'Master · ผู้ใช้ · ยอดยกมา', roles: ['wh', 'view'], items: [['master', 'Master วัตถุดิบ / NCP'], ['admin', 'ผู้ใช้ · ยอดยกมา · ฐานข้อมูล']] }
 ];
@@ -316,6 +316,7 @@ const S = {
   docDay: '', docLot: '', docTag: '',
   pd: { data: null, loading: false, err: '' }, bsel: '', bcard: { bin: '', rows: null }, bs: { item: '', itemText: '', kg: '', reason: '', mode: 'kg', empty: '' }, hl: { bin: '', kg: '' }, sh: { kg: '', ref: '' }, nf: { bin: '', kg: '', note: '' }, mst: { tab: 'rm', q: '', only: '', chg: {}, bulk: '', data: null, open: {} }, lrn: { lot: '', v: '', reason: '' }, vm: { lot: '', open: false, range: '', reason: '' }, rs: { sel: {}, reason: '' }, lblQr: null, lr: { lot: '', open: false }, qe: { lot: '', open: false, r: {}, reason: '' },
   hx: { day: '', data: null, loading: false, act: null },
+  dp: { day: '', time: '', sheet: null, key: '', loading: false, v: {}, note: '', rep: null, rf: '', rt: '', cx: { id: '', reason: '' }, open: '' },
   ui: { file: '', rows: null, day: '', t1: '', t2: '', bfrom: '', bto: '', fileFrom: '', fileTo: '', prev: null, prevKey: '', err: '', list: null, cx: { id: '', reason: '' } },
   of: { intake: 'IN2', bin: '', item: '', itemText: '', qty: '', unit: 'PALLET', note: '' }, ox: { doc: '' },
   br: { at: '', from: '', day: '', view: 'table', only: '', data: null, loading: false },
@@ -1048,7 +1049,7 @@ const OUNIT = { PALLET: 'พาเลท', BAG: 'ถุง', BIGBAG: 'Bigbag', K
 const OST = { queue: 'ในคิว', started: 'กำลังเท', done: 'เสร็จ', cancel: 'ยกเลิก' };
 const BTYPE = { OPENING: 'ยอดตั้งต้น', ADJUST: 'ปรับยอด', DUMP: 'เทเข้า', DUMP_VOID: 'ยกเลิกเท', USE: 'ใช้ batching', HAUL_IN: 'ลากจากกอง', HAUL_OUT: 'ลากขึ้นถัง', SHIP: 'ส่ง BFL-PC' };
 const PD_IGNORE_BINS = ['H1', 'DL', 'B803'];
-const pdScreen = (sc) => sc === 'bins' || sc === 'dumpctl' || sc === 'intake' || sc === 'direct' || sc === 'useimp';
+const pdScreen = (sc) => sc === 'bins' || sc === 'dumpctl' || sc === 'intake' || sc === 'direct' || sc === 'useimp' || sc === 'dip';
 const binOK = (ik, g) => ik === 'IN1' ? g === 'PILE' : ik === 'HAND' ? g === 'HAND' : ['B1', 'B2', 'LOADOUT'].includes(g);
 const isCtl = () => ['control', 'admin'].includes(S.snap.me.role);
 const dtm = (t) => t ? dmy(new Date(t).toLocaleDateString('sv-SE', { timeZone: 'Asia/Bangkok' })) + ' ' + hm(t) : '–';
@@ -1396,6 +1397,53 @@ function viewUseImp(d) {
       <span style="flex:1 1 280px;${x.status !== 'active' ? 'text-decoration:line-through' : ''}"><span class="mono">IMP-${x.id}</span> · <b>${dtm(x.from)} – ${hm(x.to)}</b> · ${fmt(x.used)}/${fmt(x.n)} ถัง · <b>${fmt(x.kg)} กก.</b> · ${esc(x.file || '')} · ${esc(x.by || '')} ${hm(x.at)}</span>
       ${x.status !== 'active' ? `<span class="tag bad">ยกเลิก</span> <span class="muted">${esc(x.vreason || '')} · ${esc(x.vby || '')}</span>` : !ctl || (x.day !== today && S.snap.me.role !== 'admin') ? '' : cx.id === x.id ? `<span class="chips"><input data-bind="ui.cx.reason" value="${esc(cx.reason)}" placeholder="เหตุผล" maxlength="120" style="width:160px"><button type="button" class="sm" data-uicxdo="${x.id}" ${cx.reason.trim().length >= 3 && !S.busy ? '' : 'disabled'}>ยืนยันยกเลิก</button><button type="button" class="ghost sm" data-uicx="">ปิด</button></span>` : `<button type="button" class="ghost sm" data-uicx="${x.id}">ยกเลิก</button>`}</div>`).join('') : '<p class="muted smt" style="margin:0">ยังไม่มี</p>'}</div>`;
   return `${head}${form}${list}`;
+}
+
+// ===== ดิ่งถัง (ปกติ 08:00 / 20:00) + ข้อมูลทวนสอบส่วนต่าง (ผู้ใช้ 13 พ.ย. 2026) =====
+// Control ใส่ระยะว่างจากปากถัง (ม.) → กก. = ขนาดถัง × density · ปรับยอดถังตามที่ดิ่ง ณ เวลารอบ · เก็บ ดิ่ง − ระบบ เป็นข้อมูลทวนสอบ
+function dpDefault() { const n = new Date(); const h = n.getHours(); const d = new Date(n); if (h < 8) d.setDate(d.getDate() - 1);
+  return { day: d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()), time: h >= 20 || h < 8 ? '20:00' : '08:00' }; }
+const dpRound = () => S.dp.day && /^\d{2}:\d{2}$/.test(S.dp.time) ? S.dp.day + 'T' + S.dp.time : '';
+async function loadDip() { const D0 = S.dp; const rd = dpRound(); if (!rd) return; D0.loading = true; D0.key = rd; render();
+  try { const r = await rpc('rm_bin_dip_sheet', { p_token: S.tok, p_round: rd }); if (D0.key === rd) D0.sheet = r; } catch (e) { S.toast = e.message; S.toastErr = true; }
+  D0.loading = false; render(); }
+async function loadDipRep() { const D0 = S.dp; try { D0.rep = await rpc('rm_bin_dip_report', { p_token: S.tok, p_from: D0.rf || null, p_to: D0.rt || null }); if (!D0.rf) { D0.rf = D0.rep.from; D0.rt = D0.rep.to; } } catch (e) { D0.rep = { rows: [] }; S.toast = e.message; S.toastErr = true; } render(); }
+const dpDiff = (v, sys) => `<b style="color:${Math.abs(v) < 1 ? 'var(--muted)' : v > 0 ? 'var(--ok, #2e7d32)' : 'var(--bad)'}">${v > 0 ? '+' : ''}${fmt(v)}</b>${sys > 0 ? ` <span class="muted">(${v > 0 ? '+' : ''}${fmt(Math.round(v / sys * 1000) / 10)}%)</span>` : ''}`;
+function viewDip(d) {
+  const head = pdHead('ดิ่งถัง (08:00 / 20:00)', 'ใส่ระยะว่างจากปากถังถึงผิววัตถุดิบ (ม.) → ระบบคำนวณ กก. (ขนาดถัง × density) และปรับยอดถังตามที่ดิ่ง ณ เวลารอบ · ส่วนต่าง (ดิ่ง − ระบบ) เก็บเป็นข้อมูลทวนสอบ · ช่วงเวลา Import ยอดใช้ที่อยู่ก่อนรอบดิ่งจะไม่ตัดซ้ำ');
+  if (!S.pd.data) return head;
+  const D0 = S.dp; const ctl = isCtl(); if (!D0.day) Object.assign(D0, dpDefault());
+  const rd = dpRound(); if (rd && D0.key !== rd && !D0.loading) setTimeout(loadDip, 0); if (!D0.rep) { D0.rep = { rows: [] }; loadDipRep(); }
+  const sh = D0.sheet && D0.key === rd ? D0.sheet : null; const bins = sh ? sh.bins : [];
+  const calc = (b) => { const v = D0.v[b.code]; if (v === undefined || String(v).trim() === '') return null; const e = num(v); const kg = binEst(b, e, Number(b.density || 0));
+    return { e, kg, ok: e >= 0 && e <= Number(b.height || 0) + 0.5 && !isNaN(kg), diff: isNaN(kg) ? null : kg - Number(b.sys || 0) }; };
+  const todo = bins.filter((b) => !b.dip && calc(b)); const bad = todo.filter((b) => !calc(b).ok);
+  const rows = (g) => bins.filter((b) => b.grp === g).map((b) => { const why = !b.item ? 'ยังไม่ตั้งวัตถุดิบ' : !(Number(b.density) > 0) ? 'ไม่มี density' : !b.cap_m3 || !b.height ? 'ไม่มีขนาดถัง' : ''; const c = calc(b); const x = b.dip; const cx = D0.cx;
+    return `<tr${x ? ' style="background:var(--card2)"' : ''}><td class="mono"><b>${esc(b.code)}</b></td><td>${b.item ? esc(inm(d, b.item)) : '<span class="muted">ว่าง</span>'}</td><td class="num">${fmt(x ? x.sys : b.sys)}</td>
+      <td>${x ? `<span class="mono">${fmt(x.empty)}</span>` : why ? `<span class="muted smt">${why}</span>` : ctl ? `<input data-bind="dp.v.${esc(b.code)}" value="${esc(D0.v[b.code] ?? '')}" inputmode="decimal" style="width:90px" aria-label="ระยะว่าง ${esc(b.code)} (ม.)"> <span class="muted smt">/ ${fmt(b.height)}</span>` : ''}</td>
+      <td class="num">${x ? `<b>${fmt(x.meas)}</b>` : c ? (c.ok ? `<b>${fmt(c.kg)}</b>` : '<span class="err">ระยะว่างไม่ถูกต้อง</span>') : ''}</td>
+      <td class="num">${x ? dpDiff(Number(x.diff), Number(x.sys)) : c && c.ok ? dpDiff(c.diff, Number(b.sys)) : ''}</td>
+      <td>${x ? `<span class="tag st-ready">${x.first ? 'ตั้งยอดตั้งต้น' : 'ดิ่งแล้ว'}</span> <span class="muted smt">${esc(x.by || '')} ${hm(x.at)}</span>${ctl && !x.first ? (cx.id === x.id ? ` <span class="chips"><input data-bind="dp.cx.reason" value="${esc(cx.reason)}" placeholder="เหตุผล" maxlength="120" style="width:130px"><button type="button" class="sm" data-dpcxdo="${x.id}" ${cx.reason.trim().length >= 3 && !S.busy ? '' : 'disabled'}>ยืนยันยกเลิก</button><button type="button" class="ghost sm" data-dpcx="">ปิด</button></span>` : ` <button type="button" class="ghost sm" data-dpcx="${x.id}">ยกเลิก</button>`) : ''}` : ''}</td></tr>`; }).join('');
+  const table = bins.length ? `<div style="overflow:auto"><table><thead><tr><th>ถัง</th><th>วัตถุดิบ</th><th class="num">ระบบ ณ รอบ (กก.)</th><th>ระยะว่าง (ม.)</th><th class="num">ดิ่งได้ (กก.)</th><th class="num">ส่วนต่าง ดิ่ง − ระบบ</th><th></th></tr></thead>
+      <tbody>${PD_GRP.filter(([g]) => bins.some((b) => b.grp === g)).map(([g, l]) => `<tr><td colspan="7" style="background:var(--card2)"><b class="smt">${esc(l)}</b></td></tr>${rows(g)}`).join('')}</tbody></table></div>` : `<p class="muted">${D0.loading ? 'กำลังโหลด…' : 'เลือกวันและรอบ'}</p>`;
+  const tot = todo.filter((b) => calc(b).ok).reduce((a, b) => a + calc(b).diff, 0);
+  const form = `<div class="card" style="display:flex;flex-direction:column;gap:10px">
+      <div class="chips" style="align-items:flex-end;gap:10px"><label class="fld">วันที่<input type="date" data-bind="dp.day" value="${esc(D0.day)}"></label>
+        <div class="fld">รอบ<span class="chips">${['08:00', '20:00'].map((t) => `<button type="button" class="tg" aria-pressed="${D0.time === t}" data-dpt="${t}">${t}</button>`).join('')}<input type="time" data-bind="dp.time" value="${esc(D0.time)}" aria-label="เวลาอื่น" style="width:110px"></span></div></div>
+      ${table}
+      ${ctl && bins.length ? `<div class="grid2"><label class="fld">หมายเหตุ (ถ้ามี)<input data-bind="dp.note" value="${esc(D0.note)}" maxlength="200"></label>
+        <div class="fld">รอบนี้จะบันทึก<b style="color:var(--ink)">${todo.length} ถัง · ส่วนต่างรวม ${tot > 0 ? '+' : ''}${fmt(tot)} กก.</b></div></div>
+        <div><button type="button" data-dpdo="1" ${todo.length && !bad.length && !S.busy ? '' : 'disabled'}>บันทึกดิ่งถัง + ปรับยอด (${todo.length} ถัง)</button></div>` : !ctl ? '<p class="muted smt" style="margin:0">ดูอย่างเดียว — บันทึกได้เฉพาะ Control</p>' : ''}</div>`;
+  // ข้อมูลทวนสอบ
+  const R = (D0.rep || {}).rows || []; const act = R.filter((x) => x.status === 'active' && !x.first);
+  const by = {}; act.forEach((x) => { (by[x.bin] = by[x.bin] || []).push(x); });
+  const sumRows = Object.keys(by).sort().map((bn) => { const a = by[bn]; const s = a.reduce((t, x) => t + Number(x.diff), 0); const ab = a.reduce((t, x) => t + Math.abs(Number(x.diff)), 0) / a.length; const mx = a.reduce((t, x) => Math.abs(Number(x.diff)) > Math.abs(t) ? Number(x.diff) : t, 0); const last = a[0];
+    return `<tr><td class="mono"><b>${esc(bn)}</b></td><td>${esc(inm(d, last.item))}</td><td class="num">${a.length}</td><td class="num">${dpDiff(s, 0)}</td><td class="num">${fmt(Math.round(ab))}</td><td class="num">${dpDiff(mx, 0)}</td><td class="num">${dtm(last.round)} · ${dpDiff(Number(last.diff), Number(last.sys))}</td>
+      <td><button type="button" class="ghost sm" data-dpopen="${esc(bn)}" aria-expanded="${D0.open === bn}">${D0.open === bn ? 'ซ่อน' : 'ดูรายรอบ'}</button></td></tr>${D0.open === bn ? `<tr><td colspan="8"><div class="smt">${a.map((x) => `<div class="lrow">${dtm(x.round)} · ระยะว่าง ${fmt(x.empty)} ม. · ระบบ ${fmt(x.sys)} → ดิ่ง ${fmt(x.meas)} กก. · ${dpDiff(Number(x.diff), Number(x.sys))} · ${esc(x.by || '')}${x.note ? ' · <span data-noi18n>' + esc(x.note) + '</span>' : ''}</div>`).join('')}</div></td></tr>` : ''}`; }).join('');
+  const rep = `<div class="card" style="display:flex;flex-direction:column;gap:8px"><div class="fc" style="gap:8px;flex-wrap:wrap"><div><h2 style="margin:0">ข้อมูลทวนสอบ · ส่วนต่างดิ่งถัง</h2><span class="muted smt">ดิ่ง − ระบบ (บวก = ของจริงมากกว่าระบบ) · ไม่รวมครั้งที่เป็นยอดตั้งต้นและรายการที่ยกเลิก</span></div>
+      <span class="chips"><input type="date" data-bind="dp.rf" value="${esc(D0.rf)}" aria-label="จากวันที่"> – <input type="date" data-bind="dp.rt" value="${esc(D0.rt)}" aria-label="ถึงวันที่"><button type="button" class="ghost sm" data-dprep="1">แสดง</button><button type="button" class="ghost sm" data-dpcsv="1" ${R.length ? '' : 'disabled'}>Excel</button></span></div>
+    ${sumRows ? `<div style="overflow:auto"><table><thead><tr><th>ถัง</th><th>วัตถุดิบล่าสุด</th><th class="num">รอบ</th><th class="num">ส่วนต่างสะสม (กก.)</th><th class="num">เฉลี่ย |ส่วนต่าง|</th><th class="num">มากสุด</th><th class="num">ล่าสุด</th><th></th></tr></thead><tbody>${sumRows}</tbody></table></div>` : '<p class="muted smt" style="margin:0">ยังไม่มีข้อมูลดิ่งถังในช่วงนี้</p>'}</div>`;
+  return `${head}${form}${rep}`;
 }
 
 // ประวัติใบสั่งเทรายวัน + แก้จำนวน / ยกเลิกรายการเท (Control) · ผู้ใช้ 13 พ.ย. 2026
@@ -2595,7 +2643,7 @@ function render() {
   const d = D();
   const me = S.snap.me;
   const tabs = TABS.concat(me.role === 'admin' ? [['admin', 'ระบบ']] : []);
-  const screens = { home: viewHome, recv: viewRecv, grind: viewGrind, issue: viewIssue, stock: viewStock, count: viewCount, loc: viewLoc, docs: viewDocs, admin: viewAdmin, reports: viewReports, stockrep: viewStockRep, bins: viewBins, dumpctl: viewDumpCtl, intake: viewIntake, master: viewMaster, menu: viewMenu, binrep: viewBinRep, direct: viewDirect, useimp: viewUseImp };
+  const screens = { home: viewHome, recv: viewRecv, grind: viewGrind, issue: viewIssue, stock: viewStock, count: viewCount, loc: viewLoc, docs: viewDocs, admin: viewAdmin, reports: viewReports, stockrep: viewStockRep, bins: viewBins, dumpctl: viewDumpCtl, intake: viewIntake, master: viewMaster, menu: viewMenu, binrep: viewBinRep, direct: viewDirect, useimp: viewUseImp, dip: viewDip };
   if (S.screen === 'admin' && me.role !== 'admin') S.screen = 'menu';
   const sim = simple(); if (sim && S.screen !== 'intake') { S.screen = 'intake'; S.scan.open = false; if (!S.pd.data && !S.pd.loading) loadPD(); }
   const dark = document.documentElement.getAttribute('data-theme') === 'dark';
@@ -2688,7 +2736,7 @@ document.addEventListener('click', async (e) => {
   if (ds.ipick) { const it = S.snap.items.find((i) => i.code === ds.code); if (it) setItem(ds.ipick, it); render(); return; }
   if (ds.pack) { const o = S[ds.pt]; o.pack = ds.pack; o.cont = ds.cont || ''; if (ds.pt === 'f') S.f.labels = ''; render(); return; }
   if (ds.bclose) { S.bsel = ''; S.bcard = { bin: '', rows: null }; render(); return; }
-  if (ds.pdload) { loadPD(); return; }
+  if (ds.pdload) { loadPD(); if (S.screen === 'dip') { S.dp.key = ''; S.dp.rep = null; } return; }
   if (ds.ncpdo) { const n = S.nf; S.keepScroll = true; act('rm_bin_ncp_add', { p_bin: ds.ncpdo, p: { kg: num(n.kg), note: n.note } }, (r) => 'เท NCP เข้า ' + r.bin + ' ' + fmt(r.kg) + ' กก. แล้ว', () => { S.nf = { bin: '', kg: '', note: '' }; }); return; }
   if (ds.mstg) { S.mst.open[ds.mstg] = !S.mst.open[ds.mstg]; render(); return; }
   if (ds.mstall !== undefined) { const d = D(); const on = ds.mstall === '1'; S.mst.open = {}; if (on) d.s.items.forEach((i) => { S.mst.open[String(i.code).slice(0, 4).toUpperCase()] = true; }); render(); return; }
@@ -2758,6 +2806,16 @@ document.addEventListener('click', async (e) => {
   if (ds.themeT) { setTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'); render(); return; }
   if (ds.logout) { logout(); return; }
   if (ds.pk) { pinKey(ds.pk); return; }
+  if (ds.dpt) { S.dp.time = ds.dpt; S.dp.v = {}; S.keepScroll = true; loadDip(); return; }
+  if (ds.dprep) { loadDipRep(); return; }
+  if (ds.dpopen) { S.dp.open = S.dp.open === ds.dpopen ? '' : ds.dpopen; S.keepScroll = true; render(); return; }
+  if (ds.dpcx !== undefined) { S.dp.cx = { id: ds.dpcx ? Number(ds.dpcx) : '', reason: '' }; S.keepScroll = true; render(); return; }
+  if (ds.dpcxdo) { S.keepScroll = true; act('rm_bin_dip_cancel', { p_id: Number(ds.dpcxdo), p_reason: S.dp.cx.reason.trim() }, (r) => 'ยกเลิกดิ่งถัง ' + r.bin + ' แล้ว · คืนยอดเดิม', () => { S.dp.cx = { id: '', reason: '' }; }).then(() => { S.dp.key = ''; loadDip(); loadDipRep(); }); return; }
+  if (ds.dpdo) { const D0 = S.dp; const bins = ((D0.sheet || {}).bins || []).filter((b) => !b.dip && D0.v[b.code] !== undefined && String(D0.v[b.code]).trim() !== ''); S.keepScroll = true;
+    act('rm_bin_dip_save', { p: { round: dpRound(), rows: bins.map((b) => ({ bin: b.code, empty: num(D0.v[b.code]) })), note: D0.note.trim() } }, (r) => 'บันทึกดิ่งถังแล้ว ' + fmt(r.n) + ' ถัง · ส่วนต่างรวม ' + (r.diff > 0 ? '+' : '') + fmt(r.diff) + ' กก.',
+      () => { D0.v = {}; D0.note = ''; }).then(() => { D0.key = ''; loadDip(); loadDipRep(); }); return; }
+  if (ds.dpcsv) { const R = (S.dp.rep || {}).rows || []; dlCSV('ดิ่งถัง_' + S.dp.rf + '_' + S.dp.rt, ['รอบ', 'ถัง', 'รหัสวัตถุดิบ', 'ระยะว่าง (ม.)', 'density', 'ลบ.ม.', 'ระบบ (กก.)', 'ดิ่ง (กก.)', 'ส่วนต่าง ดิ่ง−ระบบ (กก.)', 'ส่วนต่าง %', 'ยอดตั้งต้น', 'สถานะ', 'ผู้บันทึก', 'หมายเหตุ'],
+      R.map((x) => [dtm(x.round), x.bin, x.item, x.empty, x.density, x.m3, x.sys, x.meas, x.diff, Number(x.sys) > 0 ? Math.round(x.diff / x.sys * 1000) / 10 : '', x.first ? 'ใช่' : '', x.status === 'active' ? '' : 'ยกเลิก: ' + (x.vreason || ''), x.by, x.note || ''])); return; }
   if (ds.uiclear) { Object.assign(S.ui, { file: '', rows: null, prev: null, err: '', t1: '', t2: '', bfrom: '', bto: '', fileFrom: '', fileTo: '' }); render(); return; }
   if (ds.uicx !== undefined) { S.ui.cx = { id: ds.uicx ? Number(ds.uicx) : '', reason: '' }; S.keepScroll = true; render(); return; }
   if (ds.uicxdo) { S.keepScroll = true; act('rm_use_import_cancel', { p_id: Number(ds.uicxdo), p_reason: S.ui.cx.reason.trim() }, (r) => 'ยกเลิก IMP-' + r.id + ' แล้ว · คืนยอดถัง ' + fmt(r.kg) + ' กก.', () => { S.ui.cx = { id: '', reason: '' }; S.ui.list = null; }); return; }
@@ -2885,6 +2943,7 @@ function applyField(el) {
     if (ds.bind === 'rep.day') { S.rep.data = null; S.fx = { doc: '' }; loadRep(); }
     if (ds.bind === 'hx.day') { S.hx.data = null; S.hx.act = null; loadHist(); }
     if (ds.bind === 'ui.day' || ds.bind === 'ui.t1' || ds.bind === 'ui.t2') uiPreview();
+    if (ds.bind === 'dp.day' || ds.bind === 'dp.time') { S.dp.v = {}; if (dpRound()) loadDip(); }
     return true;
   }
   if (ds.ud) { S.ud[ds.ud] = S.ud[ds.ud] || {}; S.ud[ds.ud][ds.k] = el.value; return true; }
