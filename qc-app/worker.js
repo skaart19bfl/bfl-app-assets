@@ -61,7 +61,7 @@ var Utilities = {
   DigestAlgorithm: {}, Charset: {}
 };
 
-importScripts('server.js?v=202611130948', 'web.js?v=202611130948');   // web.js ทับฟังก์ชันของ server.js ที่ต่างกัน
+importScripts('server.js?v=202611130957', 'web.js?v=202611130957');   // web.js ทับฟังก์ชันของ server.js ที่ต่างกัน
 
 /* ---------------- รับคำสั่งจากหน้าเว็บ ---------------- */
 self.onmessage = function (e) {
