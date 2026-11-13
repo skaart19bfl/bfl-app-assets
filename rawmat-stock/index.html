@@ -315,6 +315,7 @@ const S = {
   selSlot: 'S-01', sp: { unit: '' }, spLast: null, lf: { zone: 'S', zoneName: '', code: '' }, adminInfo: null,
   docDay: '', docLot: '', docTag: '',
   pd: { data: null, loading: false, err: '' }, bsel: '', bcard: { bin: '', rows: null }, bs: { item: '', itemText: '', kg: '', reason: '', mode: 'kg', empty: '' }, hl: { bin: '', kg: '' }, sh: { kg: '', ref: '' }, nf: { bin: '', kg: '', note: '' }, mst: { tab: 'rm', q: '', only: '', chg: {}, bulk: '', data: null, open: {} }, lrn: { lot: '', v: '', reason: '' }, vm: { lot: '', open: false, range: '', reason: '' }, rs: { sel: {}, reason: '' }, lblQr: null, lr: { lot: '', open: false }, qe: { lot: '', open: false, r: {}, reason: '' },
+  hx: { day: '', data: null, loading: false, act: null },
   of: { intake: 'IN2', bin: '', item: '', itemText: '', qty: '', unit: 'PALLET', note: '' }, ox: { doc: '' },
   br: { at: '', from: '', day: '', view: 'table', only: '', data: null, loading: false },
   pk: { doc: '', v: {} }, dd: { bin: '', item: '', itemText: '', iq: '', sel: {}, v: {}, note: '', auto: '' },
@@ -974,8 +975,8 @@ function ncpQrCard(d, fixed, inline, ord) { // ord = ใบสั่งเท NC
         <button type="button" data-nqdo="1" style="font-size:18px;padding:14px" ${ok && (fixed || n.bin) && !n.loading && !S.busy ? '' : 'disabled'}>ยืนยันเท ${fmt(r.kg)} กก. → ${esc(fixed || n.bin || 'เลือกถัง')}</button></div>` : ''}`;
   }
   const L = (n.list || []).filter((x) => !fixed || x.bin === fixed).slice(0, 12); const cx = n.cx; const today = (S.pd.data || {}).day;
-  const list = L.length ? `<details data-nqlist="1" ${(n.q || simple()) && !n.listOpen && !n.cx.id ? '' : 'open'} ${simple() && inline && !n.q ? 'class="card"' : ''}><summary class="smt">สแกน BB NCP ล่าสุด (ยกเลิกได้)</summary>${L.map((x) => `<div class="lrow smt" style="flex-wrap:wrap;gap:6px;${x.void ? 'text-decoration:line-through;opacity:.6' : ''}"><span style="flex:1 1 220px">${hm(x.at)} <span class="mono">${esc(x.no)}</span> → <b>${esc(x.bin)}</b> · ${fmt(x.kg)} กก. · ${x.doc ? 'เบิก ' + esc(x.doc) : 'เบิกไว้แล้ว'} · ${esc(x.by)}</span>
-      ${x.void ? '<span class="tag bad">ยกเลิก</span>' : x.day !== today && S.snap.me.role !== 'admin' ? '' : cx.id === x.id ? `<span class="chips"><input data-bind="nq.cx.reason" value="${esc(cx.reason)}" placeholder="เหตุผล" maxlength="120" style="width:150px"><button type="button" class="sm" data-nqcxdo="${x.id}" ${cx.reason.trim().length >= 3 && !S.busy ? '' : 'disabled'}>ยืนยันยกเลิก</button><button type="button" class="ghost sm" data-nqcx="">ปิด</button></span>` : `<button type="button" class="ghost sm" data-nqcx="${x.id}">ยกเลิก</button>`}</div>`).join('')}</details>` : '';
+  const list = L.length ? `<details data-nqlist="1" ${(n.q || simple()) && !n.listOpen && !n.cx.id ? '' : 'open'} ${simple() && inline && !n.q ? 'class="card"' : ''}><summary class="smt">สแกน BB NCP ล่าสุด${isCtl() ? ' (ยกเลิกได้)' : ''}</summary>${L.map((x) => `<div class="lrow smt" style="flex-wrap:wrap;gap:6px;${x.void ? 'text-decoration:line-through;opacity:.6' : ''}"><span style="flex:1 1 220px">${hm(x.at)} <span class="mono">${esc(x.no)}</span> → <b>${esc(x.bin)}</b> · ${fmt(x.kg)} กก. · ${x.doc ? 'เบิก ' + esc(x.doc) : 'เบิกไว้แล้ว'} · ${esc(x.by)}</span>
+      ${x.void ? '<span class="tag bad">ยกเลิก</span>' : !isCtl() || (x.day !== today && S.snap.me.role !== 'admin') ? '' : cx.id === x.id ? `<span class="chips"><input data-bind="nq.cx.reason" value="${esc(cx.reason)}" placeholder="เหตุผล" maxlength="120" style="width:150px"><button type="button" class="sm" data-nqcxdo="${x.id}" ${cx.reason.trim().length >= 3 && !S.busy ? '' : 'disabled'}>ยืนยันยกเลิก</button><button type="button" class="ghost sm" data-nqcx="">ปิด</button></span>` : `<button type="button" class="ghost sm" data-nqcx="${x.id}">ยกเลิก</button>`}</div>`).join('')}</details>` : '';
   if (inline) return `<div id="ncpqr" style="display:flex;flex-direction:column;gap:10px">${res}${list}</div>`;
   return `<div class="card" id="ncpqr" style="display:flex;flex-direction:column;gap:10px;border-color:var(--blue)">
     <div><h2 style="margin:0">สแกน BB NCP (ป้าย Reject)</h2><span class="muted smt">สแกน QR มุมขวาบนของป้าย หรือพิมพ์เลข BB (ป้ายเก่าไม่มี QR) · เทเข้าถัง + เบิกใน NCP System ในครั้งเดียว</span></div>
@@ -1053,12 +1054,18 @@ const dtm = (t) => t ? dmy(new Date(t).toLocaleDateString('sv-SE', { timeZone: '
 const inm = (d, c) => (d.items[c] || {}).name || c || '';
 async function loadPD(silent) {
   if (S.pd.loading) return; S.pd.loading = true;
-  try { const [b, nv] = await Promise.all([rpc('rm_pd_board', { p_token: S.tok }), rpc('rm_ncp_bb_avail', { p_token: S.tok }).catch(() => null)]); S.pd.data = b; S.pd.nav = nv; S.pd.err = ''; } catch (e) { S.pd.err = e.message; }
+  try { const [b, nv] = await Promise.all([rpc('rm_pd_board', { p_token: S.tok }), rpc('rm_ncp_bb_avail', { p_token: S.tok }).catch(() => null)]); S.pd.data = b; S.pd.nav = nv; S.pd.err = ''; ikNewCheck(); } catch (e) { S.pd.err = e.message; }
   S.pd.loading = false; if (!silent) render();
 }
 async function loadBinCard(bin) { S.bcard = { bin, rows: null }; render(); try { S.bcard.rows = await rpc('rm_bin_card', { p_token: S.tok, p_bin: bin, p_days: 14 }); } catch (e) { S.toast = e.message; S.toastErr = true; } render(); }
 const pdBins = () => (S.pd.data && S.pd.data.bins) || [];
 const pdOrders = () => (S.pd.data && S.pd.data.orders) || [];
+function ikNewCheck() { // ใบสั่งเทที่เพิ่งเริ่มของจุดที่เลือก → ไฮไลต์ "ใบใหม่" + สั่น (มือถือ) · ผู้ใช้ 13 พ.ย.
+  if (!S.ik || !S.ik.point) return; const st = pdOrders().filter((o) => o.intake === S.ik.point && o.status === 'started').map((o) => o.doc);
+  if (!S.ik.seen) { S.ik.seen = new Set(st); return; }
+  const nw = st.filter((x) => !S.ik.seen.has(x)); st.forEach((x) => S.ik.seen.add(x));
+  if (nw.length) { S.ik.newDoc = nw[0]; S.ik.newAt = Date.now(); S.ik.doc = nw[0]; S.ik.q = ''; S.ik.unit = ''; S.ik.bags = ''; if (S.nq) { S.nq.q = ''; S.nq.peek = null; S.nq.err = ''; } /* ใบใหม่ → ล้างช่องสแกนค้าง */ try { if (navigator.vibrate) navigator.vibrate([250, 120, 250]); } catch (e) { /* ไม่รองรับ */ } setTimeout(() => { if (S.screen === 'intake') render(); }, 31000); }
+}
 const ncpAvail = (item) => (S.pd.nav || []).filter((x) => x.item === item); // BB NCP พร้อมเท (คลัง WH-RW / รอ WH รับ · ยังไม่สแกน) เก่าก่อน · จาก NCP System
 const ncpAvailTxt = (item) => { const a = ncpAvail(item); if (S.pd.nav === null || S.pd.nav === undefined) return '';
   return a.length ? `BB พร้อมเท ${a.length} ใบ · ${fmt(a.reduce((t, x) => t + Number(x.kg || 0), 0))} กก. (คลัง WH-RW) · ควรเทก่อน ${a.slice(0, 3).map((x) => x.no + ' (' + dmy(x.day) + ')').join(', ')}` : '<span class="err">ไม่มี BB ของรหัสนี้ในคลัง WH-RW (เฉพาะ BB ที่มีป้าย Reject)</span>'; };
@@ -1318,7 +1325,35 @@ function viewDumpCtl(d) {
     return `<div class="card" style="display:flex;flex-direction:column;gap:8px;flex:1 1 300px;min-width:0"><h2 style="margin:0">${l}</h2>
       ${live.length ? live.map((o) => orderRow(d, o, true)).join('') : '<p class="muted smt" style="margin:0">ไม่มีใบในคิว</p>'}
       ${done.length ? `<details><summary class="smt">เสร็จ/ยกเลิก 24 ชม. (${done.length})</summary>${done.map((o) => orderRow(d, o, false)).join('')}</details>` : ''}</div>`; }).join('');
-  return `${head}${form}<div class="row" style="align-items:flex-start">${lanes}</div>`;
+  return `${head}${form}<div class="row" style="align-items:flex-start">${lanes}</div>${histPanel(d)}`;
+}
+// ประวัติใบสั่งเทรายวัน + แก้จำนวน / ยกเลิกรายการเท (Control) · ผู้ใช้ 13 พ.ย. 2026
+async function loadHist() {
+  if (S.hx.loading) return; S.hx.loading = true;
+  try { S.hx.data = await rpc('rm_order_hist', { p_token: S.tok, p_day: S.hx.day || null }); if (!S.hx.day) S.hx.day = S.hx.data.day; } catch (e) { S.toast = e.message; S.toastErr = true; }
+  S.hx.loading = false; render();
+}
+function histRec(x, today) {
+  const ctl = isCtl(); const A = S.hx.act; const open = A && A.id === x.id && A.kind === x.kind; const canEdit = x.kind === 'ncp' || (x.kind_u === 'PALLET' && x.bags > 0);
+  const can = ctl && !x.void && (x.day === today || S.snap.me.role === 'admin');
+  const what = x.kind === 'ncp' ? `BB <span class="mono">${esc(x.p)}</span>` : `<span class="mono">${esc(x.lot)} ${esc(pl(x.p))}</span>${x.bags ? ' · ' + fmt(x.bags) + ' ถุง' : ''}`;
+  return `<div class="lrow smt" style="flex-wrap:wrap;gap:6px;${x.void ? 'opacity:.6' : ''}"><span style="flex:1 1 260px;${x.void ? 'text-decoration:line-through' : ''}">${hm(x.at)} ${what} → <b class="mono">${esc(x.bin)}</b> · <b>${fmt(x.kg)} กก.</b> · ${esc(x.by || '')}${x.kind === 'ncp' && Number(x.kgSys) !== Number(x.kg) ? ' <span class="muted">(BB ' + fmt(x.kgSys) + ' กก.)</span>' : ''}</span>
+    ${x.void ? `<span class="tag bad">ยกเลิก</span> <span class="muted">${esc(x.vreason || '')} · ${esc(x.vby || '')}</span>` : can && !open ? `<span class="chips">${canEdit ? `<button type="button" class="ghost sm" data-hxact="edit" data-kind="${x.kind}" data-id="${x.id}">แก้จำนวน</button>` : ''}<button type="button" class="ghost sm" data-hxact="cancel" data-kind="${x.kind}" data-id="${x.id}">ยกเลิก</button></span>` : ''}
+    ${open ? `<div class="note" style="flex:1 1 100%;display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end">${A.mode === 'edit' ? `<label class="fld">${x.kind === 'ncp' ? 'กก. ที่เทจริง' : 'จำนวนถุงที่เทจริง (สูงสุด ' + fmt(x.max) + ')'}<input data-bind="hx.act.qty" value="${esc(A.qty)}" inputmode="decimal" style="width:120px"></label>` : ''}
+      <label class="fld" style="flex:1 1 200px">${A.mode === 'edit' ? 'เหตุผลที่แก้ไข' : 'เหตุผลที่ยกเลิก'}<input data-bind="hx.act.reason" value="${esc(A.reason)}" maxlength="120"></label>
+      <button type="button" data-hxdo="1" ${A.reason.trim().length >= 3 && !S.busy && (A.mode !== 'edit' || num(A.qty) > 0) ? '' : 'disabled'}>${A.mode === 'edit' ? 'บันทึกจำนวนใหม่' : 'ยืนยันยกเลิก'}</button><button type="button" class="ghost sm" data-hxclose="1">ปิด</button></div>` : ''}</div>`;
+}
+function histPanel(d) {
+  const H = S.hx; if (!H.data && !H.loading) setTimeout(loadHist, 0);
+  const D0 = H.data || { orders: [], recs: [] }; const today = (S.pd.data || {}).day; const recs = D0.recs || [];
+  const ords = (D0.orders || []).map((o) => { const rs = recs.filter((x) => x.doc === o.doc); const st = o.status === 'started' ? 'st-ready' : o.status === 'queue' ? 'st-weigh' : o.status === 'cancel' ? 'bad' : 'st-qc';
+    return `<div class="lrow" style="flex-direction:column;align-items:stretch;gap:4px"><div class="fc" style="gap:8px"><span class="smt"><span class="mono">${esc(o.doc)}</span> <span class="tag ${st}">${OST[o.status]}</span> ${esc(IKNAME[o.intake] || o.intake)}</span><span class="muted smt">${hm(o.at)} ${esc(o.by || '')}</span></div>
+      <span class="smt">${ordLine(d, o)}${o.note ? ' · ' + esc(o.note) : ''}${o.reason ? ' · ' + esc(o.reason) : ''}</span>
+      ${rs.length ? rs.map((x) => histRec(x, today)).join('') : '<span class="muted smt">ยังไม่มีรายการเท</span>'}</div>`; }).join('');
+  const loose = recs.filter((x) => !x.doc);
+  return `<div class="card" style="display:flex;flex-direction:column;gap:8px"><div class="fc" style="gap:8px;flex-wrap:wrap"><div><h2 style="margin:0">ประวัติใบสั่งเท</h2><span class="muted smt">${isCtl() ? 'Control แก้จำนวน / ยกเลิกรายการเทได้ (Intake ยกเลิกไม่ได้) · ย้อนหลังต้องเป็น admin' : 'ดูอย่างเดียว'}</span></div>
+      <span class="chips"><input type="date" data-bind="hx.day" value="${esc(H.day || today || '')}" aria-label="วันที่"><button type="button" class="ghost sm" data-hxload="1">โหลดใหม่</button></span></div>
+    ${H.loading && !H.data ? '<p class="muted">กำลังโหลด…</p>' : ords || loose.length ? ords + (loose.length ? `<div class="lrow" style="flex-direction:column;align-items:stretch;gap:4px"><b class="smt">สแกน BB NCP ไม่ผูกใบสั่ง</b>${loose.map((x) => histRec(x, today)).join('')}</div>` : '') : '<p class="muted smt" style="margin:0">ไม่มีใบสั่งเทในวันนี้</p>'}</div>`;
 }
 // Control เลือกเบิกจาก stock WH แทนการสแกน (ผู้ใช้ 3 พ.ย.: PD เบิกเบื้องต้นยังสแกนไม่ได้) · Bulk/แท็งก์ใส่ กก. (ใบหน่วย กก.)
 function pickPanel(d, o) {
@@ -1436,7 +1471,7 @@ function viewIntakeFull(d) {
   const myDocs = new Set(os.map((x) => x.doc)); const dumps = ((S.pd.data || {}).dumps || []).filter((x) => myDocs.has(x.doc)).slice(0, 15);
   const cx = S.ik.cx;
   const list = dumps.length ? `<div class="card"><h2 style="margin:0 0 6px">รายการเทล่าสุด · ${IKNAME[k.point]}</h2>${dumps.map((x) => `<div class="lrow smt" style="flex-wrap:wrap;gap:6px;${x.void ? 'text-decoration:line-through;opacity:.6' : ''}"><span style="flex:1 1 220px">${hm(x.at)} <span class="mono">${esc(x.lot)} ${esc(pl(x.p))}</span> → <b>${esc(x.bin)}</b> · ${x.bags ? fmt(x.bags) + ' ถุง · ' : ''}${fmt(x.kg)} กก. · ${esc(x.by)}</span>
-      ${x.void ? '<span class="tag bad">ยกเลิก</span>' : cx.id === x.id ? `<span class="chips"><input data-bind="ik.cx.reason" value="${esc(cx.reason)}" placeholder="เหตุผล" maxlength="120" style="width:160px"><button type="button" class="sm" data-ikcxdo="${x.id}" ${cx.reason.trim().length >= 3 && !S.busy ? '' : 'disabled'}>ยืนยันยกเลิก</button><button type="button" class="ghost sm" data-ikcx="">ปิด</button></span>` : `<button type="button" class="ghost sm" data-ikcx="${x.id}">ยกเลิก</button>`}</div>`).join('')}</div>` : '';
+      ${x.void ? '<span class="tag bad">ยกเลิก</span>' : !isCtl() ? '' : cx.id === x.id ? `<span class="chips"><input data-bind="ik.cx.reason" value="${esc(cx.reason)}" placeholder="เหตุผล" maxlength="120" style="width:160px"><button type="button" class="sm" data-ikcxdo="${x.id}" ${cx.reason.trim().length >= 3 && !S.busy ? '' : 'disabled'}>ยืนยันยกเลิก</button><button type="button" class="ghost sm" data-ikcx="">ปิด</button></span>` : `<button type="button" class="ghost sm" data-ikcx="${x.id}">ยกเลิก</button>`}</div>`).join('')}</div>` : '';
   const pile = k.point === 'IN1' ? pdBins().filter((x) => x.grp === 'PILE') : []; const ncpBins = k.point === 'IN1' ? [] : pdBins().filter((x) => x.ncp);
   return `${head}<div class="chips" role="group" aria-label="จุด Intake">${INTAKES.map(([id, l]) => { const n = pdOrders().filter((x) => x.intake === id && x.status === 'started').length; return `<button type="button" class="tg" aria-pressed="${k.point === id}" data-ikpt="${id}">${l}${n ? ' ●' : ''}</button>`; }).join('')}</div>
     ${body}${queue.length && o ? `<div class="card smt"><b>คิวถัดไป</b>${queue.map((x) => `<div class="lrow" style="display:block">${x.seq}. ${ordLine(d, x)}</div>`).join('')}</div>` : ''}
@@ -1494,24 +1529,32 @@ function viewIntakeSimple(d) {
   const o = curs.find((x) => x.doc === k.doc) || curs[0]; const isN = !!scanNcp(k.q); const nO = o && isNcpIt(d, o.item) ? o : null;
   let pal = '';
   if (!isN && k.q.trim()) {
-    if (!o) pal = '<p class="err" style="margin:0">ยังไม่มีใบสั่งเท — รอ Control กดเริ่มงาน</p>';
+    if (!o) pal = ikMark(false, 'ยังไม่มีใบสั่งเท — รอ Control กดเริ่มงาน');
+    else if (nO) pal = ikMark(false, 'ใบนี้เป็น NCP — สแกนป้าย Reject');
     else pal = ikPalSimple(d, o);
   }
-  const job = o ? `<div class="smt">${curs.length > 1 ? `<span class="chips" style="margin-bottom:6px">${curs.map((x) => `<button type="button" class="tg" aria-pressed="${x.doc === o.doc}" data-ikdoc="${esc(x.doc)}">${esc(x.bin)}</button>`).join('')}</span>` : ''}
-      ใบสั่งเท: <b>${esc(inm(d, o.item))}</b> → ถัง <b class="mono">${esc(o.bin)}</b> · เทแล้ว <b>${fmt(prog(o))}</b> / ${fmt(o.qty)} ${OUNIT[o.unit]}</div>`
-    : '<div class="muted smt">ยังไม่มีใบสั่งเทของจุดนี้ (ป้าย Reject NCP สแกนได้เลย)</div>';
+  const fresh = o && S.ik.newDoc === o.doc && Date.now() - (S.ik.newAt || 0) < 30000; const nextQ = os.filter((x) => x.status === 'queue')[0];
+  const job = o ? `<div style="border:3px solid ${fresh ? 'var(--warn, #c77700)' : 'var(--blue)'};border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:4px">
+      ${curs.length > 1 ? `<span class="chips" style="margin-bottom:4px">${curs.map((x) => `<button type="button" class="tg" style="font-size:17px" aria-pressed="${x.doc === o.doc}" data-ikdoc="${esc(x.doc)}">${esc(x.bin)}</button>`).join('')}</span>` : ''}
+      <div class="smt">${fresh ? '<b style="color:var(--warn, #c77700)">● ใบใหม่ </b>' : ''}ใบสั่งเท <span class="mono">${esc(o.doc)}</span></div>
+      <div style="font-size:24px;font-weight:700;line-height:1.25">${esc(inm(d, o.item))}</div>
+      <div style="font-size:20px">→ ถัง <b class="mono" style="font-size:32px">${esc(o.bin)}</b></div>
+      <div style="font-size:20px">เทแล้ว <b style="font-size:28px">${fmt(prog(o))}</b> / ${fmt(o.qty)} ${OUNIT[o.unit]}</div>
+      <div aria-hidden="true" style="height:10px;background:var(--line);border-radius:5px"><div style="height:10px;border-radius:5px;background:var(--blue);width:${Math.min(100, Math.round(prog(o) / o.qty * 100))}%"></div></div>
+      ${o.note ? `<div class="smt">${esc(o.note)}</div>` : ''}</div>`
+    : `<div style="text-align:center;padding:20px 8px;border:2px dashed var(--line);border-radius:12px"><b style="font-size:24px">รอใบสั่งเท</b><div class="muted smt">${nextQ ? 'ใบถัดไป (รอ Control กดเริ่ม): ' + esc(inm(d, nextQ.item)) + ' → ' + esc(nextQ.bin) : 'Control ออกใบแล้วจะขึ้นที่นี่เอง'}</div></div>`;
   const myDocs = new Set(os.map((x) => x.doc)); const dumps = ((S.pd.data || {}).dumps || []).filter((x) => myDocs.has(x.doc)).slice(0, 10); const cx = S.ik.cx;
-  const list = dumps.length ? `<details class="card smt" data-iklist="1" ${S.ik.listOpen || cx.id ? 'open' : ''}><summary>รายการเทล่าสุด (ยกเลิกได้)</summary>${dumps.map((x) => `<div class="lrow" style="flex-wrap:wrap;gap:6px;${x.void ? 'text-decoration:line-through;opacity:.6' : ''}"><span style="flex:1 1 200px">${hm(x.at)} <span class="mono">${esc(x.lot)} ${esc(pl(x.p))}</span> → <b>${esc(x.bin)}</b> · ${fmt(x.kg)} กก.</span>
-      ${x.void ? '<span class="tag bad">ยกเลิก</span>' : cx.id === x.id ? `<span class="chips"><input data-bind="ik.cx.reason" value="${esc(cx.reason)}" placeholder="เหตุผล" maxlength="120" style="width:150px"><button type="button" class="sm" data-ikcxdo="${x.id}" ${cx.reason.trim().length >= 3 && !S.busy ? '' : 'disabled'}>ยืนยันยกเลิก</button><button type="button" class="ghost sm" data-ikcx="">ปิด</button></span>` : `<button type="button" class="ghost sm" data-ikcx="${x.id}">ยกเลิก</button>`}</div>`).join('')}</details>` : '';
+  const list = dumps.length ? `<details class="card smt" data-iklist="1" ${S.ik.listOpen || cx.id ? 'open' : ''}><summary>รายการเทล่าสุด</summary>${dumps.map((x) => `<div class="lrow" style="flex-wrap:wrap;gap:6px;${x.void ? 'text-decoration:line-through;opacity:.6' : ''}"><span style="flex:1 1 200px">${hm(x.at)} <span class="mono">${esc(x.lot)} ${esc(pl(x.p))}</span> → <b>${esc(x.bin)}</b> · ${fmt(x.kg)} กก.</span>
+      ${x.void ? '<span class="tag bad">ยกเลิก</span>' : !isCtl() ? '' : cx.id === x.id ? `<span class="chips"><input data-bind="ik.cx.reason" value="${esc(cx.reason)}" placeholder="เหตุผล" maxlength="120" style="width:150px"><button type="button" class="sm" data-ikcxdo="${x.id}" ${cx.reason.trim().length >= 3 && !S.busy ? '' : 'disabled'}>ยืนยันยกเลิก</button><button type="button" class="ghost sm" data-ikcx="">ปิด</button></span>` : `<button type="button" class="ghost sm" data-ikcx="${x.id}">ยกเลิก</button>`}</div>`).join('')}</details>` : '';
   const pile = k.point === 'IN1' ? pdBins().filter((x) => x.grp === 'PILE') : [];
   return `<div class="chips" role="group" aria-label="จุด Intake" style="gap:8px">${INTAKES.map(([id, l]) => { const n = pdOrders().filter((x) => x.intake === id && x.status === 'started').length;
       return `<button type="button" class="tg" style="font-size:17px;padding:12px 16px" aria-pressed="${k.point === id}" data-ikpt="${id}">${l}${n ? ' ●' : ''}</button>`; }).join('')}</div>
     <div class="card" style="display:flex;flex-direction:column;gap:12px;border-color:var(--blue)">
       ${job}
       <div class="chips"><input data-bind="ik.q" id="ikq" value="${esc(k.q)}" placeholder="สแกนป้าย" autocomplete="off" style="flex:1 1 200px;font-size:20px;padding:12px"><button type="button" data-cam="1" style="font-size:18px;padding:12px 16px">📷 สแกน</button>${k.q ? '<button type="button" class="ghost" data-ikclear="1">ล้าง</button>' : ''}</div>
-      ${isN ? (k.point === 'IN1' ? ikMark(false, 'ป้าย Reject NCP เทได้ที่ Intake 2 / Intake 3 / เทมือ BIA') : ikNcpSimple(d, nO)) : pal}
+      ${isN ? (k.point === 'IN1' ? ikMark(false, 'ป้าย Reject NCP เทได้ที่ Intake 2 / Intake 3 / เทมือ BIA') : !o ? ikMark(false, 'ยังไม่มีใบสั่งเท — รอ Control กดเริ่มงาน') : !nO ? ikMark(false, 'ใบนี้ไม่ใช่ NCP — สแกนป้ายพาเลท') : ikNcpSimple(d, nO)) : pal}
     </div>
-    ${list}${!isN && k.point !== 'IN1' ? ncpQrCard(d, nO ? nO.bin : '', true, nO) : ''}
+    ${list}
     ${pile.length ? `<details class="card"><summary><b>ลากกอง Intake 1 ขึ้นถัง</b></summary><div class="blane" style="margin-top:8px">${pile.map((x) => binTile(d, x)).join('')}</div>${pile.find((x) => x.code === S.bsel) ? haulForm(d, pile.find((x) => x.code === S.bsel), pdBins().filter((x) => ['B1', 'B2', 'HAND'].includes(x.grp))) : '<span class="muted smt">แตะกองเพื่อลากขึ้นถัง</span>'}</details>` : ''}`;
 }
 
@@ -2612,7 +2655,7 @@ document.addEventListener('click', async (e) => {
   if (ds.oact) { S.keepScroll = true; act('rm_order_act', { p_doc: ds.doc, p_action: ds.oact, p: {} }, ds.oact === 'start' ? 'เริ่มใบ ' + ds.doc + ' แล้ว — Intake เทได้' : 'เลื่อนคิวแล้ว'); return; }
   if (ds.oopen !== undefined) { S.ox = { doc: ds.doc || '', act: ds.oopen, reason: '', qty: '' }; S.keepScroll = true; render(); return; }
   if (ds.odo) { const x = S.ox; S.keepScroll = true; act('rm_order_act', { p_doc: ds.odo, p_action: x.act, p: { reason: x.reason.trim(), qty: num(x.qty) } }, (r) => ({ close: 'ปิดใบ ', cancel: 'ยกเลิกใบ ', qty: 'แก้จำนวนใบ ' }[x.act] || '') + r.doc + ' แล้ว', () => { S.ox = { doc: '' }; }); return; }
-  if (ds.ikpt) { S.ik = Object.assign(S.ik, { point: ds.ikpt, doc: '', q: '', unit: '', bags: '', cx: { id: '', reason: '' } }); store('rm_ik_point', ds.ikpt); S.bsel = ''; render(); return; }
+  if (ds.ikpt) { S.ik = Object.assign(S.ik, { point: ds.ikpt, doc: '', q: '', unit: '', bags: '', cx: { id: '', reason: '' }, seen: null, newDoc: '' }); store('rm_ik_point', ds.ikpt); S.bsel = ''; render(); return; }
   if (ds.ikdoc) { S.ik.doc = ds.ikdoc; S.ik.q = ''; S.ik.unit = ''; S.ik.bags = ''; render(); return; }
   if (ds.ikunit) { S.ik.unit = ds.ikunit; S.ik.bags = ''; render(); return; }
   if (ds.ikpick) { const u = D().live.find((x) => x.id === ds.ikpick); if (u) { S.ik.q = u.lot + '|' + u.p; S.ik.unit = u.id; S.ik.bags = ''; } render(); return; }
@@ -2644,6 +2687,16 @@ document.addEventListener('click', async (e) => {
   if (ds.themeT) { setTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'); render(); return; }
   if (ds.logout) { logout(); return; }
   if (ds.pk) { pinKey(ds.pk); return; }
+  if (ds.hxload) { S.hx.data = null; loadHist(); return; }
+  if (ds.hxclose) { S.hx.act = null; S.keepScroll = true; render(); return; }
+  if (ds.hxact) { const x = ((S.hx.data || {}).recs || []).find((r) => r.kind === ds.kind && String(r.id) === ds.id); if (!x) return;
+    S.hx.act = { kind: x.kind, id: x.id, mode: ds.hxact, reason: '', qty: x.kind === 'ncp' ? String(x.kg) : String(x.bags) }; S.keepScroll = true; render(); return; }
+  if (ds.hxdo) { const A = S.hx.act; if (!A) return; S.keepScroll = true;
+    const done = () => { S.hx.act = null; S.hx.data = null; loadHist(); };
+    if (A.mode === 'edit') act('rm_dump_edit', { p_kind: A.kind, p_id: A.id, p_qty: num(A.qty), p_reason: A.reason.trim() }, (r) => 'แก้จำนวนแล้ว' + (r.doc ? ' · ใบ ' + r.doc : ''), done);
+    else if (A.kind === 'ncp') act('rm_ncp_bb_cancel', { p_id: A.id, p_reason: A.reason.trim() }, (r) => 'ยกเลิกสแกน ' + r.no + ' แล้ว · หัก ' + fmt(r.kg) + ' กก. ออกจากถัง', done);
+    else act('rm_dump_cancel', { p_move: A.id, p_reason: A.reason.trim() }, (r) => 'ยกเลิกรายการเทแล้ว · คืน ' + fmt(r.kg) + ' กก. เข้าพาเลทเดิม', done);
+    return; }
   if (ds.ikncp) { S.ik.q = ds.ikncp; S.ik.unit = ''; S.ik.bags = ''; S.keepScroll = true; ncpFromIk(ds.ikncp, true); render(); return; }
   if (ds.lang) { setLang(ds.lang); return; }
   if (ds.lgpick) { S.lg.pick = ds.lgpick; S.lg.pin = ''; S.toast = ''; render(); return; }
@@ -2753,6 +2806,7 @@ function applyField(el) {
     if (ds.bind === 'nq.q') { S.nq.err = ''; clearTimeout(ncpTimer); const k = scanNcp(el.value); if (!k) S.nq.peek = null; else if (k.no !== (S.nq.peek || {}).no) ncpTimer = setTimeout(() => ncpPeek(), 350); }
     if (ds.nfbin && S.nf.bin !== ds.nfbin) { const v = el.value; S.nf = { bin: ds.nfbin, kg: '', note: '' }; setPath(ds.bind, v); }
     if (ds.bind === 'rep.day') { S.rep.data = null; S.fx = { doc: '' }; loadRep(); }
+    if (ds.bind === 'hx.day') { S.hx.data = null; S.hx.act = null; loadHist(); }
     return true;
   }
   if (ds.ud) { S.ud[ds.ud] = S.ud[ds.ud] || {}; S.ud[ds.ud][ds.k] = el.value; return true; }
@@ -2856,19 +2910,20 @@ async function loadAdmin() { S.adminInfo = null; S.users = null; try { S.adminIn
 })();
 // Realtime ทุกหน้า (user 9 Nov 2026): ทุก 5 วินาทีถาม rm_stamp (ตัวนับการเขียนของตาราง rm_* — เบามาก)
 // ถ้ามีข้อมูลใหม่จึงโหลดหน้าที่เปิดอยู่ใหม่ · ไม่โหลดระหว่างพิมพ์ / ระหว่างบันทึก / ตอนเปิดกล้องสแกน
-let liveV = '', liveBusy = false;
+let liveV = '', liveBusy = false, lastInputAt = 0;
+document.addEventListener('input', () => { lastInputAt = Date.now(); }, true);
 setInterval(async () => {
-  const a = document.activeElement || document.body; const idleScan = a.id === 'ikq' && !a.value;
+  const a = document.activeElement || document.body; const idleScan = a.id === 'ikq' && (!a.value || Date.now() - lastInputAt > 1500); // ช่องสแกนนิ่ง > 1.5 วิ = โหลดใหม่ได้ (ผู้ใช้ 13 พ.ย.: ใบใหม่ต้องขึ้นเอง)
   if (!S.tok || !S.snap || S.busy || liveBusy || document.hidden || S.scan.open || (isTyping(a) && !idleScan)) return;
   liveBusy = true;
   try {
     const st = await rpc('rm_stamp', { p_token: S.tok });
     const changed = liveV && st !== liveV; liveV = st;
     if (!changed || S.busy || S.scan.open) return;
-    const b = document.activeElement || document.body; if (isTyping(b) && !(b.id === 'ikq' && !b.value)) { liveV = ''; return; } // พิมพ์อยู่ → รอบหน้า
+    const b = document.activeElement || document.body; if (isTyping(b) && !(b.id === 'ikq' && (!b.value || Date.now() - lastInputAt > 1500))) { liveV = ''; return; } // พิมพ์อยู่ → รอบหน้า
     await load(); if (repScreen(S.screen) && S.rep.data) await fetchRep(); if (pdScreen(S.screen)) await loadPD(true);
     if (S.bcard.bin && S.screen === 'bins') loadBinCard(S.bcard.bin);
-    render(); if (idleScan) { const n = document.getElementById('ikq'); if (n) n.focus(); }
+    render(); if (idleScan) { const n = document.getElementById('ikq'); if (n) { n.focus(); const L = n.value.length; try { n.setSelectionRange(L, L); } catch (e) { /* ไม่รองรับ */ } } }
   } catch (e) { /* ลองใหม่รอบหน้า */ } finally { liveBusy = false; }
 }, 5000);
 </script>
