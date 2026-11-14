@@ -2,6 +2,415 @@
 <html lang="th">
 <head>
 <title>Packing Record</title><link rel="icon" href="https://raw.githubusercontent.com/skaart19bfl/bfl-app-assets/main/packing-logo-64.png">
+<script>const PF_LOGO_B64 = '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';
+/* pform.js — ฟอร์มรายงานการบรรจุ (F-WI06-PRD04-01 Rev.05 / F-WI07-PRD03-01 Rev.00) สร้างในมือถือ: PDF (pdf-lib) + Excel (ExcelJS)
+ * v93 (14 Nov 2026, user "เริ่ม" — ฟอร์ม Export สร้างในมือถือแล้วดาวน์โหลด; decision 14 Nov "สร้างในมือถือ แล้วดาวน์โหลด")
+ * Port of the main script 088_123_Packing_Form.gs (Bluefalo Production_Lot): pfBuildPages_ copied as is (same pages / rows / stops / dups),
+ * pfDrawPage_ / pfDrawPagePC_ turned into one sheet model that both the PDF and the Excel are drawn from.
+ * No Drive, no Apps Script: data = Supabase rows (dates as {$d: ms}), files made on the phone.
+ * PF_LOGO_B64 (logo.js) is defined before this file. Works in the browser (window.PForm) and in node (module.exports) for tests. */
+(function (root) {
+  const PF = {
+    FORM_CODE: 'F-WI06-PRD04-01 Rev.05',
+    FORM_CODE_PC: 'F-WI07-PRD03-01 Rev.00',
+    TYPES: { Output: 'FG', WIP: 'WIP', SEMI: 'SEMI', Hold: 'Hold', Reject: 'Reject' },
+    ROWS: 20, DAY_FROM: 8, TZ: 'Asia/Bangkok',
+    XLSX_FONT: 'TH SarabunPSK',
+  };
+
+  /* ---------- time in Asia/Bangkok (same as Utilities.formatDate with the project zone) ---------- */
+  const DTF = new Intl.DateTimeFormat('en-GB', { timeZone: PF.TZ, year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric', hourCycle: 'h23' });
+  function fmt(t, p) {
+    const o = {};
+    DTF.formatToParts(new Date(t)).forEach((x) => { o[x.type] = x.value; });
+    const n = (k) => Number(o[k]) % (k === 'hour' ? 24 : 1e9), pad = (v, w) => String(v).padStart(w, '0');
+    const map = { yyyy: pad(n('year'), 4), MM: pad(n('month'), 2), M: String(n('month')), dd: pad(n('day'), 2), d: String(n('day')),
+      HH: pad(n('hour'), 2), H: String(n('hour')), mm: pad(n('minute'), 2), ss: pad(n('second'), 2) };
+    return p.replace(/yyyy|MM|M|dd|d|HH|H|mm|ss/g, (k) => map[k]);
+  }
+  const isD = (v) => v instanceof Date || (v !== null && typeof v === 'object' && '$d' in v);
+  const ms = (v) => (v instanceof Date ? v.getTime() : isD(v) ? Number(v.$d) : 0);
+  function pfTrue(v) { return v === true || v === 1 || /^(TRUE|1|Y|YES)$/i.test(String(v).trim()); }
+  // Stop_Time: the main script read the sheet's display text and took the first H:MM — a date cell shows its time, so format it here
+  const stopText = (v) => (isD(v) ? fmt(ms(v), 'HH:mm') : v == null ? '' : String(v));
+
+  /* ---------- pages: pfBuildPages_ (main script) unchanged except fmt ---------- */
+  function pfBuildPages(fg, recs, runs, shift, merge) {
+    const num = (v) => { const n = parseInt(String(v), 10); return isNaN(n) ? 1e9 : n; };
+    const be = (t) => { const d = fmt(t, 'd/M/yyyy').split('/'); return d[0] + '/' + d[1] + '/' + (+d[2] + 543); };
+    const types = Object.keys(PF.TYPES);
+    const rows = recs.map((x) => Object.assign({}, x, {
+      RecordType: x.RecordType === 'Output' && pfTrue(x.WIP) ? 'WIP' : x.RecordType === 'Output' && x._item ? 'SEMI' : String(x.RecordType),
+    })).filter((x) => types.indexOf(x.RecordType) >= 0)
+      .sort((a, b) => a.t - b.t || num(a.Pallet_No) - num(b.Pallet_No) || a.c - b.c);
+    rows.forEach((x) => {
+      x.team = String(x.Packing_Team || '').trim();
+      x.key = x.RecordType + '|' + fmt(x.t - PF.DAY_FROM * 3600e3, 'yyyyMMdd') + '|' + x.team;
+      x.stop = '';
+    });
+    const stops = runs.filter((x) => !/เดินเครื่อง/.test(x.Process)).map((x) => x.t).sort((a, b) => a - b);
+    ['Output', 'WIP', 'SEMI'].forEach((type) => {
+      const out = rows.filter((x) => x.RecordType === type);
+      out.forEach((x, i) => {
+        const next = out.slice(i + 1).find((y) => y.t > x.t);
+        let t = next && next.key === x.key ? next.t : 0;
+        if (!t) {
+          const until = next ? next.t : x.t + 12 * 3600e3;
+          t = stops.find((s) => s > x.t && s <= until) || 0;
+        }
+        x.stop = t ? fmt(t, 'HH:mm') : '';
+      });
+    });
+    rows.forEach((x) => {
+      const own = String(x.Stop_Time || '').match(/(\d{1,2}):(\d{2})/);
+      if (own) x.stop = ('0' + own[1]).slice(-2) + ':' + own[2];
+    });
+    const pack = String(fg.Packaging_Detail || '').split(/\r?\n/).map((s) => s.trim());
+    const dupKey = (x) => String(x.Pallet_No).trim() === '' ? '' :
+      x.RecordType + '|' + (/^(Output|WIP|SEMI)$/.test(x.RecordType) ? '' : x.key.split('|')[1]) + '|' + String(x.Pallet_No).trim();
+    const cnt = {};
+    rows.forEach((x) => { const k = dupKey(x); if (k) cnt[k] = (cnt[k] || 0) + 1; });
+    const dupBy = {};
+    Object.keys(cnt).filter((k) => cnt[k] > 1).forEach((k) => {
+      const p = k.split('|'), g = types.indexOf(p[0]) + '|' + PF.TYPES[p[0]] + (p[1] ? ' ' + +p[1].slice(6) + '/' + +p[1].slice(4, 6) : '');
+      (dupBy[g] = dupBy[g] || []).push(p[2]);
+    });
+    const dups = Object.keys(dupBy).sort().map((g) => {
+      const n = dupBy[g].sort((a, b) => num(a) - num(b)), out = [];
+      let from = n[0], prev = n[0];
+      n.slice(1).concat([null]).forEach((v) => {
+        if (v !== null && num(v) === num(prev) + 1) { prev = v; return; }
+        out.push(from === prev ? from : from + '–' + prev); from = prev = v;
+      });
+      return g.split('|')[1] + ' #' + out.join(', ');
+    });
+    const groups = {};
+    const inShift = (x) => !shift || fmt(x.t - PF.DAY_FROM * 3600e3, 'yyyy-MM-dd') + '|' + [0, 8, 16][Math.floor(+fmt(x.t, 'H') / 8)] === shift;
+    const gk = (x) => merge ? x.key.split('|').slice(0, 2).join('|') : x.key;
+    rows.filter(inShift).forEach((x) => (groups[gk(x)] = groups[gk(x)] || []).push(x));
+    const keys = Object.keys(groups).sort((a, b) =>
+      types.indexOf(a.split('|')[0]) - types.indexOf(b.split('|')[0]) || groups[a][0].t - groups[b][0].t);
+    const span = (c) => {
+      const f = c[0], l = c[c.length - 1], d1 = be(f.t), d2 = be(l.t);
+      return { day: d1 === d2 ? d1 : d1.replace(/\/\d+$/, '') + ' – ' + d2, shift: fmt(f.t, 'HH:mm') + ' – ' + (l.stop || fmt(l.t, 'HH:mm')) };
+    };
+    const pages = [];
+    keys.forEach((k) => {
+      const g = groups[k], first = g[0], last = g[g.length - 1], item = first._item || fg;
+      const d1 = be(first.t), d2 = be(last.t);
+      const head = {
+        type: PF.TYPES[first.RecordType], team: first.team,
+        day: d1 === d2 ? d1 : d1.replace(/\/\d+$/, '') + ' – ' + d2,
+        shift: fmt(first.t, 'HH:mm') + ' – ' + (last.stop || fmt(last.t, 'HH:mm')),
+        fg: first._item ? Object.assign({}, fg, first._item) : null,
+      };
+      for (let i = 0; i < g.length; i += PF.ROWS) {
+        const chunk = g.slice(i, i + PF.ROWS);
+        pages.push(Object.assign({}, head, span(chunk), {
+          team: [...new Set(chunk.map((x) => x.team).filter(String))].join(' / '),
+          sup: [...new Set(chunk.map((x) => String(x.Sup_Pack || '').trim()).filter(String))].join(' / '),
+          bags: chunk.reduce((s, x) => s + (Number(x.Output_Bag) || 0), 0),
+          kg: chunk.reduce((s, x) => s + (Number(x.Output_Kg) || 0), 0),
+          rows: chunk.map((x, j) => [
+            j + 1,
+            j === 0 ? item.FGID : j === 1 ? item.FG_Name : '',
+            j === 0 ? fg.Lot_Number : '',
+            pack[j] || '',
+            j === 0 ? '/' : '',
+            x.WeightInput, x.Packing_bin || '', String(x.Pallet_No), x.Output_Bag,
+            fmt(x.t, 'HH:mm'), x.stop, x.Storage_Location || '',
+            [j === 0 ? fg.Pack_Number : '', j === 0 && PF.TYPES[x.RecordType] !== 'FG' ? PF.TYPES[x.RecordType] : '',
+              cnt[dupKey(x)] > 1 ? 'ซ้ำ' : '', String(x.Comment || '').trim()].filter(String).join(' '),
+          ]),
+        }));
+      }
+    });
+    pages.dups = dups;
+    return pages;
+  }
+
+  /* ---------- the export: same checks, names and message as packingFormExport ---------- */
+  // o = {fg (FG_Lot row), det (FG_Detail rows), recs (Packing_Record rows of the lot), runs (Packing_Runtime rows), shift, merge, now, formType?}
+  function build(o) {
+    const fg = o.fg;
+    if (!fg) throw new Error('ไม่พบ FG Lot นี้');
+    const id = String(fg.FGLotID);
+    const detRows = o.det || [];
+    const det = detRows.find((x) => String(x.FGID).trim() === String(fg.FGID).trim()) || {};
+    const pc = String(o.formType || det.Form_Type || '').trim().toUpperCase() === 'BFL-PC';
+    const recs = (o.recs || []).filter((x) => String(x.FGLotID) === id && !pfTrue(x.Cancelled) && isD(x.DateTimeRecords))
+      .map((x) => Object.assign({}, x, { t: ms(x.DateTimeRecords), c: ms(x.CreateTimestamp), Stop_Time: stopText(x.Stop_Time) }));
+    const runs = (o.runs || []).filter((x) => String(x.FGLotID) === id && !pfTrue(x.Cancelled) && isD(x.DateTimeRecords))
+      .map((x) => ({ Process: x.Process, t: ms(x.DateTimeRecords) }));
+    const semi = {};
+    detRows.forEach((d) => { if (String(d.LotType).trim().toUpperCase() === 'SEMI') semi[String(d.FGID).trim()] = d; });
+    if (String(fg.LotType).trim().toUpperCase() !== 'SEMI') recs.forEach((x) => { const d = semi[String(x.Pack_Item || '').trim()]; if (d) x._item = { FGID: String(d.FGID).trim(), FG_Name: d.FG_Name }; });
+    const shift = String(o.shift || '').trim(), merge = o.merge === true;
+    if (shift && !/^\d{4}-\d{2}-\d{2}\|(0|8|16)$/.test(shift)) throw new Error('กะไม่ถูกต้อง: ' + shift);
+    const sp = shift.split('|'), sDay = shift ? fmt(Date.parse(sp[0] + 'T12:00:00+07:00') + (sp[1] === '0' ? 86400e3 : 0), 'd/M/yyyy').split('/') : [];
+    const sLabel = shift ? 'กะ ' + { 0: '00:00–08:00', 8: '08:00–16:00', 16: '16:00–00:00' }[sp[1]] + ' ' + sDay[0] + '/' + sDay[1] + '/' + (+sDay[2] + 543) : '';
+    const pages = pfBuildPages(fg, recs, runs, shift, merge);
+    if (!pages.length) throw new Error(shift ? 'ไม่มีพาเลทใน' + sLabel : 'ล็อตนี้ยังไม่มีข้อมูลบรรจุ (Packing_Record)');
+    const base = [(pc ? PF.FORM_CODE_PC : PF.FORM_CODE).split(' ')[0], fg.Lot_Number, fg.Pack_Number]
+      .concat(shift ? ['S' + ('0' + sp[1]).slice(-2) + '-' + sp[0].replace(/-/g, '')] : [], merge ? ['MERGED'] : [], [fmt(o.now || Date.now(), 'yyyyMMdd-HHmmss')]).join('_');
+    const nRows = pages.reduce((s, p) => s + p.rows.length, 0);
+    const msg = (pc ? 'แบบ BFL-PC · ' : '') + (sLabel || 'ทั้งล็อต') + (merge ? ' · รวมทีม' : '') + ' · ' + pages.length + ' หน้า, ' + nRows + ' รายการ' +
+      (pages.dups.length ? ' · พาเลทซ้ำ (แก้ในแอปแล้วกดพิมพ์ใหม่): ' + pages.dups.join(' · ') : '');
+    const models = pages.map((pg) => (pc ? modelPC(pg, pg.fg || fg) : modelBFL(pg)));
+    return { pages, pc, base, msg, nRows, sLabel, models };
+  }
+
+  /* ---------- sheet model (what pfDrawPage_ / pfDrawPagePC_ put on a Google Sheet) ---------- */
+  // sizes in Sarabun pt like the sheet; widths / heights in sheet px
+  function Model(W, last, defH) {
+    const m = { W, last, H: [], custom: [], cells: {}, merges: [], borders: [], img: null };
+    for (let r = 1; r <= last; r++) m.H[r] = defH;
+    const key = (r, c) => r + ',' + c;
+    m.cell = (r, c) => m.cells[key(r, c)] || (m.cells[key(r, c)] = { size: 11, va: 'middle' });
+    m.each = (r, c, nr, nc, f) => { for (let i = 0; i < nr; i++) for (let j = 0; j < nc; j++) f(m.cell(r + i, c + j), i, j); };
+    m.style = (r, c, nr, nc, s) => m.each(r, c, nr, nc, (x) => Object.assign(x, s));
+    m.merge = (r, c, nr, nc) => { m.merges.push([r, c, r + nr - 1, c + nc - 1]); };
+    m.val = (r, c, v) => { m.cell(r, c).v = v; };
+    m.height = (r, n, px) => { for (let i = 0; i < n; i++) { m.H[r + i] = px; m.custom[r + i] = true; } };
+    m.border = (r, c, nr, nc, kind) => m.borders.push({ r1: r, c1: c, r2: r + nr - 1, c2: c + nc - 1, kind });
+    return m;
+  }
+  const A1 = (a) => { const t = a.match(/^([A-Z])(\d+)(?::([A-Z])(\d+))?$/); const c1 = t[1].charCodeAt(0) - 64, r1 = +t[2], c2 = t[3] ? t[3].charCodeAt(0) - 64 : c1, r2 = t[4] ? +t[4] : r1; return [r1, c1, r2 - r1 + 1, c2 - c1 + 1]; };
+  const thLen = (s) => String(s).replace(/[ัิ-ฺ็-๎]/g, '').length;
+  const HEAD = ['ลำดับที่', 'รหัสสูตรอาหาร', 'Lot. No.', 'ลักษณะบรรจุภัณฑ์', 'ตรวจสอบความ\nสะอาดก่อนบรรจุ',
+    'น้ำหนัก/ถุง\n(กิโลกรัม)', 'ถังบรรจุ', 'พาเลทที่', 'จำนวนถุง\n/พาเลท', 'เวลาบรรจุ', '', 'สถานที่จัดเก็บ', 'หมายเหตุ'];
+  const HEAD_PC = ['ลำดับที่', 'ลักษณะบรรจุภัณฑ์', 'ตรวจสอบความ\nสะอาดก่อนบรรจุ', 'น้ำหนัก/ถุง\n(กิโลกรัม)', 'ถังบรรจุ', 'พาเลทที่',
+    'จำนวนถุง\n/พาเลท', 'เวลาบรรจุ', '', 'สถานที่จัดเก็บ', 'หมายเหตุ'];
+  function sign(m, FOOT, cols, who, role) {
+    m.merge(FOOT + 2, cols[0], 1, cols[1]); m.val(FOOT + 2, cols[0], who || ''); m.style(FOOT + 2, cols[0], 1, 1, { va: 'bottom' });
+    m.border(FOOT + 2, cols[0], 1, cols[1], 'dotBottom');
+    m.merge(FOOT + 3, cols[0], 1, cols[1]); m.val(FOOT + 3, cols[0], role);
+    m.style(FOOT + 2, cols[0], 3, cols[1], { h: 'center' });
+  }
+  function modelBFL(pg) {
+    const W = [42, 166, 139, 190, 100, 61, 52, 52, 60, 57, 56, 74, 70];
+    const NC = W.length, H0 = 5, D0 = 7, FOOT = D0 + PF.ROWS, LAST = FOOT + 4, m = Model(W, LAST, 21);
+    m.style(1, 1, LAST, NC, { size: 11, va: 'middle' });
+    m.merge(...A1('A1:M1')); m.val(1, 1, 'บริษัท บลูฟาโล่ จำกัด');
+    m.merge(...A1('A2:M2')); m.val(2, 1, 'รายงานการบรรจุอาหารสัตว์');
+    m.style(...A1('A1:M2'), { size: 14, bold: true, h: 'center' });
+    m.height(1, 2, 30);
+    m.img = { c: 4, r: 1, ox: 10, oy: 2, w: 64, h: 60 };
+    m.merge(...A1('J3:M3')); m.style(...A1('J3:M3'), { h: 'right' }); m.val(3, 10, PF.FORM_CODE);
+    m.merge(...A1('I4:M4')); m.style(...A1('I4:M4'), { h: 'right' }); m.val(4, 9, 'วันที่  ' + pg.day + '      กะ  ' + pg.shift);
+    HEAD.forEach((v, i) => { if (v) m.val(H0, i + 1, v); });
+    m.val(H0 + 1, 10, 'เริ่ม'); m.val(H0 + 1, 11, 'หยุด');
+    for (let c = 1; c <= NC; c++) if (c !== 10 && c !== 11) m.merge(H0, c, 2, 1);
+    m.merge(H0, 10, 1, 2);
+    m.style(H0, 1, 2, NC, { h: 'center', wrap: true });
+    m.height(H0, 2, 20);
+    const body = Array.from({ length: PF.ROWS }, (_, k) => pg.rows[k] || [k + 1].concat(Array(NC - 1).fill('')));
+    m.style(D0, 2, PF.ROWS, 10, { text: true });
+    body.forEach((r, i) => r.forEach((v, j) => { if (v !== '' && v != null) m.val(D0 + i, j + 1, v); }));
+    m.style(D0, 1, PF.ROWS, NC, { h: 'center', size: 10, clip: true });
+    m.style(D0 + 1, 2, 1, 1, { size: 7, wrap: true, clip: false });
+    body.forEach((r, i) => { const l = thLen(r[NC - 1]); Object.assign(m.cell(D0 + i, NC), { h: 'left', wrap: true, clip: false, size: l <= 12 ? 8 : l <= 26 ? 7 : 6 }); });
+    m.height(D0, PF.ROWS, 23);
+    m.merge(FOOT, 1, 1, 4); m.style(FOOT, 1, 1, 4, { h: 'left' });
+    m.val(FOOT, 1, 'หมายเหตุ : การตรวจสอบความสะอาดก่อนการบรรจุ / สะอาด  X ไม่สะอาด  ⓧ แก้ไขแล้ว ตรวจซ้ำสะอาด');
+    m.merge(FOOT, 7, 1, 3); m.style(FOOT, 7, 1, 3, { h: 'center' }); m.val(FOOT, 7, 'ยอดบรรจุรวม  ' + pg.bags.toLocaleString('en-US') + '  ถุง');
+    Object.assign(m.cell(FOOT, 10), { wrap: false, h: 'left' }); if (pg.kg) m.val(FOOT, 10, pg.kg.toLocaleString('en-US') + ' kg');
+    m.height(FOOT, 1, 26);
+    m.border(H0, 1, FOOT - H0 + 1, NC, 'grid'); m.border(H0, 1, FOOT - H0 + 1, NC, 'box');
+    m.border(FOOT, 7, 1, 3, 'box');
+    sign(m, FOOT, [1, 2], pg.team, 'หัวหน้าหน่วยงานบรรจุ');
+    sign(m, FOOT, [10, 3], pg.sup, 'ผู้ตรวจสอบ');
+    m.height(FOOT + 1, 1, 26); m.height(FOOT + 2, 3, 24);
+    return m;
+  }
+  function modelPC(pg, fg) {
+    const W = [53, 203, 119, 75, 65, 65, 64, 72, 72, 88, 244];
+    const NC = W.length, H0 = 7, D0 = 9, FOOT = D0 + PF.ROWS, LAST = FOOT + 4, m = Model(W, LAST, 21);
+    m.style(1, 1, LAST, NC, { size: 11, va: 'middle' });
+    const line = (a) => m.border(...A1(a), 'dotBottom');
+    m.merge(...A1('A1:K1')); m.val(1, 1, 'บริษัท บลูฟาโล่ เพ็ทแคร์ จำกัด');
+    m.merge(...A1('A2:K2')); m.val(2, 1, 'รายงานการบรรจุอาหารสัตว์');
+    m.style(...A1('A1:K2'), { size: 13, h: 'center' });
+    m.height(1, 2, 30);
+    m.img = { c: 2, r: 1, ox: 40, oy: 2, w: 56, h: 53 };
+    m.merge(...A1('I3:K3')); m.style(...A1('I3:K3'), { h: 'right' }); m.val(3, 9, PF.FORM_CODE_PC);
+    m.val(4, 1, 'ชื่ออาหาร');
+    m.merge(...A1('C4:H4')); m.val(4, 3, fg.FG_Name || ''); line('B4:H4');
+    m.style(4, 9, 1, 1, { h: 'right' }); m.val(4, 9, 'Lot No.');
+    m.merge(...A1('J4:K4')); m.val(4, 10, String(fg.Lot_Number || '')); line('J4:K4');
+    m.val(5, 1, 'รหัสสูตรอาหาร');
+    m.merge(...A1('C5:H5')); m.val(5, 3, fg.FGID || ''); line('B5:H5');
+    m.style(5, 9, 1, 1, { h: 'right' }); m.val(5, 9, 'วันที่');
+    m.val(5, 10, pg.day); line('J5');
+    m.val(5, 11, 'กะ   ' + pg.shift); line('K5');
+    m.style(...A1('A4:K5'), { text: true, size: 10 });
+    m.height(3, 3, 22); m.height(6, 1, 8);
+    HEAD_PC.forEach((v, i) => { if (v) m.val(H0, i + 1, v); });
+    m.val(H0 + 1, 8, 'เริ่ม'); m.val(H0 + 1, 9, 'หยุด');
+    for (let c = 1; c <= NC; c++) if (c !== 8 && c !== 9) m.merge(H0, c, 2, 1);
+    m.merge(H0, 8, 1, 2);
+    m.style(H0, 1, 2, NC, { h: 'center', wrap: true });
+    m.height(H0, 2, 20);
+    const body = Array.from({ length: PF.ROWS }, (_, k) => {
+      const r = pg.rows[k];
+      return r ? [r[0], r[3], r[4], r[5], r[6], r[7], r[8], r[9], r[10], r[11], r[12]] : [k + 1].concat(Array(NC - 1).fill(''));
+    });
+    m.style(D0, 2, PF.ROWS, 9, { text: true });
+    body.forEach((r, i) => r.forEach((v, j) => { if (v !== '' && v != null) m.val(D0 + i, j + 1, v); }));
+    m.style(D0, 1, PF.ROWS, NC, { h: 'center', size: 10, clip: true });
+    body.forEach((r, i) => { const l = thLen(r[NC - 1]); Object.assign(m.cell(D0 + i, NC), { h: 'left', wrap: true, clip: false, size: l <= 40 ? 9 : l <= 80 ? 8 : 7 }); });
+    m.height(D0, PF.ROWS, 23);
+    m.border(H0, 1, FOOT - H0, NC, 'grid'); m.border(H0, 1, FOOT - H0, NC, 'box');
+    m.merge(FOOT, 1, 1, 4); m.style(FOOT, 1, 1, 4, { h: 'left', size: 9 }); m.val(FOOT, 1, 'หมายเหตุ : / สะอาด  X ไม่สะอาด  ⓧ แก้ไขแล้ว ตรวจซ้ำสะอาด');
+    m.merge(FOOT, 5, 1, 3); m.style(FOOT, 5, 1, 3, { h: 'center', size: 10 }); m.val(FOOT, 5, 'ยอดบรรจุรวม  ' + pg.bags.toLocaleString('en-US') + '  ถุง');
+    m.border(FOOT, 5, 1, 3, 'box');
+    m.merge(FOOT, 8, 1, 2); m.style(FOOT, 8, 1, 2, { wrap: false, h: 'left', size: 10 }); if (pg.kg) m.val(FOOT, 8, pg.kg.toLocaleString('en-US') + ' kg');
+    m.height(FOOT, 1, 24);
+    sign(m, FOOT, [2, 2], pg.team, 'หัวหน้าหน่วยงานบรรจุ');
+    sign(m, FOOT, [9, 3], pg.sup, 'ผู้ตรวจสอบ');
+    m.height(FOOT + 1, 1, 22); m.height(FOOT + 2, 3, 24);
+    return m;
+  }
+
+  /* ---------- Excel (what Google's xlsx export + pfXlsxFix_ gave: TH SarabunPSK, Letter landscape, 1 page per sheet) ---------- */
+  const TH = { 6: 9, 7: 10, 8: 11, 9: 13, 10: 14, 11: 16, 13: 19, 14: 20 };
+  const thSize = (s) => TH[s] || Math.round(s * 1.45);
+  async function toXlsx(ExcelJS, models, logoB64) {
+    const wb = new ExcelJS.Workbook();
+    const img = wb.addImage({ base64: logoB64, extension: 'jpeg' });
+    models.forEach((m, i) => {
+      const ws = wb.addWorksheet('P' + (i + 1), {
+        views: [{ showGridLines: false }],
+        pageSetup: { paperSize: 1, orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 1, horizontalCentered: true,
+          margins: { left: 0.3, right: 0.3, top: 0.35, bottom: 0.35, header: 0, footer: 0 } },
+      });
+      const r2 = (v) => Math.round(v * 100 + 1e-6) / 100;   // Google's export: width = px/8 + 0.125, height = px × 0.75 (× 1.15 for TH SarabunPSK)
+      ws.columns = m.W.map((px) => ({ width: r2(px / 8 + 0.125) }));
+      for (let r = 1; r <= m.last; r++) if (m.custom[r]) ws.getRow(r).height = r2(m.H[r] * 0.75 * 1.15);
+      Object.keys(m.cells).forEach((k) => {
+        const [r, c] = k.split(',').map(Number), x = m.cells[k], cell = ws.getCell(r, c);
+        if (x.v !== undefined && x.v !== '') cell.value = x.v;
+        cell.font = { name: PF.XLSX_FONT, size: thSize(x.size), bold: !!x.bold };
+        cell.alignment = Object.assign({ vertical: x.va === 'bottom' ? 'bottom' : 'middle' }, x.h ? { horizontal: x.h } : {}, x.wrap ? { wrapText: true } : {});
+        if (x.text) cell.numFmt = '@';
+      });
+      m.merges.forEach((g) => ws.mergeCells(g[0], g[1], g[2], g[3]));
+      const bd = {};
+      const put = (r, c, side, style) => { const k = r + ',' + c; (bd[k] = bd[k] || {})[side] = { style }; };
+      m.borders.forEach((b) => {
+        for (let r = b.r1; r <= b.r2; r++) for (let c = b.c1; c <= b.c2; c++) {
+          if (b.kind === 'grid') ['top', 'left', 'bottom', 'right'].forEach((s) => put(r, c, s, 'thin'));
+          if (b.kind === 'box') { if (r === b.r1) put(r, c, 'top', 'medium'); if (r === b.r2) put(r, c, 'bottom', 'medium'); if (c === b.c1) put(r, c, 'left', 'medium'); if (c === b.c2) put(r, c, 'right', 'medium'); }
+          if (b.kind === 'dotBottom' && r === b.r2) put(r, c, 'bottom', 'dotted');
+        }
+      });
+      Object.keys(bd).forEach((k) => { const [r, c] = k.split(',').map(Number); ws.getCell(r, c).border = bd[k]; });
+      if (m.img) ws.addImage(img, { tl: { nativeCol: m.img.c - 1, nativeColOff: m.img.ox * 9525, nativeRow: m.img.r - 1, nativeRowOff: m.img.oy * 9525 }, ext: { width: m.img.w, height: m.img.h }, editAs: 'oneCell' });
+    });
+    return wb.xlsx.writeBuffer();
+  }
+
+  /* ---------- PDF (Letter landscape, margins 0.3 / 0.35 in, fit to width, centred — like the sheet's PDF export) ---------- */
+  const MARKS = /[ัิ-ฺ็-๎]/;
+  const clusters = (s) => s.match(/[^ัิ-ฺ็-๎][ัิ-ฺ็-๎]*|[ัิ-ฺ็-๎]+/g) || [];
+  async function toPdf(L, fontkit, fontBytes, logoBytes, models) {
+    const doc = await L.PDFDocument.create();
+    doc.registerFontkit(fontkit);
+    const font = await doc.embedFont(fontBytes, { subset: true });
+    const has = (ch) => { try { return font.embedder.font.hasGlyphForCodePoint(ch.codePointAt(0)); } catch (e) { return true; } };
+    const SUB = { '–': '-', '—': '-', ' ': ' ' };
+    const clean = (s) => Array.from(s).map((ch) => (ch === 'ⓧ' || has(ch) ? ch : SUB[ch] || '?')).join('');
+    const logo = logoBytes ? await doc.embedJpg(logoBytes) : null;
+    const black = L.rgb(0, 0, 0);
+    doc.setTitle('รายงานการบรรจุอาหารสัตว์');
+    for (const m of models) {
+      const page = doc.addPage([792, 612]);
+      const sumW = m.W.reduce((a, b) => a + b, 0);
+      let sumH = 0; for (let r = 1; r <= m.last; r++) sumH += m.H[r];
+      const k = Math.min(748.8 / sumW, 561.6 / sumH), x0 = 21.6 + (748.8 - sumW * k) / 2, top = 612 - 25.2;
+      const X = [0, x0]; m.W.forEach((w, i) => { X[i + 2] = X[i + 1] + w * k; });
+      const Y = [0, top]; for (let r = 1; r <= m.last; r++) Y[r + 1] = Y[r] - m.H[r] * k;
+      const mergeAt = {};
+      m.merges.forEach((g, gi) => { for (let r = g[0]; r <= g[2]; r++) for (let c = g[1]; c <= g[3]; c++) mergeAt[r + ',' + c] = gi; });
+      const same = (r1, c1, r2, c2) => mergeAt[r1 + ',' + c1] !== undefined && mergeAt[r1 + ',' + c1] === mergeAt[r2 + ',' + c2];
+      // text width as in the sheet's PDF export (measured on its files: TH Sarabun at 0.843 × k per Sarabun pt; bold Sarabun is wider → 0.87)
+      const sz = (s, bold) => s * k * (bold ? 0.87 : 0.843);
+      const width = (s, size) => font.widthOfTextAtSize(s, size);
+      const drawRun = (s, x, y, size, bold) => {
+        const parts = s.split('ⓧ');
+        parts.forEach((p, i) => {
+          if (p) { page.drawText(p, { x, y, size, font, color: black }); if (bold) page.drawText(p, { x: x + size * 0.03, y, size, font, color: black }); x += width(p, size); }
+          if (i < parts.length - 1) {   // ⓧ (not in TH Sarabun): circle + x
+            const rr = size * 0.5, cx = x + rr + size * 0.08, cy = y + size * 0.26;
+            page.drawCircle({ x: cx, y: cy, size: rr, borderColor: black, borderWidth: size * 0.04 });
+            const xs = size * 0.9; page.drawText('x', { x: cx - width('x', xs) / 2, y: cy - xs * 0.2, size: xs, font, color: black });
+            x += rr * 2 + size * 0.16;
+          }
+        });
+      };
+      const runW = (s, size) => s.split('ⓧ').reduce((a, p) => a + width(p, size), 0) + (s.split('ⓧ').length - 1) * (size * 1.16);
+      const wrapLine = (s, size, max) => {
+        if (runW(s, size) <= max) return [s];
+        const out = []; let cur = '';
+        const words = s.split(/(\s+)/);
+        words.forEach((w) => {
+          if (runW(cur + w, size) <= max) { cur += w; return; }
+          if (cur.trim()) { out.push(cur.trimEnd()); cur = ''; }
+          w = w.replace(/^\s+/, '');
+          clusters(w).forEach((ch) => { if (runW(cur + ch, size) > max && cur) { out.push(cur); cur = ''; } cur += ch; });
+        });
+        if (cur) out.push(cur);
+        return out;
+      };
+      const clip = (s, size, max) => { if (runW(s, size) <= max) return s; let o = ''; for (const ch of clusters(s)) { if (runW(o + ch, size) > max) break; o += ch; } return o; };
+      // text
+      Object.keys(m.cells).forEach((key) => {
+        const [r, c] = key.split(',').map(Number), x = m.cells[key];
+        if (x.v === undefined || x.v === '' || x.v === null) return;
+        const gi = mergeAt[key]; if (gi !== undefined && (m.merges[gi][0] !== r || m.merges[gi][1] !== c)) return;
+        const g = gi !== undefined ? m.merges[gi] : [r, c, r, c];
+        const left = X[g[1]], right = X[g[3] + 1], ytop = Y[g[0]], ybot = Y[g[2] + 1];
+        const size = sz(x.size, x.bold), pad = 3 * k, max = right - left - 2 * pad;
+        let lh = size * 1.18;
+        const h = x.h || (typeof x.v === 'number' ? 'right' : 'left');
+        let lines = String(x.v).split('\n').map(clean);
+        if (x.wrap) lines = [].concat(...lines.map((s) => wrapLine(s, size, max)));
+        else if (x.clip) lines = lines.map((s) => clip(s, size, max));
+        const n = lines.length;
+        if (n > 1) lh = Math.min(size * 1.9, (ytop - ybot - 2 * k) / n);   // 2-line headers / names: spacing like the sheet
+        let base = x.va === 'bottom' ? ybot + 3 * k + size * 0.2 + (n - 1) * lh : (ytop + ybot) / 2 + (n - 1) * lh / 2 - size * 0.22;
+        lines.forEach((s) => {
+          const w = runW(s, size);
+          const tx = h === 'center' ? (left + right) / 2 - w / 2 : h === 'right' ? right - pad - w : left + pad;
+          drawRun(s, tx, base, size, x.bold);
+          base -= lh;
+        });
+      });
+      // borders
+      const thin = 0.55, medium = 1.3;
+      const seg = (x1, y1, x2, y2, t, dash) => page.drawLine({ start: { x: x1, y: y1 }, end: { x: x2, y: y2 }, thickness: t, color: black, dashArray: dash });
+      m.borders.filter((b) => b.kind === 'grid').forEach((b) => {
+        for (let r = b.r1; r <= b.r2; r++) for (let c = b.c1; c <= b.c2; c++) {
+          if (r === b.r1 || !same(r - 1, c, r, c)) seg(X[c], Y[r], X[c + 1], Y[r], thin);
+          if (c === b.c1 || !same(r, c - 1, r, c)) seg(X[c], Y[r], X[c], Y[r + 1], thin);
+          if (r === b.r2) seg(X[c], Y[r + 1], X[c + 1], Y[r + 1], thin);
+          if (c === b.c2) seg(X[c + 1], Y[r], X[c + 1], Y[r + 1], thin);
+        }
+      });
+      m.borders.forEach((b) => {
+        const l = X[b.c1], rt = X[b.c2 + 1], t = Y[b.r1], bt = Y[b.r2 + 1];
+        if (b.kind === 'box') { seg(l, t, rt, t, medium); seg(l, bt, rt, bt, medium); seg(l, t, l, bt, medium); seg(rt, t, rt, bt, medium); }
+        if (b.kind === 'dotBottom') seg(l, bt, rt, bt, thin, [0.9, 1.4]);
+      });
+      if (logo && m.img) page.drawImage(logo, { x: X[m.img.c] + m.img.ox * k, y: Y[m.img.r] - m.img.oy * k - m.img.h * k, width: m.img.w * k, height: m.img.h * k });
+    }
+    return doc.save();
+  }
+
+  const api = { PF, fmt, build, pfBuildPages, toPdf, toXlsx, modelBFL, modelPC, LOGO: typeof PF_LOGO_B64 !== 'undefined' ? PF_LOGO_B64 : '' };
+  if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.PForm = api;
+})(typeof window !== 'undefined' ? window : this);
+</script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;600;700&family=IBM+Plex+Mono:wght@500;600&family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
@@ -703,6 +1112,33 @@ async function sbCall(fn, body) {   // a Supabase function; its own message on e
   const t = await r.text();
   if (!r.ok) { let m = t; try { m = JSON.parse(t).message || t; } catch (e) { /* text */ } throw new Error(String(m).slice(0, 300)); }
   return t ? JSON.parse(t) : null;
+}
+const PFX = { list: {}, blobs: {}, n: 0 };
+const expList = (d) => PFX.list[d.lot.id] || [];
+async function pfxExport() {
+  const d = D.det;
+  D.exporting = true; render();
+  try {
+    const [k] = await Promise.all([tagKit(), rpLib('https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js', 'ExcelJS')]);
+    const R = await sbCall('pkr_get', { p_ticket: S.session.token, p_reqs: [{ tab: 'FG_Lot', col: 'FGLotID', vals: [String(d.lot.id)] }, { tab: 'FG_Detail' },
+      { tab: 'Packing_Record', col: 'FGLotID', vals: [String(d.lot.id)] }, { tab: 'Packing_Runtime', col: 'FGLotID', vals: [String(d.lot.id)] }] });
+    const r = PForm.build({ fg: R[0].rows[0], det: R[1].rows, recs: R[2].rows, runs: R[3].rows, shift: expShift(), merge: !!D.merge });
+    const pdf = await PForm.toPdf(window.PDFLib, window.fontkit, tgBytes(k.font), tgBytes(PForm.LOGO), r.models);
+    const xlsx = await PForm.toXlsx(window.ExcelJS, r.models, PForm.LOGO);
+    const id = 'L' + (++PFX.n);
+    PFX.blobs[id] = { pdf: { blob: new Blob([pdf], { type: 'application/pdf' }), name: r.base + '.pdf' },
+      xlsx: { blob: new Blob([xlsx], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), name: r.base + '.xlsx' } };
+    (PFX.list[d.lot.id] = PFX.list[d.lot.id] || []).unshift({ id: id, status: 'DONE', at: PForm.fmt(Date.now(), 'd/M HH:mm'), t: Date.now(), msg: r.msg, pdf: true, xlsx: true });
+    toast('สร้างไฟล์แล้ว — แตะ เปิด PDF');
+  } catch (e) { toast('สร้างไฟล์ไม่สำเร็จ · ' + String(e && e.message || e).slice(0, 160), true); }
+  D.exporting = false; render();
+}
+function pfxFile(arg) {
+  const [id, kind] = String(arg).split(','), f = PFX.blobs[id] && PFX.blobs[id][kind];
+  if (!f) throw new Error('ไฟล์นี้ไม่อยู่ในเครื่องแล้ว — กดสร้างใหม่');
+  const url = URL.createObjectURL(f.blob), a = document.createElement('a');
+  a.href = url; a.download = f.name; a.target = '_blank'; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
 }
 const call = async (fn, ...a) => {
   switch (fn) {
@@ -1818,9 +2254,9 @@ Object.assign(VIEWS, {
         + '<p class="muted" style="font-size:13px">กะ = เวลาเริ่มพาเลท · 08:00–16:00 · 16:00–00:00 · 00:00–08:00 (ตัวเลข = จำนวนพาเลท)</p>'
         + '<h2 style="margin-top:6px">ทีมแพค</h2><div class="wrap">' + [[false, 'แยกทีม'], [true, 'รวมทีม']].map(([k, l]) => '<button class="chip' + (!!D.merge === k ? ' on' : '') + '" data-act="dMerge" data-arg="' + (k ? 1 : '') + '" aria-pressed="' + (!!D.merge === k) + '">' + l + '</button>').join('') + '</div>'
         + '<p class="muted" style="font-size:13px">แยกทีม = 1 ใบต่อทีม · รวมทีม = ทุกทีมในใบเดียว เรียงตามเวลา (ชื่อทีมใต้ลายเซ็นตามพาเลทในใบ)</p></section>'
-      + '<button class="primary" data-act="dExport"' + (D.exporting ? ' disabled style="background:var(--muted)"' : '') + '>' + (D.exporting ? 'กำลังสร้าง… (10–30 วินาที)' : 'สร้าง PDF + Excel' + (expShift() ? ' · ' + shiftLabel(expShift()) : ' · ทั้งล็อต') + (D.merge ? ' · รวมทีม' : '')) + '</button>'
-      + '<p class="muted" style="font-size:13px">ไฟล์ถูกลบอัตโนมัติหลัง 1 วัน — กดสร้างใหม่ได้ตลอด</p>'
-      + '<section class="card" style="gap:2px"><h2 style="margin-bottom:6px">Export ของล็อตนี้</h2>' + (d.exports.map((x) => '<div class="col g6" style="padding:10px 0;border-bottom:1px solid var(--soft)">'
+      + '<button class="primary" data-act="dExport"' + (D.exporting ? ' disabled style="background:var(--muted)"' : '') + '>' + (D.exporting ? 'กำลังสร้างในเครื่อง…' : 'สร้าง PDF + Excel' + (expShift() ? ' · ' + shiftLabel(expShift()) : ' · ทั้งล็อต') + (D.merge ? ' · รวมทีม' : '')) + '</button>'
+      + '<p class="muted" style="font-size:13px">สร้าง PDF + Excel ในเครื่องนี้ ไม่ผ่าน Drive — ไฟล์อยู่ในหน้านี้จนปิดแอป กดสร้างใหม่ได้ตลอด</p>'
+      + '<section class="card" style="gap:2px"><h2 style="margin-bottom:6px">Export ของล็อตนี้</h2>' + (expList(d).map((x) => '<div class="col g6" style="padding:10px 0;border-bottom:1px solid var(--soft)">'
         + '<span class="row g8"><span class="tag" style="' + (st[x.status] || '') + '">' + esc(x.status) + '</span><span class="muted" style="font-size:13px;margin-left:auto">' + esc(x.at) + '</span></span>'
         + (x.msg ? '<span class="muted" style="font-size:13px">' + esc(x.msg) + '</span>' : '')
         + (x.pdf || x.xlsx ? '<div class="grid2">' + (x.pdf ? '<button class="secondary" style="min-height:44px;border-color:var(--blue);color:var(--blue)" data-act="dFile" data-arg="' + esc(x.id) + ',pdf">เปิด PDF</button>' : '<span></span>')
@@ -2045,6 +2481,7 @@ Object.assign(ACT, {
   dShift(k) { D.shift = k; render(); },
   dMerge(k) { D.merge = !!k; render(); },
   async dExport() {
+    if (PK_SA) return pfxExport();
     const d = D.det, t0 = now();
     D.exporting = true; render();
     let err = null;
@@ -2066,6 +2503,7 @@ Object.assign(ACT, {
   },
   // The file comes through the app (Sup phones need no Drive access): base64 → Blob → download / open.
   async dFile(arg) {
+    if (PK_SA) return pfxFile(arg);
     const [id, kind] = arg.split(','), f = await api('exportFile', id, kind);
     const bytes = Uint8Array.from(atob(f.b64), (c) => c.charCodeAt(0)), url = URL.createObjectURL(new Blob([bytes], { type: f.mime }));
     const a = document.createElement('a');
