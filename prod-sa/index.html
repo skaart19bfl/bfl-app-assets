@@ -979,7 +979,7 @@ const PAGES = {
   },
   ncpm() {
     const D = S.nm;
-    const head = '<div class="row"><div class="col" style="gap:2px"><span class="lbl">แท็บ NCP · ทุกแหล่ง (Coater app · AppSheet · Packing) · วันผลิต 08:00 → 08:00</span><h1>NCP ที่เกิด</h1></div><div class="row right"><input type="date" data-in="nmDay" value="' + esc(S.nmDay || '') + '"><button data-act="nmLoad">ดู</button></div></div>';
+    const head = '<div class="row"><div class="col" style="gap:2px"><span class="lbl">แท็บ NCP · ทุกแหล่ง (Coater app · AppSheet · Packing) · วันผลิต 08:00 → 08:00</span><h1>NCP ที่เกิด</h1></div><div class="row right"><input type="date" data-in="nmDay" value="' + esc(S.nmDay || '') + '"><button data-act="nmLoad">ดู</button><button data-act="nmXlsx" title="Excel NCP รายวันแบบเดิม (Shift · NCP CODE · Product · Lot · Line · BAG · Kg. · Date · Time · Process · Operator · Comment · Process\'s cause)"' + (S.nmXl ? ' disabled' : '') + '>' + (S.nmXl ? 'กำลังทำไฟล์…' : '⬇ Excel NCP รายวัน') + '</button></div></div>';
     if (!D) return head + LOADING;
     const P = D.procs.concat(Object.keys(D.byProc).filter((p) => !D.procs.includes(p))).filter((p) => D.byProc[p]);
     const chips = '<div class="row" style="flex-wrap:wrap"><span class="chip">รวม <b class="mono">' + n0(D.total) + '</b> kg · ' + D.rows.length + ' แถว</span>' + P.map((p) => '<span class="chip">' + esc(p) + ' <b class="mono">' + n0(D.byProc[p]) + '</b></span>').join('')
@@ -2374,6 +2374,37 @@ const ACT = {
     if (T === 'coat') { if (!S.coat) { const d = new Date(Date.now() - 8 * 3600e3); S.cDay = S.cDay || d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); S.coat = await api('coaterBoard', S.cDay); } return ACT.openCoat(a); }
   },
   async nmLoad() { S.nm = null; render(); S.nm = await api('ncpDay', S.nmDay); render(); },
+  // Daily NCP Excel (main script 031 in Supabase via prod-calc 'daily_ncp') — the file AppSheet's "Daily NCP Export" made
+  async nmXlsx() {
+    if (S.nmXl || !/^\d{4}-\d{2}-\d{2}$/.test(S.nmDay || '')) return;
+    S.nmXl = true; render();
+    try {
+      const fresh = (t) => t && Number(String(t).split('.')[2]) > Date.now() + (LRS.ctx ? LRS.ctx.skew : 0) + 60e3;
+      let t = LRS.lr ? LRS.lr.ticket() : null;
+      if (!fresh(t)) { await api('ncpDay', S.nmDay); t = LRS.lr ? LRS.lr.ticket() : null; }
+      if (!fresh(t)) throw new Error('ยังเชื่อม Supabase ไม่ได้ — กด ดู แล้วลองใหม่');
+      let j;
+      try { j = await (await fetch(SB.URL + '/functions/v1/prod-calc', { method: 'POST', headers: { apikey: SB.KEY, 'Content-Type': 'application/json' }, body: JSON.stringify({ mode: 'daily_ncp', ticket: t, date: S.nmDay }) })).json(); }
+      catch (e) { throw new Error('ไม่มีสัญญาณ — ลองอีกครั้ง'); }
+      if (!j || !j.ok) throw new Error('ทำไฟล์ไม่สำเร็จ: ' + ((j && j.error) || '—'));
+      const X = await loadXlsx(), day = (x) => { const p = x.split('-').map(Number); return Date.UTC(p[0], p[1] - 1, p[2]) / 864e5 + 25569; };
+      const tod = (x) => { const p = x.split(':').map(Number); return (p[0] * 3600 + p[1] * 60 + (p[2] || 0)) / 86400; };
+      const ws = X.utils.aoa_to_sheet([j.headers].concat(j.rows.map((r) => r.v.map((v) => (v == null ? '' : v)))));
+      j.rows.forEach((r, i) => {
+        const R = i + 2, v = r.v;
+        ws['B' + R] = { t: 's', v: String(v[1] == null ? '' : v[1]) }; ws['D' + R] = { t: 's', v: String(v[3] == null ? '' : v[3]) };
+        ws['G' + R] = { t: 'n', v: Number(v[6]) || 0, z: '#,##0.00' };
+        if (v[7]) ws['H' + R] = { t: 'n', v: day(v[7]), z: 'dd/mm/yyyy' };
+        if (v[8]) ws['I' + R] = { t: 'n', v: tod(v[8]), z: 'hh:mm' };
+      });
+      ws['!autofilter'] = { ref: 'A1:M' + Math.max(1, j.rows.length + 1) };
+      ws['!cols'] = [6, 18, 44, 15, 7, 8, 10, 11, 7, 10, 10, 30, 34].map((w) => ({ wch: w }));
+      const wb = X.utils.book_new(); X.utils.book_append_sheet(wb, ws, 'Daily NCP');
+      X.writeFile(wb, 'Daily_NCP_' + S.nmDay + '.xlsx');
+      toast('Excel NCP ' + S.nmDay + ' · ' + j.recordCount + ' แถว · ' + n0(j.totalKg) + ' kg (กลางวัน ' + j.dayCount + ' · กลางคืน ' + j.nightCount + ')');
+    } catch (e) { toast((e && e.message) || String(e), true); }
+    finally { S.nmXl = false; render(); }
+  },
   // ---------- แก้ทั้ง Lot (user 10 Nov 2026): Extruder runtime / Coater ----------
   async openLrt(pid) { const f = { target: 'lrt', pid, g: null, e: null }; S.f = f; S.drawer = 'lrt'; render(); f.g = await api('lotRuntime', pid); if (S.f === f) render(); },
   newLrt() { const f = S.f; f.e = { id: '', ext: f.g.exts[0] }; f.xt = nowT(); f.xp = ''; f.xr = ''; render(); },
