@@ -1143,7 +1143,7 @@ function pfxFile(arg) {
 const call = async (fn, ...a) => {
   switch (fn) {
     case 'listLogin': return sbCall('pk_login_list', {});
-    case 'login': return sbCall('pk_login', { p_id: a[0], p_pin: a[1] });
+    case 'login': { const r = await sbCall('pk_login', { p_id: a[0], p_pin: a[1] }); if (r && r.err) throw new Error(r.err); return r; }   // wrong PIN / locked: counted in Supabase (14 Nov)
     case 'changePin': await sbCall('pk_change_pin', { p_ticket: a[0], p_pin: a[1] }); return true;
     case 'saveUser': return sbCall('pk_user_save', { p_ticket: a[0], p_d: a[1] });
     case 'rdCtx': return sbCall('pkr_ctx', { p_ticket: a[0] });
