@@ -933,7 +933,7 @@ async function exCtxGet(want, have) {
   } else {
     // one Apps Script call per 10 min: every sheet-only tab comes along (small tabs; the phone keeps them for the next screens)
     const ask = Array.from(new Set(rest.concat((EX_PHONE.allSheets || []).filter((x) => REF.indexOf(x) < 0))));
-    c = await exGas('exCtx', [EXS.tok, ask, pick(ask)]);
+    c = await exCtxGas(ask, pick(ask));
     if (!c) return c;
     c.sheets = c.sheets || {}; c.disp = c.disp || {}; c.same = c.same || {}; c.hash = c.hash || {};
     const tabs = Object.assign({}, C && C.ticket === c.ticket ? C.tabs : {});
@@ -947,8 +947,13 @@ async function exCtxGet(want, have) {
   let back = ref;
   if (r && r.off) EXS.refOff = Date.now() + 10 * 60e3;
   else if (r) { put(c, r); back = r.missing || []; }
-  if (back.length) { const c2 = await exGas('exCtx', [EXS.tok, back, pick(back)]); if (c2) put(c, c2); }
+  if (back.length) { const c2 = await exCtxGas(back, pick(back)); if (c2) put(c, c2); }
   return c;
+}
+// exCtx failing for any reason but the sign-in → the phone stops (LR_OFF) and the call goes to Apps Script as before
+async function exCtxGas(want, have) {
+  try { return await exGas('exCtx', [EXS.tok, want, have]); }
+  catch (e) { const m = String(e && e.message || e); if (/AUTH:/.test(m)) throw e; throw new Error('LR_OFF ctx ' + m.slice(0, 120)); }
 }
 function exGet() {
   if (!EXS.lr) EXS.lr = makeLR({ src: EX_SRC, okSheets: EX_PHONE.okSheets, patches: EX_PHONE.patches, ownAuth: true, keyProp: 'DB_KEY',
