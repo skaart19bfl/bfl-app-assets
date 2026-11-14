@@ -1245,13 +1245,27 @@ async function sbRpc(fn, body) {
   if (!r.ok) { let m = t; try { m = JSON.parse(t).message || t; } catch (e) { /* text */ } throw new Error((fn === 'pkw_commit' ? '' : 'LR_DB ') + String(m).slice(0, 200)); }
   return JSON.parse(t);
 }
+// v97: reads the phone already has come back as {same} (no rows) — FG_Lot / FG_Detail / users were downloaded on every screen.
+const PKC = new Map();
+const pkClone = (o) => (typeof structuredClone === 'function' ? structuredClone(o) : JSON.parse(JSON.stringify(o)));
+async function pkStore(ticket, reqs) {
+  const ks = reqs.map((q) => (q.tab === '__jobs' ? null : JSON.stringify([q.tab, q.col || '', q.vals || null, q.tail == null ? null : q.tail])));
+  const res = await sbRpc('pkr_get', { p_ticket: ticket, p_reqs: reqs.map((q, i) => (ks[i] && PKC.has(ks[i]) ? Object.assign({}, q, { have: PKC.get(ks[i]).a }) : q)) });
+  return res.map((r, i) => {
+    const k = ks[i];
+    if (!k) return r;
+    if (r && r.same) { const c = PKC.get(k); if (!c) throw new Error('LR_DB cache'); PKC.delete(k); PKC.set(k, c); return pkClone(c); }
+    if (r && r.a && Array.isArray(r.rows)) { PKC.delete(k); PKC.set(k, pkClone(r)); while (PKC.size > 40) PKC.delete(PKC.keys().next().value); }
+    return r;
+  });
+}
 function lrGet() {
   if (!LRS.lr) LRS.lr = makeLR({
     src: PK_SRC,
     rdCtx: (want, have) => call('rdCtx', S.session.token, want, have),
-    store: (ticket, reqs) => sbRpc('pkr_get', { p_ticket: ticket, p_reqs: reqs }),
+    store: pkStore,
     commit: async (ticket, fn, reads, ops, comp, jobs) => {
-      try { return await sbRpc('pkw_commit', { p_ticket: ticket, p_fn: fn, p_reads: reads, p_ops: ops, p_comp: comp, p_jobs: jobs }); }
+      try { const r = await sbRpc('pkw_commit', { p_ticket: ticket, p_fn: fn, p_reads: reads, p_ops: ops, p_comp: comp, p_jobs: jobs }); PKC.clear(); return r; }
       catch (e) { if (isNet(e)) throw new Error('LR_NET'); throw e; }
     },
     sheetsFor: { getState: ['Packing_App_Users', 'FG_Detail'], tagList: ['Packing_App_Users', 'FG_Detail'], record: ['Packing_App_Users', 'FG_Detail'],
@@ -1297,6 +1311,7 @@ async function showLogin() {
 function logout() {
   S.session = null; S.data = null; S.draft = null; S.holds = null; S.hd = null; S.pin = ''; S.proxy = null; S.jobForm = null;
   D.lots = D.det = D.opts = D.fgd = null;
+  PKC.clear();
   LS.set('pk-session', null);
   showLogin();
 }
