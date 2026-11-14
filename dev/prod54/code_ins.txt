@@ -1,0 +1,30 @@
+/* ---------- v54: the phone reads Supabase itself (user 14 Nov 2026 "ทำเลย") ----------
+ * The page runs this file's read functions on the phone (lr.js) on rows from Supabase (pdr_get + ticket) — no UrlFetch here.
+ * rdCtx gives only what is not in Supabase: sheet-only tabs (PIN hashes blanked; a tab the phone already has with the same hash is
+ * not sent again), the Script Properties the reads use and the ticket. No ticket unless DB_PRIMARY = '1' and PD_LOCAL_R = '1'. */
+const RD = { SHEETS: ['ProdApp_Users', 'Production_Lot', 'Product_Detail', 'RuntimeType', 'NCP', 'Moisture', 'Kibble', 'Grinding_Fineness', 'NCP_Detail',
+  'Production_NCP_Map', 'Old_Semi_Use', 'Extruder_Lot_Info', 'FG_Lot', 'Batching_OCR_Log'], HOURS: 2 };
+function rdCtx(token, want, have) {
+  cacheOn_();
+  const me = session_(token), all = PropertiesService.getScriptProperties().getProperties();
+  const props = { DB_PRIMARY: all.DB_PRIMARY || '', DB_LATER_ON: all.DB_LATER_ON || '', PD_LOCAL_R: all.PD_LOCAL_R || '' };
+  const sheets = {}, same = {}, hash = {};
+  (want || []).forEach(function (n) {
+    n = String(n);
+    if (RD.SHEETS.indexOf(n) < 0 || isDb_(n) || hash[n]) return;
+    let v = TCACHE_ ? tcGet_(n) : null;
+    if (!v) { const sh = rawSs_().getSheetByName(n); if (!sh) return; v = sh.getDataRange().getValues(); tcPut_(n, v); }
+    if (n === CFG.USERS) { const i = v[0].map(String).indexOf('PIN_Hash'); if (i >= 0) v = v.map(function (r, j) { if (!j) return r; r = r.slice(); r[i] = ''; return r; }); }
+    const enc = v.map(function (r) { return r.map(function (x) { return x instanceof Date ? { $d: x.getTime() } : x; }); });
+    const hx = Utilities.base64EncodeWebSafe(Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, JSON.stringify(enc), Utilities.Charset.UTF_8));
+    hash[n] = hx;
+    if (have && have[n] === hx) same[n] = 1; else sheets[n] = enc;
+  });
+  const on = props.DB_PRIMARY === '1' && props.PD_LOCAL_R === '1' && !!all.DB_KEY;
+  return { me: { id: me.id, name: me.Name, role: me.Role }, ticket: on ? rdTicket_(me, all.DB_KEY) : null, props: props, sheets: sheets, same: same, hash: hash, serverNow: Date.now() };
+}
+function rdTicket_(me, key) {
+  const exp = Date.now() + RD.HOURS * HOUR, body = [me.id, me.Role, exp].join('|');
+  const hx = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, key, Utilities.Charset.UTF_8).map(function (b) { return ('0' + (b & 255).toString(16)).slice(-2); }).join('');
+  return [me.id, me.Role, exp, Utilities.base64EncodeWebSafe(Utilities.computeHmacSha256Signature(body, 'pdr|' + hx)).replace(/=+$/, '')].join('.');
+}

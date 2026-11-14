@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="th" data-theme="light">
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>BFL Production Hub</title>
+<link rel="icon" type="image/png" sizes="64x64" href="favicon-64.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0F2744">
+<meta name="apple-mobile-web-app-title" content="BFL Hub">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+  /* BFL theme = Packing app (user 9 Nov 2026): grey-blue page, navy top bar, white cards, blue for "selected", IBM Plex Sans Thai */
+  :root { --bg:#EEF2F7; --card:#fff; --ink:#0F2744; --muted:#566779; --line:#D5DEE8; --line2:#BCC9D7; --blue:#1E5BD8; --navy:#0F2744; --amber:#FAAA20;
+          --bar:#0F2744; --bar-line:#5E7894; --blue-weak:#E7EFFC; --bad:#C2410C; --bad-weak:#FDE7DC; --ok:#157A43; --r:16px; --shadow:none; }
+  html[data-theme=dark] { --bg:#0B1A2E; --card:#12263F; --ink:#E6EDF7; --muted:#9FB0C4; --line:#24405F; --line2:#36506F; --blue:#5B8DEF; --navy:#9DBBF5;
+          --bar:#081424; --bar-line:#36506F; --blue-weak:#1A3358; --bad:#FF8A65; --bad-weak:#3D2216; --ok:#4CC38A; --shadow:none; }
+  * { box-sizing:border-box; }
+  html, body { margin:0; height:100%; background:var(--bg); color:var(--ink); font:16px/1.45 "IBM Plex Sans Thai", system-ui, sans-serif; -webkit-tap-highlight-color:transparent; }
+  button, input, select { font:inherit; color:inherit; }
+  button { cursor:pointer; border:1.5px solid var(--line2); background:var(--card); border-radius:12px; min-height:44px; padding:8px 14px; font-weight:600; }
+  button.primary { background:var(--ink); border-color:var(--ink); color:var(--card); font-weight:700; min-height:52px; border-radius:14px; }
+  html[data-theme=dark] button.primary { background:var(--blue); border-color:var(--blue); color:#fff; }
+  button.primary:disabled { opacity:.45; cursor:default; }
+  button.ghost { background:transparent; }
+  button.danger { color:var(--bad); }
+  input, select { width:100%; min-height:46px; border:2px solid var(--line2); border-radius:12px; padding:8px 12px; background:var(--card); }
+  label { display:flex; flex-direction:column; gap:4px; font-size:14px; color:var(--muted); }
+  .wrap { max-width:460px; margin:0 auto; padding:24px 16px 40px; }
+  .brand { display:flex; align-items:center; gap:10px; margin-bottom:18px; }
+  /* BFL Production logo (user 10 Nov 2026) — white tile so the artwork reads the same in light and dark */
+  .logo { width:56px; height:56px; border-radius:14px; background:#fff; border:1px solid var(--line); padding:2px; flex:none; display:block; object-fit:contain; }
+  .brand b { font-size:20px; } .brand small { display:block; color:var(--muted); font-size:13px; }
+  .card { background:var(--card); border:0; border-radius:var(--r); padding:16px; box-shadow:var(--shadow); }
+  .col { display:flex; flex-direction:column; gap:12px; } .row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .muted { color:var(--muted); } .small { font-size:13px; } h2 { margin:0 0 4px; font-size:20px; } h3 { margin:14px 0 6px; font-size:15px; color:var(--muted); font-weight:600; }
+  .names button { width:100%; text-align:left; font-weight:600; }
+  .pin { display:flex; gap:10px; justify-content:center; margin:10px 0; } .pin i { width:18px; height:18px; border-radius:50%; border:2px solid var(--ink); }
+  .pin i.on { background:var(--ink); }
+  .tpin { display:flex; gap:10px; justify-content:center; } .tpin span { width:48px; height:56px; border:1px solid var(--line); border-radius:12px; display:grid; place-items:center; font-size:26px; font-weight:700; background:var(--card); }
+  .pad { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; } .pad button { min-height:62px; font-size:24px; font-weight:600; border:0; border-radius:14px; font-family:'IBM Plex Mono',monospace; background:var(--bg); }
+  .switch { display:flex; flex-direction:row; align-items:center; gap:10px; color:var(--ink); text-align:left; padding:10px 12px; border:1px solid var(--line); border-radius:12px; background:var(--card); cursor:pointer; }
+  .switch input { width:22px; min-height:22px; margin:0; }
+  .err { background:var(--bad-weak); color:var(--bad); padding:10px 12px; border-radius:12px; font-size:14px; }
+  /* app shell */
+  #root { height:100%; }
+  #shell { display:flex; flex-direction:column; height:100%; height:100dvh; }
+  .top { display:flex; align-items:center; gap:8px; padding:8px 12px; background:var(--bar); color:#fff; }
+  .top .who { flex:1; min-width:0; } .top .who b { display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; } .top .who small { color:#C3D1E2; font-size:12px; }
+  .top button { min-height:38px; padding:6px 10px; font-size:14px; background:transparent; border-color:var(--bar-line); color:#fff; }
+  .top .logo { width:38px; height:38px; border-radius:10px; border-color:transparent; padding:1px; }
+  .tabs { display:flex; gap:6px; padding:8px 12px; background:var(--bg); border-bottom:1px solid var(--line); overflow-x:auto; }
+  .tabs button { white-space:nowrap; min-height:42px; font-weight:600; border:2px solid var(--line2); }
+  .tabs button.on { background:var(--blue); border-color:var(--blue); color:#fff; }
+  .tabs button .dot { display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--amber); margin-left:6px; vertical-align:middle; }
+  .stage { flex:1; position:relative; min-height:0; }
+  .stage iframe { position:absolute; inset:0; width:100%; height:100%; border:0; background:var(--bg); }
+  .stage .page { position:absolute; inset:0; overflow:auto; }
+  .tiles { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:12px; }
+  .tile { min-height:96px; text-align:left; display:flex; flex-direction:column; justify-content:space-between; font-weight:700; font-size:17px; border-radius:var(--r); }
+  .tile small { font-weight:400; color:var(--muted); font-size:12px; }
+  .loading { position:absolute; inset:0; display:grid; place-items:center; color:var(--muted); pointer-events:none; }
+  table { width:100%; border-collapse:collapse; font-size:14px; } td, th { padding:8px 6px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; }
+  .tag { display:inline-block; font-size:11px; padding:1px 7px; border-radius:99px; background:var(--blue-weak); color:var(--navy); margin:1px 2px 1px 0; }
+  html[data-theme=dark] .tag { color:#cfe0ff; }
+  .toast { font-weight:600; position:fixed; left:50%; bottom:20px; transform:translateX(-50%); background:var(--ink); color:var(--bg); padding:10px 16px; border-radius:12px; z-index:9; max-width:92vw; }
+  .toast.e { background:var(--bad); color:#fff; }
+  @media (max-width:520px) { .top .hide-sm { display:none; } }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+/* BFL Production Hub (user 9 Nov 2026; renamed from "BFL Hub" the same day) — one login (new PIN per person) for Production · Coating · NCP System · Raw material.
+ * Logins / users / app list live in Supabase bfl-production (hub_* functions). Each app opens inside this page; apps that support
+ * the Hub get a one-time ticket (?hub=…) and sign the person in as the app account the Admin mapped. Every app still opens directly as before.
+ * Shared station devices (Control, QC): the login ends at the end of the shift (08:00 / 16:00 / 00:00). Personal devices: 30 days. */
+const SB = 'https://kdytxuufvigwjccebrki.supabase.co/rest/v1/rpc/', KEY = 'sb_publishable_IYCMIaN7tJleWINprA42CQ_dX10sXFF';
+const LS = { get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} } };
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const S = { view: 'loading', theme: LS.get('hub-theme', 'light'), shared: LS.get('hub-shared', false), session: LS.get('hub-session', null),
+  names: [], pick: null, pin: '', pin1: '', oldPin: '', err: '', apps: [], open: {}, tab: 'home', admin: null, edit: null, busy: false };
+document.documentElement.dataset.theme = S.theme;
+
+async function rpc(fn, args) {
+  const r = await fetch(SB + fn, { method: 'POST', headers: { apikey: KEY, Authorization: 'Bearer ' + KEY, 'Content-Type': 'application/json' }, body: JSON.stringify(args || {}) });
+  const b = await r.json().catch(() => null);
+  if (!r.ok) throw new Error((b && b.message) || 'เชื่อมต่อไม่สำเร็จ ลองใหม่');
+  return b;
+}
+let tT; function toast(m, e) { let t = document.querySelector('.toast'); if (!t) { t = document.createElement('div'); document.body.appendChild(t); }
+  t.className = 'toast' + (e ? ' e' : ''); t.textContent = m; clearTimeout(tT); tT = setTimeout(() => t.remove(), e ? 5000 : 2500); }
+function go(v) { S.view = v; S.err = ''; render(); }
+const tok = () => S.session && S.session.token;
+
+/* ---------- screens ---------- */
+const V = {};
+V.loading = () => '<div class="wrap"><div class="muted">กำลังโหลด…</div></div>';
+const brand = (sub) => '<div class="brand"><img class="logo" src="logo-128.png" alt="BFL Production"><div><b>BFL Production Hub</b><small>' + esc(sub || 'Production · Coating · NCP · วัตถุดิบ · Extruder · Packing') + '</small></div></div>';
+const errBox = () => S.err ? '<div class="err">' + esc(S.err) + '</div>' : '';
+const pinDots = (n) => '<div class="pin">' + [0, 1, 2, 3].map((i) => '<i class="' + (i < n ? 'on' : '') + '"></i>').join('') + '</div>';
+const pad = () => '<div class="pad">' + [1, 2, 3, 4, 5, 6, 7, 8, 9].map((d) => '<button data-act="key" data-arg="' + d + '">' + d + '</button>').join('')
+  + '<button class="ghost" data-act="clr">ล้าง</button><button data-act="key" data-arg="0">0</button><button class="ghost" data-act="del">⌫</button></div>';
+
+V.setup = () => {
+  const head = '<div class="wrap">' + brand('ตั้งค่าครั้งแรก') + '<div class="card col"><h2>ตั้ง Admin คนแรก</h2>';
+  if (!S.setupName) return head + '<span class="muted small">ทำครั้งเดียว — คนนี้จะเพิ่มผู้ใช้คนอื่นและตั้ง PIN ชั่วคราวให้</span>'
+    + '<label>ชื่อ (แสดงตอน login)<input id="sn" autocomplete="off" value="' + esc(S.setupDraft || '') + '"></label>' + errBox()
+    + '<button class="primary" data-act="setupName">ถัดไป → ตั้ง PIN</button></div></div>';
+  return head + '<span class="muted small"><b>' + esc(S.setupName) + '</b> · ' + (!S.pin1 ? 'กดตั้ง PIN 4 หลักของคุณเอง' : 'กด PIN เดิมอีกครั้ง') + '</span>'
+    + pinDots(S.pin.length) + errBox() + pad() + '<button class="ghost" data-act="setupBack">← แก้ชื่อ</button></div></div>';
+};
+
+V.login = () => {
+  const groups = {}; S.names.forEach((u) => (groups[u.dept || 'อื่นๆ'] = groups[u.dept || 'อื่นๆ'] || []).push(u));
+  return '<div class="wrap">' + brand() + '<div class="card col"><h2>เข้าสู่ระบบ</h2><span class="muted small">แตะชื่อของคุณ</span>'
+    + (S.names.length ? Object.keys(groups).map((g) => '<h3>' + esc(g) + '</h3><div class="col names">' + groups[g].map((u) => '<button data-act="pick" data-arg="' + esc(u.id) + '">' + esc(u.name) + '</button>').join('') + '</div>').join('')
+      : '<span class="muted">ยังไม่มีผู้ใช้ — ให้ Admin เพิ่มก่อน</span>')
+    + '<label class="switch"><input type="checkbox" data-act="shared"' + (S.shared ? ' checked' : '') + '> <span><b>เครื่องประจำจุด (ใช้ร่วมกัน)</b><br><span class="small muted">ออกจากระบบเองเมื่อหมดกะ 08:00 / 16:00 / 00:00</span></span></label>'
+    + '<div class="row" style="justify-content:flex-end"><button class="ghost small" data-act="theme">' + (S.theme === 'dark' ? '☀︎ สว่าง' : '☾ มืด') + '</button></div></div></div>';
+};
+V.pin = () => '<div class="wrap">' + brand() + '<div class="card col"><h2>' + esc(S.pick.name) + '</h2><span class="muted small">ใส่ PIN 4 หลัก'
+  + (S.shared ? ' · เครื่องประจำจุด' : ' · เครื่องส่วนตัว (จำไว้ 30 วัน)') + '</span>' + pinDots(S.pin.length) + errBox() + pad()
+  + '<button class="ghost" data-act="back">← เปลี่ยนชื่อ</button></div></div>';
+V.newpin = () => {
+  const step = !S.oldPin ? 'ใส่ PIN ชั่วคราวที่ได้รับจาก Admin' : !S.pin1 ? 'ตั้ง PIN ใหม่ของคุณ (4 หลัก)' : 'ใส่ PIN ใหม่อีกครั้ง';
+  return '<div class="wrap">' + brand('ตั้ง PIN ใหม่') + '<div class="card col"><h2>' + esc(S.session.me.name) + '</h2><span class="muted small">' + step + '</span>'
+    + pinDots(S.pin.length) + errBox() + pad() + '<button class="ghost" data-act="logout">ยกเลิก</button></div></div>';
+};
+
+V.app = () => {
+  const me = S.session.me, tabs = [{ key: 'home', name: 'หน้าแรก' }].concat(S.apps).concat(me.is_admin ? [{ key: 'admin', name: 'ผู้ใช้' }] : []);
+  return '<div id="shell"><div class="top"><img class="logo" src="logo-128.png" alt="BFL Production">'
+    + '<div class="who"><b>' + esc(me.name) + '</b><small>' + esc(me.dept || '') + (S.session.shared ? ' · เครื่องประจำจุด ถึง ' + new Date(S.session.exp).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) : '') + '</small></div>'
+    + (S.tab !== 'home' && S.tab !== 'admin' ? '<button data-act="reload" title="โหลดแอปนี้ใหม่">↻<span class="hide-sm"> โหลดใหม่</span></button><button data-act="popout" title="เปิดแอปนี้ในแท็บใหม่">↗<span class="hide-sm"> แท็บใหม่</span></button>' : '')
+    + '<button data-act="theme">' + (S.theme === 'dark' ? '☀︎' : '☾') + '</button>'
+    + '<button data-act="logout">' + (S.session.shared ? 'เปลี่ยนผู้ใช้' : 'ออก') + '</button></div>'
+    + '<div class="tabs">' + tabs.map((t) => '<button class="' + (S.tab === t.key ? 'on' : '') + '" data-act="tab" data-arg="' + t.key + '">' + esc(t.name) + '</button>').join('') + '</div>'
+    + '<div class="stage" id="stage"></div></div>';
+};
+function homeHtml() {
+  return '<div class="page"><div class="wrap" style="max-width:720px">'
+    + (S.apps.length ? '<div class="tiles">' + S.apps.map((a) => '<button class="tile card" data-act="tab" data-arg="' + a.key + '">' + esc(a.name)
+      + '<small>' + (a.url ? (a.frame === false ? 'เปิดเป็นแท็บใหม่' : a.sso ? 'เข้าอัตโนมัติ' : 'login ในแอป') : 'ยังไม่ได้ตั้ง URL') + '</small></button>').join('') + '</div>'
+      : '<div class="card muted">ยังไม่ได้รับสิทธิ์ใช้แอปใด — แจ้ง Admin</div>')
+    + '<p class="muted small" style="margin-top:18px">แตะแอปเพื่อเปิด · สลับแอปได้จากแถบด้านบนโดยไม่ต้องโหลดใหม่ · ทุกแอปยังเปิดจากลิงก์เดิมได้เหมือนเดิม</p></div></div>';
+}
+function adminHtml() {
+  const A = S.admin;
+  if (!A) return '<div class="page"><div class="wrap muted">กำลังโหลด…</div></div>';
+  if (S.edit) return '<div class="page"><div class="wrap" style="max-width:560px">' + editHtml() + '</div></div>';
+  const appName = {}; A.apps.forEach((a) => (appName[a.key] = a.name));
+  return '<div class="page"><div class="wrap" style="max-width:860px"><div class="row" style="justify-content:space-between"><h2>ผู้ใช้ Hub</h2><button class="primary" data-act="newUser">+ เพิ่มผู้ใช้</button></div>'
+    + '<div class="card" style="margin-top:10px;overflow:auto"><table><thead><tr><th>ชื่อ</th><th>ฝ่าย</th><th>แอปที่ใช้ได้</th><th></th></tr></thead><tbody>'
+    + A.users.map((u) => '<tr style="' + (u.active ? '' : 'opacity:.5') + '"><td><b>' + esc(u.name) + '</b>' + (u.is_admin ? ' <span class="tag">Admin</span>' : '') + (u.must_change ? ' <span class="tag">รอตั้ง PIN</span>' : '') + (u.active ? '' : ' <span class="tag">ปิดใช้งาน</span>') + '</td>'
+      + '<td>' + esc(u.dept) + '</td><td>' + Object.keys(u.apps || {}).map((k) => '<span class="tag">' + esc(appName[k] || k) + '</span>').join('') + '</td>'
+      + '<td><button data-act="editUser" data-arg="' + esc(u.id) + '">แก้ไข</button></td></tr>').join('') + '</tbody></table></div>'
+    + '<h3>ลิงก์แอป</h3><div class="card col">' + A.apps.map((a) => '<label>' + esc(a.name) + (a.sso ? ' · เข้าอัตโนมัติจาก Hub' : ' · login ในแอป') + '<div class="row" style="flex-wrap:nowrap"><input id="url_' + a.key + '" value="' + esc(a.url) + '"><button data-act="saveUrl" data-arg="' + a.key + '">บันทึก</button></div></label>').join('') + '</div></div></div>';
+}
+function editHtml() {
+  const A = S.admin, e = S.edit, isNew = !e.id;
+  const acc = (k) => {
+    const list = A.accounts[k];
+    if (!list) return '<input data-in="app_' + k + '" value="' + esc((e.apps || {})[k] || '') + '" placeholder="username ในแอปนี้ (เว้นว่าง = ไม่ให้ใช้)">';
+    return '<select data-in="app_' + k + '"><option value="">— ไม่ให้ใช้ —</option>' + list.map((x) => '<option value="' + esc(x.id) + '"' + ((e.apps || {})[k] === x.id ? ' selected' : '') + '>' + esc(x.name + ' · ' + x.role) + '</option>').join('') + '</select>';
+  };
+  return '<div class="card col"><h2>' + (isNew ? 'เพิ่มผู้ใช้' : 'แก้ไข · ' + esc(e.name)) + '</h2>'
+    + '<label>ชื่อ (แสดงตอน login)<input data-in="name" value="' + esc(e.name || '') + '"></label>'
+    + '<label>ฝ่าย / จุดงาน<input data-in="dept" value="' + esc(e.dept || '') + '" placeholder="เช่น Control, QC, Coating, Rawmat"></label>'
+    + '<h3>ใช้แอปไหนได้ ด้วยบัญชีอะไร</h3>' + A.apps.map((a) => '<label>' + esc(a.name) + acc(a.key) + '</label>').join('')
+    + '<h3>' + (isNew ? 'PIN ชั่วคราว 4 หลัก (บังคับ)' : 'รีเซ็ต PIN — กด PIN ชั่วคราวใหม่ (ไม่กด = ไม่เปลี่ยน)') + '</h3>'
+    + '<div class="tpin">' + [0, 1, 2, 3].map((i) => '<span>' + esc(String(e.pin || '').charAt(i) || '·') + '</span>').join('') + '</div>'
+    + '<div class="pad">' + [1, 2, 3, 4, 5, 6, 7, 8, 9].map((d) => '<button data-act="tkey" data-arg="' + d + '">' + d + '</button>').join('')
+    + '<button class="ghost" data-act="tclr">ล้าง</button><button data-act="tkey" data-arg="0">0</button><button class="ghost" data-act="tdel">⌫</button></div>'
+    + '<span class="muted small">จด / บอกเลขนี้ให้ผู้ใช้ — ใช้ login ได้ครั้งเดียว</span>'
+    + '<span class="muted small">ผู้ใช้ต้องตั้ง PIN ของตัวเองตอน login ครั้งแรก</span>'
+    + '<label class="switch"><input type="checkbox" data-in="is_admin"' + (e.is_admin ? ' checked' : '') + '> Admin (จัดการผู้ใช้ได้)</label>'
+    + (isNew ? '' : '<label class="switch"><input type="checkbox" data-in="active"' + (e.active ? ' checked' : '') + '> เปิดใช้งาน</label>')
+    + errBox() + '<button class="primary" data-act="saveUser">บันทึก</button><button class="ghost" data-act="cancelEdit">← กลับ</button></div>';
+}
+
+/* ---------- render: the shell keeps app iframes alive, so switching tabs never reloads an app ---------- */
+function render() {
+  const root = document.getElementById('root');
+  if (S.view !== 'app') { root.innerHTML = V[S.view](); return; }
+  if (!document.getElementById('shell')) root.innerHTML = V.app();
+  else { const tmp = document.createElement('div'); tmp.innerHTML = V.app(); const sh = document.getElementById('shell');
+    sh.replaceChild(tmp.querySelector('.top'), sh.querySelector('.top')); sh.replaceChild(tmp.querySelector('.tabs'), sh.querySelector('.tabs')); }
+  const st = document.getElementById('stage');
+  let pg = st.querySelector('.page'); if (pg) pg.remove();
+  st.querySelectorAll('iframe, .loading').forEach((f) => { f.style.display = f.dataset.app === S.tab ? '' : 'none'; });
+  const tabApp = S.apps.find((x) => x.key === S.tab && x.frame === false);
+  if (tabApp) st.insertAdjacentHTML('beforeend', '<div class="page"><div class="wrap col" style="max-width:460px;text-align:center;padding-top:48px">'
+    + '<h2>' + esc(tabApp.name) + '</h2><span class="muted small">แอปนี้ต้อง login บัญชี Google จึงเปิดในหน้า Hub ไม่ได้ — เปิดเป็นแท็บใหม่' + (tabApp.sso ? ' และเข้าให้อัตโนมัติ' : '') + '</span>'
+    + '<button class="primary" data-act="popout" style="min-height:56px;font-size:18px">เปิด ' + esc(tabApp.name) + ' ↗</button></div></div>');
+  if (S.tab === 'home') st.insertAdjacentHTML('beforeend', homeHtml());
+  else if (S.tab === 'admin') st.insertAdjacentHTML('beforeend', adminHtml());
+}
+async function openApp(key, force) {
+  const a = S.apps.find((x) => x.key === key); if (!a) return;
+  if (a.frame === false) return; // opens in a new tab from its page (button → popout)
+  const st = document.getElementById('stage'); let f = st.querySelector('iframe[data-app="' + key + '"]');
+  if (f && !force) return;
+  if (!a.url) { toast('ยังไม่ได้ตั้ง URL ของ ' + a.name + ' — แจ้ง Admin', true); return; }
+  let url = a.url;
+  if (a.sso) {
+    const r = await rpc('hub_ticket', { p_token: tok(), p_app: key });
+    if (!r.ok) { if (r.error === 'AUTH') return expired(); toast(r.error, true); return; }
+    url += (url.indexOf('?') >= 0 ? '&' : '?') + 'hub=' + r.ticket;
+  }
+  if (f) f.remove();
+  const ld = st.querySelector('.loading[data-app="' + key + '"]'); if (ld) ld.remove();
+  st.insertAdjacentHTML('beforeend', '<div class="loading" data-app="' + key + '">กำลังเปิด ' + esc(a.name) + '…</div>');
+  f = document.createElement('iframe'); f.dataset.app = key; f.src = url; f.allow = 'camera; microphone; clipboard-read; clipboard-write; fullscreen';
+  f.addEventListener('load', () => { const l = st.querySelector('.loading[data-app="' + key + '"]'); if (l) l.remove(); });
+  st.appendChild(f); render();
+}
+function expired() { toast('หมดเวลาเข้าใช้งาน — login ใหม่', true); clearSession(); start(); }
+function clearSession() { S.session = null; LS.set('hub-session', null); S.apps = []; S.tab = 'home'; S.admin = null; S.edit = null; const r = document.getElementById('root'); if (r) r.innerHTML = ''; }
+
+/* ---------- actions ---------- */
+const ACT = {
+  theme() { S.theme = S.theme === 'dark' ? 'light' : 'dark'; LS.set('hub-theme', S.theme); document.documentElement.dataset.theme = S.theme; render(); },
+  shared(el) { S.shared = el.checked; LS.set('hub-shared', S.shared); },
+  pick(id) { S.pick = S.names.find((u) => u.id === id); S.pin = ''; go('pin'); },
+  back() { S.pick = null; S.pin = ''; go('login'); },
+  clr() { S.pin = ''; render(); },
+  del() { S.pin = S.pin.slice(0, -1); render(); },
+  async key(d) {
+    if (S.busy || S.pin.length >= 4) return; S.pin += d; S.err = ''; render();
+    if (S.pin.length < 4) return;
+    S.busy = true;
+    try {
+      if (S.view === 'pin') {
+        const r = await rpc('hub_login', { p_id: S.pick.id, p_pin: S.pin, p_shared: S.shared });
+        if (!r.ok) throw new Error(r.error);
+        S.session = { token: r.token, exp: r.exp, me: r.me, shared: S.shared }; LS.set('hub-session', S.session);
+        S.pin = ''; if (r.me.must_change) { S.oldPin = ''; S.pin1 = ''; return go('newpin'); }
+        await enter();
+      } else if (S.view === 'setup') {
+        if (!S.pin1) { S.pin1 = S.pin; S.pin = ''; return render(); }
+        if (S.pin1 !== S.pin) { S.pin1 = ''; S.pin = ''; throw new Error('PIN 2 ครั้งไม่ตรงกัน — กดตั้งใหม่อีกครั้ง'); }
+        const r = await rpc('hub_setup', { p_name: S.setupName, p_pin: S.pin });
+        if (!r.ok) { S.pin1 = ''; S.pin = ''; throw new Error(r.error); }
+        S.pin1 = ''; S.pin = ''; S.setupName = ''; toast('ตั้ง Admin แล้ว — แตะชื่อแล้วกด PIN เพื่อเข้าใช้งาน'); start();
+      } else if (S.view === 'newpin') {
+        if (!S.oldPin) { S.oldPin = S.pin; S.pin = ''; return render(); }
+        if (!S.pin1) { S.pin1 = S.pin; S.pin = ''; return render(); }
+        if (S.pin1 !== S.pin) { S.pin1 = ''; S.pin = ''; throw new Error('PIN ใหม่ 2 ครั้งไม่ตรงกัน ตั้งใหม่อีกครั้ง'); }
+        const r = await rpc('hub_change_pin', { p_token: tok(), p_old: S.oldPin, p_new: S.pin });
+        if (!r.ok) { S.oldPin = ''; S.pin1 = ''; S.pin = ''; throw new Error(r.error); }
+        S.session.me.must_change = false; LS.set('hub-session', S.session); S.oldPin = ''; S.pin1 = ''; S.pin = ''; toast('ตั้ง PIN แล้ว'); await enter();
+      }
+    } catch (e) { S.pin = ''; S.err = e.message; render(); }
+    finally { S.busy = false; }
+  },
+  setupName() {
+    const n = document.getElementById('sn').value.trim(); S.setupDraft = n;
+    if (n.length < 2) { S.err = 'ใส่ชื่อ (อย่างน้อย 2 ตัวอักษร)'; return render(); }
+    S.setupName = n; S.pin = ''; S.pin1 = ''; S.err = ''; render();
+  },
+  setupBack() { S.setupName = ''; S.pin = ''; S.pin1 = ''; S.err = ''; render(); },
+  // temporary PIN in the user form: number pad, digits shown so the Admin can tell the user
+  tkey(d) { if (!S.edit) return; S.edit.pin = String(S.edit.pin || ''); if (S.edit.pin.length < 4) S.edit.pin += d; S.err = ''; render(); },
+  tdel() { if (S.edit) { S.edit.pin = String(S.edit.pin || '').slice(0, -1); render(); } },
+  tclr() { if (S.edit) { S.edit.pin = ''; render(); } },
+  async logout() { const t = tok(); clearSession(); if (t) rpc('hub_logout', { p_token: t }).catch(() => {}); start(); },
+  async tab(k) {
+    S.tab = k; S.edit = null; render();
+    if (k === 'admin') { await loadAdmin(); return; }
+    if (k !== 'home') await openApp(k).catch((e) => toast(e.message, true));
+  },
+  // some apps (e.g. ones that need a Google sign-in) may not open inside a frame on every phone → open in a new tab, signed in the same way
+  async popout() {
+    const a = S.apps.find((x) => x.key === S.tab); if (!a || !a.url) return;
+    const w = window.open('about:blank', '_blank'); let url = a.url;
+    if (a.sso) { const r = await rpc('hub_ticket', { p_token: tok(), p_app: a.key }); if (!r.ok) { if (w) w.close(); return toast(r.error, true); } url += (url.indexOf('?') >= 0 ? '&' : '?') + 'hub=' + r.ticket; }
+    if (w) w.location.href = url; else location.href = url;
+  },
+  async reload() { if (S.tab !== 'home' && S.tab !== 'admin') await openApp(S.tab, true).catch((e) => toast(e.message, true)); },
+  newUser() { S.edit = { name: '', dept: '', apps: {}, is_admin: false, active: true, pin: '' }; S.err = ''; render(); },
+  editUser(id) { const u = S.admin.users.find((x) => x.id === id); S.edit = Object.assign({ pin: '' }, JSON.parse(JSON.stringify(u))); S.err = ''; render(); },
+  cancelEdit() { S.edit = null; S.err = ''; render(); },
+  async saveUser() {
+    const e = S.edit, p = { id: e.id || '', name: e.name, dept: e.dept, is_admin: !!e.is_admin, active: e.id ? !!e.active : true, apps: e.apps || {}, pin: e.pin || '' };
+    const r = await rpc('hub_user_save', { p_token: tok(), p }); if (!r.ok) { S.err = r.error; return render(); }
+    toast(e.pin ? 'บันทึกแล้ว · แจ้ง PIN ชั่วคราวให้ผู้ใช้' : 'บันทึกแล้ว'); S.edit = null; await loadAdmin();
+  },
+  async saveUrl(k) {
+    const r = await rpc('hub_app_save', { p_token: tok(), p: { key: k, url: document.getElementById('url_' + k).value.trim() } });
+    if (!r.ok) return toast(r.error, true);
+    toast('บันทึกลิงก์แล้ว'); await loadApps(); await loadAdmin();
+  },
+};
+async function loadAdmin() { const r = await rpc('hub_user_list', { p_token: tok() }); if (!r.ok) { if (r.error === 'AUTH') return expired(); return toast(r.error, true); } S.admin = r; render(); }
+async function loadApps() { const r = await rpc('hub_apps', { p_token: tok() }); if (!r.ok) return expired(); S.apps = r.apps; }
+async function enter() { await loadApps(); S.tab = 'home'; go('app'); setTimeout(warmApps, 1500); }
+/* GitHub Pages apps (user 10 Nov 2026): after login, quietly fetch each app's page into this browser (same store gas/boot.js reads,
+ * gasp-page-<app>) and wake its Apps Script, so the first tap on an app does not wait ~2 s for the page or a cold script.
+ * One app at a time; an app whose page has not changed costs one small request. */
+let warming = false;
+async function warmApps() {
+  if (warming) return; warming = true;
+  const base = new URL('../', location.href).href;
+  try {
+    for (const a of S.apps) {
+      if (!a.url || a.url.indexOf(base) !== 0) continue;
+      try {
+        const html = await (await fetch(a.url.split('?')[0], { cache: 'no-cache' })).text();
+        const key = (/data-key="([^"]+)"/.exec(html) || [])[1], exec = (/data-exec="([^"]+)"/.exec(html) || [])[1];
+        if (!key || !exec) continue;
+        const lsk = 'gasp-page-' + key; let old = null; try { old = JSON.parse(localStorage.getItem(lsk) || 'null'); } catch (e) {}
+        const r = await fetch(exec, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ fn: '__page', hash: old && old.hash }) });
+        const j = await r.json();
+        if (j.ok && j.v && j.v.html) { try { localStorage.setItem(lsk, JSON.stringify({ hash: j.v.hash, html: j.v.html, at: Date.now() })); } catch (e) {} }
+        // apps with a read cache (Production) fill it now, while nobody waits; the others answer "no such function"
+        fetch(exec, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ fn: '__warm' }) }).catch(() => {});
+      } catch (e) { /* the app still loads its page itself when opened */ }
+    }
+  } finally { warming = false; }
+}
+
+document.addEventListener('click', (ev) => {
+  const el = ev.target.closest('[data-act]'); if (!el || el.tagName === 'INPUT') return;
+  const f = ACT[el.dataset.act]; if (f) Promise.resolve(f(el.dataset.arg)).catch((e) => toast(e.message, true));
+});
+document.addEventListener('change', (ev) => {
+  const el = ev.target;
+  if (el.dataset.act === 'shared') return ACT.shared(el);
+  if (el.dataset.in && S.edit) { const k = el.dataset.in, v = el.type === 'checkbox' ? el.checked : el.value;
+    if (k.indexOf('app_') === 0) { S.edit.apps = S.edit.apps || {}; S.edit.apps[k.slice(4)] = v; } else S.edit[k] = v; }
+});
+document.addEventListener('input', (ev) => { const el = ev.target; if (el.dataset.in && S.edit && el.type !== 'checkbox' && el.tagName !== 'SELECT') { const k = el.dataset.in; if (k.indexOf('app_') === 0) { S.edit.apps[k.slice(4)] = el.value; } else S.edit[k] = el.value; } });
+document.addEventListener('keydown', (ev) => { const padView = S.view === 'pin' || S.view === 'newpin' || (S.view === 'setup' && S.setupName); if (!padView) return; if (/^\d$/.test(ev.key)) ACT.key(ev.key); else if (ev.key === 'Backspace') ACT.del(); });
+// shared device: end of shift → back to the login screen (checked every 30 s)
+setInterval(() => { if (S.session && S.session.exp && Date.now() > S.session.exp) expired(); }, 30000);
+
+async function start() {
+  S.view = 'loading'; render();
+  try {
+    if (S.session && S.session.token) {
+      const r = await rpc('hub_me', { p_token: S.session.token });
+      if (r.ok) { S.session.me = r.me; S.session.exp = r.exp; LS.set('hub-session', S.session); if (r.me.must_change) { S.oldPin = ''; S.pin1 = ''; return go('newpin'); } return enter(); }
+      clearSession();
+    }
+    const st = await rpc('hub_status');
+    if (!st.has_admin) return go('setup');
+    S.names = await rpc('hub_login_list'); go('login');
+  } catch (e) { S.view = 'login'; S.names = []; S.err = e.message; render(); }
+}
+start();
+</script>
+</body>
+</html>
