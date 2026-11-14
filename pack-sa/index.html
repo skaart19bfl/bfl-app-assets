@@ -665,17 +665,19 @@ function makeLR(o) {
     const t = S.tabs[q.p_tab] || (S.tabs[q.p_tab] = { h: res.h, kc: res.kc, rows: new Map() });
     t.h = res.h; if (res.kc != null) t.kc = res.kc;
     (res.rows || []).forEach((r) => { const d = Object.assign({}, r); delete d._k; delete d._s; t.rows.set(String(r._k), { d: d, s: r._s }); });
+    if (String(q.p_col || '').charAt(0) === '@') (S.picks || (S.picks = new Map())).set(key(q), (res.rows || []).map((r) => String(r._k)));   // v99: '@month' = rows Supabase chose
     S.reqs.set(key(q), res.v);
   }
   function runView(S) {   // a fresh copy of the rows for one run (its writes stay in it)
     const tabs = {};
     Object.keys(S.tabs).forEach((n) => { const t = S.tabs[n]; tabs[n] = { h: t.h, kc: t.kc, rows: new Map(Array.from(t.rows, ([k, r]) => [k, { d: r.d, s: r.s }])) }; });
-    return { tabs: tabs, jobs: S.jobs ? Object.assign({}, S.jobs) : null, ops: [], comp: [], jobOps: [], hooks: [], used: new Set(), blocked: [] };
+    return { tabs: tabs, jobs: S.jobs ? Object.assign({}, S.jobs) : null, ops: [], comp: [], jobOps: [], hooks: [], used: new Set(), blocked: [], picks: S.picks || new Map() };
   }
   function answer(V, q) {
     const t = V.tabs[q.p_tab];
     let rows = Array.from(t.rows, ([k, r]) => ({ k: k, d: r.d, s: r.s })).sort((a, b) => a.s - b.s);
     if (q.p_col == null) { if (q.p_tail != null) rows = rows.slice(-q.p_tail); }
+    else if (String(q.p_col).charAt(0) === '@') { const ks = new Set((V.picks && V.picks.get(key(q))) || []); rows = rows.filter((r) => ks.has(r.k)); }   // v99
     else {
       const vals = (q.p_vals || []).map(String), byKey = t.kc && q.p_col === t.kc;
       rows = rows.filter((r) => vals.indexOf(byKey ? r.k : txt(r.d[q.p_col])) >= 0);
