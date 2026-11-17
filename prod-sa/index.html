@@ -2316,8 +2316,19 @@ const ACT = {
     if (S.recalcing) return; S.recalcing = true;
     const pc = (v) => v == null ? '—' : (v * 100).toFixed(2) + '%', before = S.sum.kpi.Yield;
     try {
-      toast('กำลังสั่งคำนวณ Yield ใหม่…'); await api('lotKpiRecalc', S.lotPid);
-      await new Promise((r) => setTimeout(r, 2500)); S.lots = null; await loadLot();
+      toast('กำลังสั่งคำนวณ Yield ใหม่…');
+      // KPI in Supabase (prod-calc, the main script's 049 code) with this phone's ticket — the same way phone saves recalc
+      const fresh = (t) => t && Number(String(t).split('.')[2]) > Date.now() + (LRS.ctx ? LRS.ctx.skew : 0) + 60e3;
+      let t = LRS.lr ? LRS.lr.ticket() : null;
+      if (!fresh(t)) { S.lots = null; await loadLot(); t = LRS.lr ? LRS.lr.ticket() : null; }
+      if (!fresh(t)) throw new Error('ยังเชื่อม Supabase ไม่ได้ — รีเฟรชหน้าแล้วลองใหม่');
+      const pid = S.lotPid, job = { action: 'PRODUCTION_LOT_FINISHED', module: 'PRODUCTION_LOT_KPI', productionID: pid, rowID: pid, requestedBy: 'ProdApp:' + ((S.data && S.data.me && S.data.me.name) || '') };
+      let j;
+      try { j = await (await fetch(SB.URL + '/functions/v1/prod-calc', { method: 'POST', headers: { apikey: SB.KEY, 'Content-Type': 'application/json' }, body: JSON.stringify({ mode: 'run', ticket: t, jobs: [job], apply: true, quiet: false }) })).json(); }
+      catch (e) { throw new Error('ไม่มีสัญญาณ — ลองอีกครั้ง'); }
+      const e = j && j.e, bad = e && (e.results || []).find((x) => x && x.error);
+      if (!j || !j.ok || !e || !e.saved || bad) throw new Error('คำนวณไม่สำเร็จ: ' + ((j && j.error) || (bad && bad.error) || (e && e.why) || 'ไม่มีผลลัพธ์'));
+      await new Promise((r) => setTimeout(r, 800)); if (LRS.cache) LRS.cache.clear(); S.lots = null; await loadLot();
       const after = S.sum.kpi.Yield; toast(after === before ? 'คำนวณใหม่แล้ว · Yield ' + pc(after) + ' (ค่าเดิม)' : 'คำนวณใหม่แล้ว · Yield ' + pc(before) + ' → ' + pc(after));
     } catch (e) { fail(e); } finally { S.recalcing = false; }
   },
