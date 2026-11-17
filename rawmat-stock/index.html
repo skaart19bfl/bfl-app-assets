@@ -179,7 +179,7 @@ html[data-theme=dark] .prev{background:#0b111c}
   <video id="camv" playsinline muted style="max-width:100%;max-height:70vh;border-radius:12px;background:#000"></video>
   <span id="cammsg" style="color:#fff"></span><button type="button" id="camx" style="min-width:140px">ปิดกล้อง</button></div>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
-<script src="i18n-en.js?v=20261117c"></script>
+<script src="i18n-en.js?v=20261117d"></script>
 <script>
 'use strict';
 const SB_URL = 'https://kdytxuufvigwjccebrki.supabase.co';
@@ -469,7 +469,7 @@ const LABEL_CSS = `.lb{width:186mm;height:128mm;padding:6mm 8mm;font-family:${FF
 document.getElementById('lbcss').textContent = FORM_FONT + LABEL_CSS;
 
 // น้ำหนักบนป้ายแสดงต่อกระสอบ/ชิ้น (ผู้ใช้ 3 พ.ย.) · Bigbag / รถ / Bulk = ต่อหน่วย
-const perBag = (lot, u) => u.kind === 'PALLET' && u.bags > 0 && u.kg > 0 ? Math.round(u.kg / u.bags * 100) / 100 : u.kind === 'PALLET' && lot.avg ? Number(lot.avg) : null;
+const perBag = (lot, u) => u.kind === 'PALLET' && !u.scrap && lot.wsrc === 'label' && Number(lot.lpb) > 0 && u.bags > 0 && u.kg > 0 ? Number(lot.lpb) : u.kind === 'PALLET' && u.bags > 0 && u.kg > 0 ? Math.round(u.kg / u.bags * 100) / 100 : u.kind === 'PALLET' && lot.avg ? Number(lot.avg) : null;
 // ป้ายมี/ไม่มี QR: ก่อน 11 พ.ย. 2569 ค่าเริ่มต้นไม่มี QR (แบบฟอร์มเดิม) · ตั้งแต่ 11/11 ค่าเริ่มต้นมี QR · เลือกเองได้ทุกเมื่อ (ผู้ใช้ 6 พ.ย.)
 const QR_FROM = '2026-11-11';
 const lblQrDefault = () => ((S.snap && S.snap.biz_day) || new Date().toISOString().slice(0, 10)) >= QR_FROM;
@@ -1866,7 +1866,7 @@ function kgNote(d, lot) {
   if ((lot.pack !== 'BAG' && lot.pack !== 'BIGBAG') || !lot.net) return '';
   const us = d.s.units.filter((u) => u.lot === lot.lot && u.store === lot.store && (u.kind === 'PALLET' || u.kind === 'BIGBAG') && u.kg > 0).sort((a, b) => pSort(a.p) - pSort(b.p));
   if (!us.length) return '';
-  const per = (u) => u.kind === 'PALLET' && u.bags > 0 ? u.kg / u.bags : u.kg; // ป้ายเขียน กก./กระสอบ (Bigbag = ต่อใบ)
+  const per = (u) => u.kind === 'PALLET' && u.bags > 0 ? (!u.scrap && lot.wsrc === 'label' && Number(lot.lpb) > 0 ? Number(lot.lpb) : u.kg / u.bags) : u.kg; // ป้ายเขียน กก./กระสอบ (Bigbag = ต่อใบ)
   const g = new Map(); us.forEach((u) => { const k = per(u).toFixed(2); if (!g.has(k)) g.set(k, []); g.get(k).push(u); });
   const rng = (list) => { const out = []; let s = null, prev = null;
     list.map((u) => int(u.p)).forEach((n) => { if (s === null) { s = n; prev = n; } else if (n === prev + 1) prev = n; else { out.push(s === prev ? 'P' + s : 'P' + s + '–P' + prev); s = n; prev = n; } });
