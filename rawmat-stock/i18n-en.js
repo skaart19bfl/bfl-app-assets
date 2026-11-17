@@ -1622,5 +1622,7 @@ window.RM_I18N_EN = {
 " น. ห่างจากเวลาปัจจุบัน ": " is ",
 " ชม. · ระบบปรับยอด ณ เวลารอบ แล้วบวก/ลบการเทและตัดใช้หลังจากนั้น — เลือกรอบให้ตรงกับเวลาที่วัดจริง": " h before now · The balance is adjusted at the round time, then dumps and usage after it are added/deducted — choose the round that matches when you actually measured",
 ": รอบดิ่งอยู่ก่อนยอดตั้งต้น / นับถัง ": ": dip round is before the starting balance / bin count ",
-" — เลือกรอบหลังจากนั้น": " — choose a later round"
+" — เลือกรอบหลังจากนั้น": " — choose a later round",
+"พาเลทนี้เทแล้ว ": "This pallet was already dumped ",
+" ลงถัง ": " into bin "
 };

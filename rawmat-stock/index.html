@@ -179,7 +179,7 @@ html[data-theme=dark] .prev{background:#0b111c}
   <video id="camv" playsinline muted style="max-width:100%;max-height:70vh;border-radius:12px;background:#000"></video>
   <span id="cammsg" style="color:#fff"></span><button type="button" id="camx" style="min-width:140px">ปิดกล้อง</button></div>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
-<script src="i18n-en.js?v=20261113f"></script>
+<script src="i18n-en.js?v=20261117a"></script>
 <script>
 'use strict';
 const SB_URL = 'https://kdytxuufvigwjccebrki.supabase.co';
@@ -1617,7 +1617,8 @@ function ikPalSimple(d, o) {
   if (lot.item !== o.item) return ikMark(false, 'วัตถุดิบไม่ตรงใบสั่ง');
   if (lot.status !== 'ready') return ikMark(false, 'Lot ยังไม่พร้อมใช้');
   const cand = d.live.filter((u) => u.lot === sc.lot && (!sc.p || u.p === sc.p) && u.kg > 0);
-  if (!cand.length) return ikMark(false, 'ไม่พบพาเลทที่มียอด');
+  if (!cand.length) { const dm = ((S.pd.data || {}).dumps || []).find((x) => x.lot === sc.lot && (!sc.p || String(x.p) === String(sc.p)) && !x.void);
+    return ikMark(false, dm ? 'พาเลทนี้เทแล้ว ' + dtm(dm.at) + ' · ' + dm.doc + ' ลงถัง ' + dm.bin : 'ไม่พบพาเลทที่มียอด'); }
   const u = cand.find((x) => x.id === k.unit) || (cand.length === 1 ? cand[0] : null);
   if (!u) return `<div class="chips">${cand.map((x) => `<button type="button" class="tg" data-ikunit="${x.id}">${esc(pl(x.p))}</button>`).join('')}</div>`;
   const kindOk = o.unit === 'BIGBAG' ? u.kind === 'BIGBAG' : o.unit === 'KG' ? ['PALLET', 'BIGBAG'].includes(u.kind) : u.kind === 'PALLET';
