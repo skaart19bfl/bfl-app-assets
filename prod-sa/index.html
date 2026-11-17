@@ -919,7 +919,8 @@ const PAGES = {
     const base = Math.max(totIn, totOut + loss, 1);
     const bar = (arr) => '<div style="display:flex;height:40px;border-radius:9px;overflow:hidden;gap:2px;background:var(--well)">' + arr.map((x) => '<div title="' + esc(x[0] + ' ' + n0(x[1]) + ' kg') + '" style="flex:' + x[1] / base + ' 1 0;background:' + x[2] + ';color:var(--onacc);font-size:12px;font-weight:600;display:flex;align-items:center;padding:0 8px;white-space:nowrap;overflow:hidden">' + esc(x[0]) + ' ' + n0(x[1]) + '</div>').join('') + (totIn > totOut + loss ? '' : '') + '</div>';
     const inBtn = canWork() ? '<button class="small right" data-act="openLotIn" data-arg="' + esc(l.pid) + '">' + (k.Total_Fat_kg || k.Total_Flavour_kg || k['Total_Pre-con_kg'] || k.Total_Color_kg ? 'แก้' : '+ ใส่') + ' Fat / Flavour / Pre-con / Color</button>' : '';
-    const mass = totIn ? '<div class="card col"><div class="row"><h2>เข้าเท่าไร ออกเป็นอะไร</h2><span class="lbl">ความยาวแท่ง = kg · เข้า ' + n0(totIn) + ' kg</span>' + inBtn + '</div><span class="lbl">เข้า (Input)</span>' + bar(ins) + '<span class="lbl">ออก (Output)</span>' + (outs.length ? bar(outs) : '<span class="lbl">ยังไม่มีผลผลิต</span>') + '</div>'
+    const reBtn = canWork() ? '<button class="small right" data-act="lotKpiRecalc">คำนวณ Yield ใหม่</button>' : '';
+    const mass = totIn ? '<div class="card col"><div class="row"><h2>เข้าเท่าไร ออกเป็นอะไร</h2><span class="lbl">ความยาวแท่ง = kg · เข้า ' + n0(totIn) + ' kg</span>' + reBtn + inBtn + '</div><span class="lbl">เข้า (Input)</span>' + bar(ins) + '<span class="lbl">ออก (Output)</span>' + (outs.length ? bar(outs) : '<span class="lbl">ยังไม่มีผลผลิต</span>') + '</div>'
       : '<div class="card empty">ยังไม่มี Input — Yield จะคำนวณเมื่อมี Total_Batch</div>';
     // grinding card
     const G = Z.grinding;
@@ -2311,6 +2312,15 @@ const ACT = {
   async setState(s) { if (S.sum.lot.state === s) return; if (!await ask('เปลี่ยน State ' + S.sum.lot.lot + ' เป็น ' + s + ' ?')) return; await api('updateLot', S.lotPid, { state: s }); toast('State = ' + s + (s === 'Finished' ? ' · ส่งคำนวณ KPI แล้ว' : '')); S.lots = null; await loadLot(); },
   async saveLotEdit() { const x = {}; if (S.f.eQty != null) x.qty = S.f.eQty; if (S.f.eFormula != null) x.formula = S.f.eFormula; if (!Object.keys(x).length) return toast('ยังไม่ได้แก้อะไร');
     await api('updateLot', S.lotPid, x); toast('บันทึกแล้ว'); S.f = {}; S.lots = null; await loadLot(); },
+  async lotKpiRecalc() { // re-calculate this lot's KPI (Yield / Loss / Output …) then show before → after
+    if (S.recalcing) return; S.recalcing = true;
+    const pc = (v) => v == null ? '—' : (v * 100).toFixed(2) + '%', before = S.sum.kpi.Yield;
+    try {
+      toast('กำลังสั่งคำนวณ Yield ใหม่…'); await api('lotKpiRecalc', S.lotPid);
+      await new Promise((r) => setTimeout(r, 2500)); S.lots = null; await loadLot();
+      const after = S.sum.kpi.Yield; toast(after === before ? 'คำนวณใหม่แล้ว · Yield ' + pc(after) + ' (ค่าเดิม)' : 'คำนวณใหม่แล้ว · Yield ' + pc(before) + ' → ' + pc(after));
+    } catch (e) { fail(e); } finally { S.recalcing = false; }
+  },
   async cancelLot() { const c = await api('lotCancelCheck', S.lotPid);
     if (Object.keys(c.used).length || c.fg) { S.f = { target: 'lotcx', pid: S.lotPid, c, reason: '' }; S.drawer = 'lotcx'; render(); return; }
     if (!await ask('ยกเลิก Lot ' + S.sum.lot.lot + ' ? (Lot นี้ยังไม่มีข้อมูลการผลิต)')) return; await api('updateLot', S.lotPid, { cancel: true }); toast('ยกเลิก Lot แล้ว'); S.lots = null; await ACT.page('lots'); },
