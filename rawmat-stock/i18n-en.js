@@ -1624,5 +1624,7 @@ window.RM_I18N_EN = {
 ": รอบดิ่งอยู่ก่อนยอดตั้งต้น / นับถัง ": ": dip round is before the starting balance / bin count ",
 " — เลือกรอบหลังจากนั้น": " — choose a later round",
 "พาเลทนี้เทแล้ว ": "This pallet was already dumped ",
-" ลงถัง ": " into bin "
+" ลงถัง ": " into bin ",
+" — ถ้าของจริงยังอยู่ ให้ WH เช็คของจริงคงคลังและดำเนินการ": " — if the physical pallet is still there, WH must check actual stock and take action",
+"ไม่พบพาเลทที่มียอด — ให้ WH เช็คของจริงคงคลังและดำเนินการ": "No pallet with a balance was found — WH must check actual stock and take action"
 };
