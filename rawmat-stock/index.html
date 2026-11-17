@@ -179,7 +179,7 @@ html[data-theme=dark] .prev{background:#0b111c}
   <video id="camv" playsinline muted style="max-width:100%;max-height:70vh;border-radius:12px;background:#000"></video>
   <span id="cammsg" style="color:#fff"></span><button type="button" id="camx" style="min-width:140px">ปิดกล้อง</button></div>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
-<script src="i18n-en.js?v=20261117b"></script>
+<script src="i18n-en.js?v=20261117c"></script>
 <script>
 'use strict';
 const SB_URL = 'https://kdytxuufvigwjccebrki.supabase.co';
@@ -309,7 +309,7 @@ const S = {
   f: { source: 'purchase', plant: 'BFL-PC', lot: '', tdoc: '', slot: '', item: '', itemText: '', pack: 'BAG', cont: '', supKg: '', sup: '', supText: '', plate: '', exp: '', ticket: '', weighIn: '', delivery: '', po: '', province: '', qci: '', qcin: '', per: '', labels: '', bigbags: '', location: 'S-01', vehN: '1', vehU: 'คัน', method: '', tStart: '', tEnd: '', note: '' },
   net: {}, ud: {}, wo: {}, rt: { plant: 'BFL-PC', key: '', tdoc: '', pack: 'BAG', n: '', per: '', last: '', big: '', net: '', loc: 'S-01', note: '' }, rtc: { doc: '', reason: '' }, lotTab: 'label', le: { lot: '' }, holdReason: '', rw: { net: '', reason: '' },
   ob: { item: '', itemText: '', lot: '', store: 'RM', pack: 'BAG', cont: '', recv: '', exp: '', sup: '', loc: 'S-01', n: '', bags: '', kgb: '', lastBags: '', total: '', lines: '', tb: '', tkg: '' }, labelLot: '', labelP: '', lsel: { lot: '', ps: {} }, pf: { unit: '', bags: '', reason: '' }, cancel: '', cxReason: '', docPs: '',
-  rep: { day: '', data: null, loading: false }, fx: { doc: '' }, gLast: '', adj: { unit: '' }, gW: [], mm: {}, mmTo: '', scan: { open: false, q: '', to: '' }, sr: { mode: 'day', day: '', month: '', from: '', to: '', data: null, loading: false }, users: null, uf: { mode: 'new', username: '', name: '', role: 'wh', active: true, password: '' }, upw: { user: '', pw: '' },
+  rep: { day: '', data: null, loading: false }, fx: { doc: '' }, gLast: '', adj: { unit: '' }, adjq: '', gW: [], mm: {}, mmTo: '', scan: { open: false, q: '', to: '' }, sr: { mode: 'day', day: '', month: '', from: '', to: '', data: null, loading: false }, users: null, uf: { mode: 'new', username: '', name: '', role: 'wh', active: true, password: '' }, upw: { user: '', pw: '' },
   gSel: {}, gPart: {}, gQ: '', gDest: 'PD', gCount: '1', gKg: '', gPd: PD_DESTS[0], gLoc: '',
   iType: 'fat', iItem: '', iStore: '', iKg: '', iRef: '', iPick: {},
   storeF: 'ALL', view: 'sum', card: null, cardRows: null,
@@ -2456,13 +2456,15 @@ function viewStock(d) {
 
 // ปรับยอดจากผลตรวจนับ (admin) · ใส่จำนวนถุงที่นับได้ ระบบคิด กก. ตามน้ำหนักเฉลี่ยของพาเลทให้ (แก้ได้) · 0 = ไม่พบของ
 function adjPanel(d, u) {
-  const a = S.adj; const per = u.bags > 0 && u.kg > 0 ? u.kg / u.bags : 0;
+  const a = S.adj; const lt = d.lots[u.lot] || {}; const per = u.bags > 0 && u.kg > 0 ? u.kg / u.bags : lt.pack === 'BAG' && lt.avg ? Number(lt.avg) : 0; const bagIn = u.bags > 0 || (per > 0 && lt.pack === 'BAG');
+  const dm = ((S.pd.data || {}).dumps || []).find((x) => x.unit === u.id && !x.void);
   const kg = a.kg !== '' ? num(a.kg) : a.bags !== '' && per ? Math.round(int(a.bags) * per * 100) / 100 : NaN;
   const dk = isNaN(kg) ? null : Math.round((kg - Number(u.kg)) * 100) / 100;
   const ok = !isNaN(kg) && kg >= 0 && a.reason.trim().length >= 3 && !S.busy;
   return `<tr><td colspan="6"><div class="note" style="display:flex;flex-direction:column;gap:10px">
     <b>ปรับยอด ${esc(tag(u))} · ตามระบบ ${u.bags > 0 ? fmt(u.bags) + ' ' + (u.kind === 'BIGBAG' ? 'ใบ' : 'ถุง') + ' · ' : ''}${fmt(u.kg)} กก. · ช่อง ${esc(u.loc || '-')}</b>
-    <div class="grid4">${u.bags > 0 ? `<label class="fld">จำนวนที่นับได้ (${u.kind === 'BIGBAG' ? 'ใบ' : 'ถุง'})<input data-bind="adj.bags" value="${esc(a.bags)}" inputmode="numeric" placeholder="${fmt(u.bags)}"></label>` : ''}
+    ${dm ? `<div class="msg warn" role="note">พาเลทนี้ถูกเทลงถัง ${esc(dm.bin)} เมื่อ ${dtm(dm.at)} (${esc(dm.doc)}) — ถ้าเทลงถังจริงอย่าปรับยอด · ถ้าเทผิดให้ยกเลิกรายการเท (ยอดถังจะกลับด้วย)</div>` : ''}
+    <div class="grid4">${bagIn ? `<label class="fld">จำนวนที่นับได้ (${u.kind === 'BIGBAG' ? 'ใบ' : 'ถุง'})<input data-bind="adj.bags" value="${esc(a.bags)}" inputmode="numeric" placeholder="${fmt(u.bags)}"></label>` : ''}
       <label class="fld">น้ำหนักที่นับได้ (กก.)<input data-bind="adj.kg" value="${esc(a.kg)}" inputmode="decimal" placeholder="${isNaN(kg) ? fmt(u.kg) : fmt(kg)}"></label>
       <label class="fld">ช่องที่พบ<select data-bind="adj.loc">${locOpts(d, (a.loc || u.loc))}</select></label>
       <div class="fld">ไม่พบของ<button type="button" class="ghost sm" data-adjzero="1">ตั้งเป็น 0</button></div></div>
@@ -2474,17 +2476,27 @@ function adjPanel(d, u) {
 function viewCount(d) {
   const order = d.slots;
   const units = d.live.slice().sort((a, b) => order.indexOf(a.loc) - order.indexOf(b.loc) || (a.lot < b.lot ? -1 : 1));
-  const done = units.filter((u) => d.s.counted[u.id]).length; const adjOf = d.s.count_adj || {}; const admin = d.s.me.role === 'admin';
+  const done = units.filter((u) => d.s.counted[u.id]).length; const adjOf = d.s.count_adj || {}; const admin = ['admin', 'wh'].includes(d.s.me.role);
   const diff = units.filter((u) => d.s.counted[u.id] === 'diff' && !adjOf[u.id]).length;
   const rows = units.map((u) => { const c = d.s.counted[u.id];
     return `<tr><td>${esc(u.loc || '-')}</td><td class="mono">${esc(tag(u))}</td><td>${esc(d.itemOf(u).name)}</td><td>${KIND[u.kind]}</td>
       <td class="num">${u.kg === null ? fmt(u.bags) + ' ถุง (รอชั่ง)' : (u.bags > 0 ? fmt(u.bags) + ' ถุง · ' : '') + fmt(u.kg) + ' กก.'}</td>
       <td style="white-space:nowrap">${adjOf[u.id] ? `<span class="tag st-ready">ปรับยอดแล้ว ${esc(adjOf[u.id])}</span>` : `<button type="button" class="tg" aria-pressed="${c === 'ok'}" data-count="${u.id}" data-res="ok">ตรง</button> <button type="button" class="tg" aria-pressed="${c === 'diff'}" data-count="${u.id}" data-res="diff">ไม่ตรง</button>`}
-        ${c === 'diff' && !adjOf[u.id] ? (admin ? ` <button type="button" class="sm" data-adjopen="${u.id}">ปรับยอด</button>` : ' <span class="muted smt">รอ admin ปรับยอด</span>') : ''}</td></tr>${S.adj.unit === u.id ? adjPanel(d, u) : ''}`; }).join('');
-  return `<div class="fc"><div><h1>ตรวจนับ</h1><p class="lead">รอบ ${dmy(d.s.biz_day)} · นับแล้ว ${done} จาก ${units.length} หน่วย · ไม่ตรงรอปรับยอด ${diff} · ผลนับไม่ปรับยอดอัตโนมัติ — กด "ปรับยอด" ที่แถวไม่ตรง (admin) · ยกเลิกใบปรับยอดได้ที่รายงานท้ายหน้า</p></div>
+        ${c === 'diff' && !adjOf[u.id] ? (admin ? ` <button type="button" class="sm" data-adjopen="${u.id}">ปรับยอด</button>` : ' <span class="muted smt">รอ WH ปรับยอด</span>') : ''}</td></tr>${S.adj.unit === u.id ? adjPanel(d, u) : ''}`; }).join('');
+  return `<div class="fc"><div><h1>ตรวจนับ</h1><p class="lead">รอบ ${dmy(d.s.biz_day)} · นับแล้ว ${done} จาก ${units.length} หน่วย · ไม่ตรงรอปรับยอด ${diff} · ผลนับไม่ปรับยอดอัตโนมัติ — กด "ปรับยอด" ที่แถวไม่ตรง (WH) · ยกเลิกใบปรับยอดได้ที่รายงานท้ายหน้า</p></div>
     <div class="chips">พิมพ์ใบนับ <button type="button" class="ghost sm" data-pf="countLoc" title="F-WI03-WHD01-04">Lot + ช่องจัดเก็บ</button><button type="button" class="ghost sm" data-pf="countDaily" title="F-WI03-WHD01-01">รายรหัส</button><button type="button" class="ghost sm" data-pf="countOil" title="F-WI03-WHD01-06">น้ำมัน</button></div></div>
     <div class="card tw" style="padding:6px 8px"><table><thead><tr><th>ช่อง</th><th>Lot · พาเลท</th><th>วัตถุดิบ</th><th>แบบ</th><th class="num">ตามระบบ</th><th>ผลนับ</th></tr></thead><tbody>${rows || '<tr><td colspan="6" class="muted">ยังไม่มีของในคลัง</td></tr>'}</tbody></table></div>
+    ${admin ? actualSearch(d) : ''}
     ${viewRep(d, 'count')}`;
+}
+// ปรับพาเลทตามจริง (ช่วงเปลี่ยนผ่านแสกน + เบิกมือ · ผู้ใช้ 17 พ.ย.): ค้น Lot รวมพาเลทยอด 0 แล้วใส่จำนวนที่พบจริง
+function actualSearch(d) {
+  const q = S.adjq.trim().toUpperCase(); const hits = q.length >= 4 ? S.snap.units.filter((u) => !u.void && d.lots[u.lot] && (u.lot.toUpperCase().includes(q) || (d.itemOf(u).name || '').toUpperCase().includes(q))).sort((a, b) => a.lot < b.lot ? -1 : a.lot > b.lot ? 1 : String(a.p).localeCompare(String(b.p), 'en', { numeric: true })) : [];
+  const shown = hits.slice(0, 30);
+  return `<div class="card" style="display:flex;flex-direction:column;gap:8px"><div><h2 style="margin:0">ปรับพาเลทตามจริง</h2><span class="muted smt">ค้น Lot เพื่อใส่จำนวนที่พบจริง รวมพาเลทที่ระบบเหลือ 0 (เช่น เทแล้วแต่ของยังอยู่ / เบิกมือแล้วไม่ตัดยอด) · ต้องใส่เหตุผล ออกใบ AJ ย้อนดูและให้ admin ยกเลิกได้</span></div>
+    <input data-bind="adjq" id="adjq" value="${esc(S.adjq)}" placeholder="พิมพ์เลข Lot อย่างน้อย 4 ตัว เช่น WH261112012" autocomplete="off" style="max-width:420px">
+    ${q.length >= 4 ? (shown.length ? `<div style="overflow:auto"><table><thead><tr><th>ช่อง</th><th>Lot · พาเลท</th><th>วัตถุดิบ</th><th>แบบ</th><th class="num">ตามระบบ</th><th></th></tr></thead><tbody>${shown.map((u) => `<tr><td>${esc(u.loc || '-')}</td><td class="mono">${esc(tag(u))}</td><td>${esc(d.itemOf(u).name)}</td><td>${KIND[u.kind]}</td>
+      <td class="num">${u.kg === null ? 'รอชั่ง' : (u.bags > 0 ? fmt(u.bags) + ' ถุง · ' : '') + fmt(u.kg) + ' กก.'}</td><td><button type="button" class="sm" data-adjopen="${u.id}" data-adjsrc="actual">ปรับยอด</button></td></tr>${S.adj.unit === u.id && S.adj.src === 'actual' ? adjPanel(d, u) : ''}`).join('')}</tbody></table></div>${hits.length > shown.length ? `<span class="muted smt">แสดง ${shown.length} จาก ${hits.length} รายการ — พิมพ์ให้เจาะจงขึ้น</span>` : ''}` : '<span class="muted smt">ไม่พบ Lot นี้</span>') : ''}</div>`;
 }
 
 // ตัวเลือกช่องเก็บ จัดกลุ่มตามโซน เรียงเลขแบบธรรมชาติ (D2 ก่อน D10)
@@ -2687,12 +2699,12 @@ document.addEventListener('click', async (e) => {
   const b = e.target.closest('button'); if (!b) return;
   const ds = b.dataset;
   if (ds.go) { S.screen = ds.go; if (ds.mod) S.mod = ds.mod; S.toast = ''; S.bsel = ''; S.bcard = { bin: '', rows: null }; if (ds.lab) { S.labelLot = ds.lab; S.labelP = ''; } if (ds.store) S.storeF = ds.store; if (ds.go === 'admin') loadAdmin(); S.fx = { doc: '' }; S.menuOpen = false; render(); if (repScreen(ds.go)) loadRep(); if (pdScreen(ds.go)) loadPD(); if (ds.go === 'master') loadMaster(); if (ds.go === 'binrep' && !S.br.data) loadBR(); window.scrollTo({ top: 0 }); return; }
-  if (ds.adjopen !== undefined) { S.adj = { unit: ds.adjopen, kg: '', bags: '', loc: '', reason: '' }; render(); return; }
+  if (ds.adjopen !== undefined) { S.adj = { unit: ds.adjopen, src: ds.adjsrc || '', kg: '', bags: '', loc: '', reason: '' }; render(); return; }
   if (ds.adjzero) { S.adj.kg = '0'; S.adj.bags = '0'; render(); return; }
-  if (ds.adjdo) { const u = S.snap.units.find((x) => x.id === ds.adjdo); if (!u) return; const a = S.adj; const per = u.bags > 0 && u.kg > 0 ? u.kg / u.bags : 0;
+  if (ds.adjdo) { const u = S.snap.units.find((x) => x.id === ds.adjdo); if (!u) return; const a = S.adj; const lt = D().lots[u.lot] || {}; const per = u.bags > 0 && u.kg > 0 ? u.kg / u.bags : lt.pack === 'BAG' && lt.avg ? Number(lt.avg) : 0;
     const kg = a.kg !== '' ? num(a.kg) : Math.round(int(a.bags) * per * 100) / 100;
     const p = { kg, bags: a.bags !== '' ? int(a.bags) : undefined, location: a.loc || u.loc || null, reason: a.reason.trim() };
-    S.keepScroll = true; act('rm_count_adjust', { p_unit: u.id, p }, (r) => 'ปรับยอดแล้ว ' + r.doc + ' · ' + (r.kg > 0 ? '+' : '') + fmt(r.kg) + ' กก.', () => { S.adj = { unit: '' }; }); return; }
+    S.keepScroll = true; act(a.src === 'actual' ? 'rm_unit_actual' : 'rm_count_adjust', { p_unit: u.id, p }, (r) => 'ปรับยอดแล้ว ' + r.doc + ' · ' + (r.kg > 0 ? '+' : '') + fmt(r.kg) + ' กก.', () => { S.adj = { unit: '' }; }); return; }
   if (ds.scanopen !== undefined) { S.scan.open = ds.scanopen === '1'; if (!S.scan.open) camStop(); render(); if (S.scan.open) { const q = document.getElementById('scanq'); if (q) { q.focus(); q.select(); } } return; }
   if (ds.cam) { camStart(ds.cam === 'ncp' ? 'ncp' : ''); return; }
   if (ds.scanlot) { S.scan.q = ds.scanlot; render(); return; }

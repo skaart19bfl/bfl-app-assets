@@ -1626,5 +1626,19 @@ window.RM_I18N_EN = {
 "พาเลทนี้เทแล้ว ": "This pallet was already dumped ",
 " ลงถัง ": " into bin ",
 " — ถ้าของจริงยังอยู่ ให้ WH เช็คของจริงคงคลังและดำเนินการ": " — if the physical pallet is still there, WH must check actual stock and take action",
-"ไม่พบพาเลทที่มียอด — ให้ WH เช็คของจริงคงคลังและดำเนินการ": "No pallet with a balance was found — WH must check actual stock and take action"
+"ไม่พบพาเลทที่มียอด — ให้ WH เช็คของจริงคงคลังและดำเนินการ": "No pallet with a balance was found — WH must check actual stock and take action",
+"ปรับพาเลทตามจริง": "Adjust pallet to actual",
+"ค้น Lot เพื่อใส่จำนวนที่พบจริง รวมพาเลทที่ระบบเหลือ 0 (เช่น เทแล้วแต่ของยังอยู่ / เบิกมือแล้วไม่ตัดยอด) · ต้องใส่เหตุผล ออกใบ AJ ย้อนดูและให้ admin ยกเลิกได้": "Search a Lot to enter the quantity actually found, including pallets the system shows as 0 (e.g. dumped but still physically there / manually issued without deducting) · A reason is required, an AJ document is issued for traceability and admin can cancel it",
+"พิมพ์เลข Lot อย่างน้อย 4 ตัว เช่น WH261112012": "Type at least 4 characters of the Lot no., e.g. WH261112012",
+"พาเลทนี้ถูกเทลงถัง ": "This pallet was dumped into bin ",
+" เมื่อ ": " on ",
+") — ถ้าเทลงถังจริงอย่าปรับยอด · ถ้าเทผิดให้ยกเลิกรายการเท (ยอดถังจะกลับด้วย)": ") — if it was really dumped, do not adjust · if dumped by mistake, cancel the dump (the bin balance is restored too)",
+"ไม่พบ Lot นี้": "Lot not found",
+" รายการ — พิมพ์ให้เจาะจงขึ้น": " items — type a more specific Lot no.",
+"รอ WH ปรับยอด": "Waiting for WH to adjust",
+" (WH) · ยกเลิกใบปรับยอดได้ที่รายงานท้ายหน้า": " (WH) · cancel an adjustment document in the report at the bottom of the page",
+"ตัวเลขไม่ถูกต้อง": "Invalid number",
+"ใส่น้ำหนักที่พบจริง (0 = ไม่พบของ)": "Enter the weight actually found (0 = nothing found)",
+"เลือกช่องที่พบของ": "Select the location where it was found",
+"ที่แถวไม่ตรง (WH) · ยกเลิกใบปรับยอดได้ที่รายงานท้ายหน้า": "on mismatch rows (WH) · cancel an adjustment document in the report at the bottom of the page"
 };
