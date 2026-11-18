@@ -408,6 +408,7 @@ window.RM_I18N_EN = {
 "วัดระยะว่างจากปากถัง": "Measure empty space from bin top",
 "ระยะว่างจากปากถังถึงผิววัตถุดิบ (ม.) · สูง": "Empty space from bin top to material surface (m) · height",
 "ม. ไม่รวม hopper": "m excluding hopper",
+"ม. รวม hopper": "m including hopper",
 "ลบ.ม. × density": "m³ × density",
 "— วัตถุดิบนี้ยังไม่มี density (ตั้งที่หน้า Master)": "— this material has no density yet (set it on the Master screen)",
 "ยอดคงเหลือจริง (กก.)": "Actual balance (kg)",

@@ -179,7 +179,7 @@ html[data-theme=dark] .prev{background:#0b111c}
   <video id="camv" playsinline muted style="max-width:100%;max-height:70vh;border-radius:12px;background:#000"></video>
   <span id="cammsg" style="color:#fff"></span><button type="button" id="camx" style="min-width:140px">ปิดกล้อง</button></div>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
-<script src="i18n-en.js?v=20261117d"></script>
+<script src="i18n-en.js?v=20261118a"></script>
 <script>
 'use strict';
 const SB_URL = 'https://kdytxuufvigwjccebrki.supabase.co';
@@ -1076,7 +1076,9 @@ const ncpFifo = (item, n) => ncpAvail(item).slice(0, n).map((x) => `<div class="
 // ประมาณ กก. จากระยะว่างจากปากถังลงถึงผิววัตถุดิบ (ใช้ขนาดตามไฟล์ Batching_Bin_Size — ความหนาแน่นอ้างอิงของไฟล์)
 // ไฟล์ Batching_Bin_Size: ปริมาณที่ใส่ได้ที่ density 1000 = ลบ.ม. · กก. = ลบ.ม. × density ของวัตถุดิบ (กก./ลบ.ม.)
 function binM3(b, empty) {
-  if (!b.cap_m3 || !b.height) return NaN; const e = num(empty); if (!(e >= 0)) return NaN; const hp = Number(b.hopper_m3 || 0);
+  if (!b.cap_m3 || !b.height) return NaN; const e = num(empty); if (!(e >= 0)) return NaN;
+  if (b.hh) return Math.max(0, b.cap_m3 * (1 - Math.min(e, b.height) / b.height));
+  const hp = Number(b.hopper_m3 || 0);
   return Math.max(0, Math.min(b.cap_m3, hp + (b.cap_m3 - hp) * (1 - Math.min(e, b.height) / b.height)));
 }
 function binEst(b, empty, dens) { const v = binM3(b, empty); return dens > 0 && !isNaN(v) ? Math.round(v * dens) : NaN; }
@@ -1271,7 +1273,7 @@ function binPanel(d, b) {
     ${ctl && b.grp !== 'LOADOUT' ? `<div class="note" style="display:flex;flex-direction:column;gap:8px"><b class="smt">${first ? 'ตั้งยอดตั้งต้น (เริ่มตัดยอดใช้จาก batch หลังเวลานี้)' : 'นับถัง / ปรับยอด / เปลี่ยนวัตถุดิบ'}</b>
       ${itemPicker('bs', 'วัตถุดิบในถัง', bs.itemText, it)}
       <div class="chips" role="group" aria-label="วิธีใส่ยอด"><button type="button" class="tg" aria-pressed="${bs.mode !== 'empty'}" data-set="bs.mode" data-val="kg">ใส่ กก.</button>${b.height ? `<button type="button" class="tg" aria-pressed="${bs.mode === 'empty'}" data-set="bs.mode" data-val="empty">วัดระยะว่างจากปากถัง</button>` : ''}</div>
-      ${bs.mode === 'empty' ? `<label class="fld">ระยะว่างจากปากถังถึงผิววัตถุดิบ (ม.) · สูง ${fmt(b.height)} ม. ไม่รวม hopper<input data-bind="bs.empty" value="${esc(bs.empty)}" inputmode="decimal"></label>
+      ${bs.mode === 'empty' ? `<label class="fld">ระยะว่างจากปากถังถึงผิววัตถุดิบ (ม.) · สูง ${fmt(b.height)} ม.${b.hh ? ' รวม hopper' : ' ไม่รวม hopper'}<input data-bind="bs.empty" value="${esc(bs.empty)}" inputmode="decimal"></label>
         <span class="smt">${isNaN(vol) ? '' : `≈ ${fmt(Math.round(vol * 100) / 100)} ลบ.ม. × density ${dens ? fmt(dens) : '?'} = `}<b>${isNaN(est) ? '–' : fmt(est)}</b> กก.${dens ? '' : ' <span class="err">— วัตถุดิบนี้ยังไม่มี density (ตั้งที่หน้า Master)</span>'}</span>`
       : `<label class="fld">ยอดคงเหลือจริง (กก.)<input data-bind="bs.kg" value="${esc(bs.kg)}" inputmode="decimal" placeholder="${fmt(b.bal)}"></label>`}
       ${first ? '' : `<label class="fld">เหตุผล<input data-bind="bs.reason" value="${esc(bs.reason)}" maxlength="120" placeholder="เช่น นับถังประจำวัน / ล้างถังเปลี่ยนวัตถุดิบ"></label>`}
