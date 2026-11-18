@@ -1660,4 +1660,5 @@ window.RM_I18N_EN = {
 "เช่น แยกใบเพื่อพิมพ์ป้ายรายใบ": "e.g. split to print a label for each Bigbag",
 "แยกเป็น": "split into",
 "ใบละ": "each",
+"ไม่พบตามคำค้น · ตอนนี้ไม่มีของรายการนี้พร้อมบดในคลัง RM (ต้องชั่งรถออก / QC ผ่านแล้ว และมียอดคงเหลือ)": "No match · none of this item is ready to grind in RM right now (must be weighed out, QC passed and have stock)",
 };
