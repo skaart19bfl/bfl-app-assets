@@ -1661,4 +1661,10 @@ window.RM_I18N_EN = {
 "แยกเป็น": "split into",
 "ใบละ": "each",
 "ไม่พบตามคำค้น · ตอนนี้ไม่มีของรายการนี้พร้อมบดในคลัง RM (ต้องชั่งรถออก / QC ผ่านแล้ว และมียอดคงเหลือ)": "No match · none of this item is ready to grind in RM right now (must be weighed out, QC passed and have stock)",
+"ตัวเลือกบด": "Grind options",
+"✓ บดได้": "✓ Grindable",
+"บดได้": "Grindable",
+"ตัวเลือกบด TC แล้ว": "grind option for TC",
+"แสดงเป็นตัวเลือกในหน้า บด TC": "Shown as an option on the Grind TC page",
+"ตัวเลือกบดตั้งได้ที่ Master วัตถุดิบ → คอลัมน์ \"บด TC\"": "Grind options are set in Master → column \"Grind TC\"",
 };
