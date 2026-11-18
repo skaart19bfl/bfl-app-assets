@@ -1652,4 +1652,12 @@ window.RM_I18N_EN = {
 "ใช้ไปแล้ว": "already used",
 "เช่น รับจริง 20 Bigbag บันทึกเป็น 1": "e.g. actually received 20 Bigbags, entered as 1",
 "รับเข้าจริง": "Actually received",
+"แยก Bigbag เป็นรายใบ": "Split Bigbags into individual units",
+"หน่วยนี้รวมหลายใบไว้ด้วยกัน จึงมีป้ายใบเดียว · แยกแล้วแต่ละใบมีป้าย / QR ของตัวเอง ยอดรวมไม่เปลี่ยน · พิมพ์ป้ายเพิ่มที่แท็บป้าย": "This unit holds several Bigbags together, so it has one label · after splitting each Bigbag gets its own label / QR · total unchanged · print labels in the Label tab",
+"ใบที่": "No.",
+"แยกเป็นรายใบ": "Split individually",
+"ยืนยันแยก": "Confirm split",
+"เช่น แยกใบเพื่อพิมพ์ป้ายรายใบ": "e.g. split to print a label for each Bigbag",
+"แยกเป็น": "split into",
+"ใบละ": "each",
 };

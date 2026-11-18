@@ -179,7 +179,7 @@ html[data-theme=dark] .prev{background:#0b111c}
   <video id="camv" playsinline muted style="max-width:100%;max-height:70vh;border-radius:12px;background:#000"></video>
   <span id="cammsg" style="color:#fff"></span><button type="button" id="camx" style="min-width:140px">ปิดกล้อง</button></div>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
-<script src="i18n-en.js?v=20261118b"></script>
+<script src="i18n-en.js?v=20261118c"></script>
 <script>
 'use strict';
 const SB_URL = 'https://kdytxuufvigwjccebrki.supabase.co';
@@ -315,7 +315,7 @@ const S = {
   storeF: 'ALL', view: 'sum', card: null, cardRows: null,
   selSlot: 'S-01', sp: { unit: '' }, spLast: null, lf: { zone: 'S', zoneName: '', code: '' }, adminInfo: null,
   docDay: '', docLot: '', docTag: '',
-  pd: { data: null, loading: false, err: '' }, bsel: '', bcard: { bin: '', rows: null }, bs: { item: '', itemText: '', kg: '', reason: '', mode: 'kg', empty: '' }, hl: { bin: '', kg: '' }, sh: { kg: '', ref: '' }, nf: { bin: '', kg: '', note: '' }, mst: { tab: 'rm', q: '', only: '', chg: {}, bulk: '', data: null, open: {} }, lrn: { lot: '', v: '', reason: '' }, vm: { lot: '', open: false, range: '', reason: '' }, rs: { sel: {}, reason: '' }, lblQr: null, lr: { lot: '', open: false }, qe: { lot: '', open: false, r: {}, reason: '' }, rf: { lot: '', open: false, bags: '', kg: '', reason: '' },
+  pd: { data: null, loading: false, err: '' }, bsel: '', bcard: { bin: '', rows: null }, bs: { item: '', itemText: '', kg: '', reason: '', mode: 'kg', empty: '' }, hl: { bin: '', kg: '' }, sh: { kg: '', ref: '' }, nf: { bin: '', kg: '', note: '' }, mst: { tab: 'rm', q: '', only: '', chg: {}, bulk: '', data: null, open: {} }, lrn: { lot: '', v: '', reason: '' }, vm: { lot: '', open: false, range: '', reason: '' }, rs: { sel: {}, reason: '' }, lblQr: null, lr: { lot: '', open: false }, qe: { lot: '', open: false, r: {}, reason: '' }, rf: { lot: '', open: false, bags: '', kg: '', reason: '' }, bbs: { unit: '', reason: '' },
   hx: { day: '', data: null, loading: false, act: null },
   dp: { day: '', time: '', sheet: null, key: '', loading: false, v: {}, note: '', rep: null, rf: '', rt: '', cx: { id: '', reason: '' }, open: '' },
   ui: { file: '', rows: null, day: '', t1: '', t2: '', bfrom: '', bto: '', fileFrom: '', fileTo: '', prev: null, prevKey: '', err: '', list: null, cx: { id: '', reason: '' } },
@@ -2261,6 +2261,18 @@ function recvFixBox(d, lot) {
       <div><button type="button" data-rfdo="${esc(lot.lot)}" ${ok ? '' : 'disabled'}>บันทึกจำนวนรับเข้า</button></div></div>
     ${ok || S.busy ? '' : `<span class="muted smt">${bad}</span>`}</details>`;
 }
+// แยก Bigbag ที่รวมเป็นหน่วยเดียว (หลายใบ) เป็นรายใบ ใบละเท่ากัน · เพื่อพิมพ์ป้ายรายใบ · rm_unit_split · ผู้ใช้ 18 พ.ย.
+function bbSplitBox(d, lot) {
+  if (lot.pack !== 'BIGBAG' || !['admin', 'wh'].includes(S.snap.me.role)) return '';
+  const us = d.s.units.filter((u) => u.lot === lot.lot && u.store === lot.store && u.kind === 'BIGBAG' && Number(u.bags) > 1 && Number(u.kg) > 0);
+  if (!us.length) return '';
+  const rows = us.map((u) => { const n = int(u.bags); const per = Math.round(Number(u.kg) / n * 100) / 100; const open = S.bbs.unit === u.id;
+    return `<div class="note" style="display:flex;flex-direction:column;gap:6px"><span>ใบที่ <b class="mono">${esc(u.p)}</b> รวม <b>${fmt(n)}</b> Bigbag · ${fmt(u.kg)} กก. → แยกเป็น ${fmt(n)} ใบ ใบละ ${fmt(per)} กก. (ใบที่ ${esc(u.p)}–${int(u.p) + n - 1})</span>
+      ${open ? `<div class="grid2" style="align-items:end"><label class="fld">เหตุผล<input data-bind="bbs.reason" value="${esc(S.bbs.reason)}" maxlength="200" autocomplete="off" placeholder="เช่น แยกใบเพื่อพิมพ์ป้ายรายใบ"></label>
+        <div class="chips"><button type="button" data-bbdo="${esc(u.id)}" ${S.bbs.reason.trim().length >= 3 && !S.busy ? '' : 'disabled'}>ยืนยันแยก ${fmt(n)} ใบ</button><button type="button" class="ghost" data-bbopen="">ปิด</button></div></div>`
+        : `<div><button type="button" class="ghost sm" data-bbopen="${esc(u.id)}">แยกเป็นรายใบ</button></div>`}</div>`; }).join('');
+  return `<div class="sect">แยก Bigbag เป็นรายใบ</div><p class="muted smt" style="margin:0">หน่วยนี้รวมหลายใบไว้ด้วยกัน จึงมีป้ายใบเดียว · แยกแล้วแต่ละใบมีป้าย / QR ของตัวเอง ยอดรวมไม่เปลี่ยน · พิมพ์ป้ายเพิ่มที่แท็บป้าย</p>${rows}`;
+}
 const pal1 = (us) => us.every((u) => u.kind === 'PALLET') ? 'พาเลท' : 'หน่วย';
 function viewLotInfo(d, lot) {
   if (S.le.lot !== lot.lot) S.le = leInit(lot);
@@ -2321,7 +2333,7 @@ function viewLotInfo(d, lot) {
       : `<div class="grid2" style="align-items:end"><label class="fld">เหตุผลที่ Hold<input data-bind="holdReason" value="${esc(S.holdReason)}" maxlength="200" autocomplete="off"></label>
         <div><button type="button" style="background:var(--bad);border-color:var(--bad)" data-qcset="${esc(lot.lot)}" data-st="hold" ${S.holdReason.trim() && !S.busy ? '' : 'disabled'}>Hold Lot นี้</button></div></div>
         <p class="muted smt" style="margin:-4px 0 0">${pre ? 'ระหว่างลงของ/รอชั่ง: ติด Hold ไว้ พอชั่งแล้ว Lot เป็น Hold (เบิกไม่ได้)' : 'Lot จะเบิก/บด/จ่ายไม่ได้จนกว่าจะปลด Hold'}</p>`}
-    ${['qc', 'hold', 'ready'].includes(lot.status) ? lotRestructBox(d, lot) + qtyEditBox(d, lot) + recvFixBox(d, lot) : ''}
+    ${['qc', 'hold', 'ready'].includes(lot.status) ? lotRestructBox(d, lot) + qtyEditBox(d, lot) + recvFixBox(d, lot) + bbSplitBox(d, lot) : ''}
     ${rwOk ? `<div class="sect">แก้น้ำหนักชั่ง (admin)</div>
       <div class="grid2" style="align-items:end"><label class="fld">น้ำหนักสุทธิที่ถูกต้อง (กก.)<input data-bind="rw.net" value="${esc(S.rw.net)}" inputmode="decimal" placeholder="${fmt(lot.net)}"></label>
         <label class="fld">เหตุผล<input data-bind="rw.reason" value="${esc(S.rw.reason)}" maxlength="200" autocomplete="off"></label></div>
@@ -2919,6 +2931,8 @@ document.addEventListener('click', async (e) => {
   if (ds.lotinfo) { S.labelLot = ds.lotinfo; S.lotTab = 'info'; S.le = { lot: '' }; S.cancel = ''; S.rw = { net: '', reason: '' }; S.holdReason = ''; render(); const c = document.getElementById('labelcard'); if (c) c.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
   if (ds.lottab) { S.lotTab = ds.lottab; render(); return; }
   if (ds.lereset) { S.le = { lot: '' }; render(); return; }
+  if (ds.bbopen !== undefined) { S.bbs = { unit: ds.bbopen, reason: '' }; render(); return; }
+  if (ds.bbdo) { act('rm_bigbag_split', { p_unit: ds.bbdo, p: { reason: S.bbs.reason.trim() } }, (x) => 'แยก Bigbag ' + x.lot + ' เป็น ' + fmt(x.n) + ' ใบแล้ว (ใบที่ ' + x.first + '–' + x.last + ') · พิมพ์ป้ายที่แท็บป้าย', () => { S.bbs = { unit: '', reason: '' }; S.lotTab = 'label'; }); return; }
   if (ds.rfdo) { const r = S.rf; const p = { bags: int(r.bags), reason: r.reason.trim() }; if (r.kg !== '') p.kg = num(r.kg);
     act('rm_lot_recv_fix', { p_lot: ds.rfdo, p }, (x) => 'แก้จำนวนรับเข้า ' + x.lot + ' แล้ว · รับเข้า ' + fmt(x.bags) + ' · ' + fmt(x.net) + ' กก. (เฉลี่ย ' + fmt(x.avg) + ' กก./หน่วย)', () => { S.rf = { lot: '', open: false, bags: '', kg: '', reason: '' }; }); return; }
   if (ds.qereset) { S.qe.r = {}; render(); return; }
