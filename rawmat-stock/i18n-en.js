@@ -1641,5 +1641,15 @@ window.RM_I18N_EN = {
 "ตัวเลขไม่ถูกต้อง": "Invalid number",
 "ใส่น้ำหนักที่พบจริง (0 = ไม่พบของ)": "Enter the weight actually found (0 = nothing found)",
 "เลือกช่องที่พบของ": "Select the location where it was found",
-"ที่แถวไม่ตรง (WH) · ยกเลิกใบปรับยอดได้ที่รายงานท้ายหน้า": "on mismatch rows (WH) · cancel an adjustment document in the report at the bottom of the page"
+"ที่แถวไม่ตรง (WH) · ยกเลิกใบปรับยอดได้ที่รายงานท้ายหน้า": "on mismatch rows (WH) · cancel an adjustment document in the report at the bottom of the page",
+"แก้จำนวนรับเข้า (Lot ที่เบิกแล้ว)": "Edit received qty (Lot already issued)",
+"ใช้เมื่อรับเข้าผิดและมีการเบิก/ปรับยอดไปแล้ว · แก้เฉพาะยอดรับเข้าของ Lot (ถุง / กก.) · ไม่แตะรายการเบิกและยอดคงเหลือของพาเลท · บันทึกเป็นรายการ \"ปรับรับเข้า\" (0 กก.) ใน Stock card · ใส่เป็นจำนวนที่รับจริงทั้งหมด (รวมที่เบิกไปแล้ว)": "Use when the receipt was wrong and the lot has already been issued/adjusted · edits only the lot's received qty (bags / kg) · does not touch issue records or pallet balances · logged as a \"Receive adjust\" (0 kg) in the Stock card · enter the total actually received (including what was already issued)",
+"น้ำหนักรวมที่รับ (กก.)": "Total weight received (kg)",
+"บันทึกจำนวนรับเข้า": "Save received qty",
+"ใส่จำนวนที่รับเข้าจริง": "Enter the qty actually received",
+"น้ำหนักไม่ถูกต้อง": "Invalid weight",
+"หลังแก้: รับเข้า": "After edit: received",
+"ใช้ไปแล้ว": "already used",
+"เช่น รับจริง 20 Bigbag บันทึกเป็น 1": "e.g. actually received 20 Bigbags, entered as 1",
+"รับเข้าจริง": "Actually received",
 };
