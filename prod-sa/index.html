@@ -1981,7 +1981,8 @@ function drawerHtml() {
   if (k === 'rec') {
     const g = f.g, last = g.records[g.records.length - 1], w = Number(String(f.w || '').replace(/,/g, '')), tms = new Date(f.t).getTime();
     let msg = 'ใส่ตัวเลขบนตาชั่ง', col = 'var(--muted)', ok = false;
-    if (w > 0) {
+    if (w > 0 && !(tms > 0)) { msg = 'ยังไม่ได้เลือกเวลา — กด “ตอนนี้” หรือเลือกเวลา'; col = 'var(--bad)'; }
+    else if (w > 0) {
       if (last && w < last.w) { msg = 'น้อยกว่าครั้งก่อน — ตาชั่งรีเซ็ตหรือพิมพ์ผิด?'; col = 'var(--bad)'; }
       else if (last) { const mins = (tms - last.t) / 60000, rate = mins > 0 ? (w - last.w) / mins * 60 : Infinity;
         if (mins <= 0) { msg = 'เวลาต้องหลังครั้งก่อน'; col = 'var(--bad)'; }
@@ -2581,12 +2582,13 @@ document.addEventListener('input', (e) => {
   if (k === 'pq') { S.f.pq = e.target.value; S.f.productID = ''; S.f.dry = null; render(); return; }
   S.f[k] = e.target.value;
   if (k === 'klot') S.f.dry = null;
-  if (['w', 't', 'process', 'pid', 'lot', 'qty', 'f425', 'f250', 'fmoist', 'fsample', 'reason', 'bkg', 'kq', 'in_fat', 'in_flavour', 'in_precon', 'in_color', 'in_reuse', 'in_ncpUse', 'in_oldSemi', 'in_pcb', 'in_pca', 'klot', 'kreason', 'nkg', 'xt', 'xp', 'xw'].includes(k)) render();
+  if (['w', 'process', 'pid', 'lot', 'qty', 'f425', 'f250', 'fmoist', 'fsample', 'reason', 'bkg', 'kq', 'in_fat', 'in_flavour', 'in_precon', 'in_color', 'in_reuse', 'in_ncpUse', 'in_oldSemi', 'in_pcb', 'in_pca', 'klot', 'kreason', 'nkg', 'xp', 'xw'].includes(k)) render();   // t / xt: on 'change' (20 Nov — re-render on every input closed the iPhone time picker)
 });
 document.addEventListener('change', async (e) => {
   const k = e.target.dataset && e.target.dataset.in; if (!k) return;
   if (k === 'bfile') { const file = e.target.files && e.target.files[0]; if (file) await bfTake(file); return; }
   if (k === 'mxfile') { const file = e.target.files && e.target.files[0]; if (file) await mxRead(file); return; }
+  if ((k === 't' || k === 'xt') && S.f) { S.f[k] = e.target.value; render(); return; }   // date/time picker closed → check + redraw once
   if (/^b[hl]-/.test(k) && S.drawer === 'bform') render();
   if (/^n[hl]-/.test(k) && S.drawer === 'ncpu') render();
   if ((k === 'nuFDay' || k === 'nuFShift') && S.f) S.f.nuPicked = true; // the user's own choice is kept when the report is read
