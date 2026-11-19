@@ -180,7 +180,7 @@ html[data-theme=dark] .prev{background:#0b111c}
   <video id="camv" playsinline muted style="max-width:100%;max-height:70vh;border-radius:12px;background:#000"></video>
   <span id="cammsg" style="color:#fff"></span><button type="button" id="camx" style="min-width:140px">ปิดกล้อง</button></div>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
-<script src="i18n-en.js?v=20261119a"></script>
+<script src="i18n-en.js?v=20261119b"></script>
 <script>
 'use strict';
 const SB_URL = 'https://kdytxuufvigwjccebrki.supabase.co';
@@ -1814,7 +1814,7 @@ function viewNcpTrend(d) {
         <span class="muted smt"> · ${rows.length} รายการ${peak.i >= 0 ? ` · สูงสุด ${esc(ntLbl(ch.keys[peak.i], N.group))} ${fmt(Math.round(peak.v))} kg` : ''}</span></div>
         <span class="chips">${Object.entries(ntDim).map(([k, l]) => tg('ntb', k, N.by, 'แยกตาม ' + l)).join('')}<button type="button" class="ghost sm" data-ntcsv="1" ${rows.length ? '' : 'disabled'}>Excel</button></span></div>
       ${rows.length ? ch.svg + `<div class="chips smt">${ch.legend}</div>` : '<p class="muted">ไม่มีข้อมูลตามตัวกรอง</p>'}
-      ${N.measure === 'q' ? '<span class="muted smt">ชั่งรับ 0 kg = PD ดึงไปก่อน WH รับ หรือ WH ชั่งรวมกับรายการอื่นบนพาเลทเดียวกัน · ยอดรายการจึงอาจไม่ตรงกับน้ำหนักที่แจ้ง</span>' : ''}</div>
+      ${N.measure === 'q' ? '<span class="muted smt">ชั่งรับ 0 kg = PD ดึงไปก่อน WH รับ หรือ WH ชั่งรวมกับรายการอื่นบนพาเลทเดียวกัน (เช่น Scrap มักชั่งรวมกับพาเลท Dyer/Sieve จึงเป็น 0) · ยอดรวมถูกต้อง แต่การแยกตาม Process ให้ดูแบบ &quot;ผลิตแจ้ง NCP&quot;</span>' : ''}</div>
     <div class="card"><b>สรุปแยกตาม ${ntDim[N.by]} (Pareto)</b><div class="tw" style="margin-top:8px"><table><thead><tr><th>${ntDim[N.by]}</th><th class="num">รายการ</th><th class="num">kg</th><th class="num">%</th><th class="num">สะสม</th></tr></thead>
       <tbody>${tb || '<tr><td colspan="5" class="muted">ไม่มีข้อมูล</td></tr>'}</tbody></table></div></div>`;
 }

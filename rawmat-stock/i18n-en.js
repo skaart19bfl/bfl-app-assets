@@ -1694,7 +1694,7 @@ window.RM_I18N_EN = {
 "ไม่มีข้อมูลตามตัวกรอง": "No data for this filter",
 "ไม่มีข้อมูล": "No data",
 "กราฟ NCP รายช่วง": "NCP chart by period",
-"ชั่งรับ 0 kg = PD ดึงไปก่อน WH รับ หรือ WH ชั่งรวมกับรายการอื่นบนพาเลทเดียวกัน · ยอดรายการจึงอาจไม่ตรงกับน้ำหนักที่แจ้ง": "Weighed 0 kg = taken by PD before WH receipt, or weighed together with another record on the same pallet · per-record kg may differ from the reported weight",
+"ชั่งรับ 0 kg = PD ดึงไปก่อน WH รับ หรือ WH ชั่งรวมกับรายการอื่นบนพาเลทเดียวกัน (เช่น Scrap มักชั่งรวมกับพาเลท Dyer/Sieve จึงเป็น 0) · ยอดรวมถูกต้อง แต่การแยกตาม Process ให้ดูแบบ \"ผลิตแจ้ง NCP\"": "Weighed 0 kg = taken by PD before WH receipt, or weighed together with another record on the same pallet (e.g. Scrap is usually weighed with a Dyer/Sieve pallet, so it shows 0) \u00b7 totals are correct, but for a split by Process use \"Reported by production\"",
 "ม.ค.": "Jan",
 "ก.พ.": "Feb",
 "มี.ค.": "Mar",
