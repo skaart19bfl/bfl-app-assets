@@ -180,7 +180,7 @@ html[data-theme=dark] .prev{background:#0b111c}
   <video id="camv" playsinline muted style="max-width:100%;max-height:70vh;border-radius:12px;background:#000"></video>
   <span id="cammsg" style="color:#fff"></span><button type="button" id="camx" style="min-width:140px">ปิดกล้อง</button></div>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
-<script src="i18n-en.js?v=20261120d"></script>
+<script src="i18n-en.js?v=20261120e"></script>
 <script>
 'use strict';
 const SB_URL = 'https://kdytxuufvigwjccebrki.supabase.co';
@@ -310,7 +310,7 @@ const S = {
   f: { source: 'purchase', plant: 'BFL-PC', lot: '', tdoc: '', slot: '', item: '', itemText: '', pack: 'BAG', cont: '', supKg: '', sup: '', supText: '', plate: '', exp: '', ticket: '', weighIn: '', delivery: '', po: '', province: '', qci: '', qcin: '', per: '', labels: '', bigbags: '', location: 'S-01', vehN: '1', vehU: 'คัน', method: '', tStart: '', tEnd: '', note: '' },
   net: {}, ud: {}, wo: {}, rt: { plant: 'BFL-PC', key: '', tdoc: '', pack: 'BAG', n: '', per: '', last: '', big: '', net: '', loc: 'S-01', note: '' }, rtc: { doc: '', reason: '' }, lotTab: 'label', le: { lot: '' }, holdReason: '', rw: { net: '', reason: '' },
   ob: { item: '', itemText: '', lot: '', store: 'RM', pack: 'BAG', cont: '', recv: '', exp: '', sup: '', loc: 'S-01', n: '', bags: '', kgb: '', lastBags: '', total: '', lines: '', tb: '', tkg: '' }, labelLot: '', labelP: '', lsel: { lot: '', ps: {} }, pf: { unit: '', bags: '', reason: '' }, cancel: '', cxReason: '', docPs: '',
-  rep: { day: '', data: null, loading: false }, dl: { from: '', to: '', shift: '', grp: '', bin: '', src: '', q: '', showVoid: true, data: null, loading: false, err: '', span: '' }, nt: { range: '90', from: '', to: '', measure: 'q', group: 'week', by: 'pr', pr: '', it: '', ex: '', data: null, loading: false, err: '', span: '' }, fx: { doc: '' }, gLast: '', adj: { unit: '' }, adjq: '', gW: [], mm: {}, mmTo: '', scan: { open: false, q: '', to: '' }, sr: { mode: 'day', day: '', month: '', from: '', to: '', data: null, loading: false }, users: null, uf: { mode: 'new', username: '', name: '', role: 'wh', active: true, password: '' }, upw: { user: '', pw: '' },
+  rep: { day: '', data: null, loading: false }, mf: null, dl: { from: '', to: '', shift: '', grp: '', bin: '', src: '', q: '', showVoid: true, data: null, loading: false, err: '', span: '' }, nt: { range: '90', from: '', to: '', measure: 'q', group: 'week', by: 'pr', pr: '', it: '', ex: '', data: null, loading: false, err: '', span: '' }, fx: { doc: '' }, gLast: '', adj: { unit: '' }, adjq: '', gW: [], mm: {}, mmTo: '', scan: { open: false, q: '', to: '' }, sr: { mode: 'day', day: '', month: '', from: '', to: '', data: null, loading: false }, users: null, uf: { mode: 'new', username: '', name: '', role: 'wh', active: true, password: '' }, upw: { user: '', pw: '' },
   gSel: {}, gPart: {}, gQ: '', gDest: 'PD', gCount: '1', gKg: '', gPd: PD_DESTS[0], gLoc: '',
   iType: 'fat', iItem: '', iStore: '', iKg: '', iRef: '', iPick: {},
   storeF: 'ALL', view: 'sum', card: null, cardRows: null,
@@ -1696,22 +1696,24 @@ function viewMaster(d) {
   const binNo = all.filter((i) => (use[i.code] || inbin[i.code]) && !(i.density > 0)).length;
   const nChg = Object.keys(M.chg).length;
   const canG = ['control', 'admin', 'wh'].includes(S.snap.me.role);
+  const canM = ['wh', 'admin'].includes(S.snap.me.role); // ผู้ใช้ 20 พ.ย.: WH / admin เพิ่ม-แก้ master (rm_item_save)
   const cell = (i) => ctl ? `<input data-bind="mst.chg.${esc(i.code)}" data-nore="1" value="${esc(M.chg[i.code] ?? (i.density ?? ''))}" inputmode="decimal" style="width:90px;text-align:right" aria-label="density ${esc(i.code)}">` : (i.density ? fmt(i.density) : '–');
   const m = (i) => i.meta || {};
   const row = (i) => `<tr${i.status !== 'Active' ? ' style="opacity:.55"' : ''}><td class="mono smt">${esc(i.code)}</td><td>${esc(i.name)}</td>
     ${ncp ? `<td class="smt">${esc(m(i).group || '')}</td><td class="smt">${esc(m(i).color || '')}</td><td class="smt">${m(i).protein_min || m(i).protein_max ? fmt(m(i).protein_min) + '–' + fmt(m(i).protein_max) + '%' : ''}</td>`
       : `<td>${spill(i.store)}</td><td class="smt">${esc(i.category || '')}</td><td class="smt">${esc(i.unit || '')}</td>`}
-    <td class="smt">${esc([...new Set([...(inbin[i.code] || []), ...(use[i.code] || [])])].join(' '))}</td><td class="num">${cell(i)}</td>${ncp ? '' : `<td>${canG ? `<button type="button" class="tg sm" aria-pressed="${!!i.grind}" data-grindset="${esc(i.code)}" data-on="${i.grind ? '0' : '1'}" ${S.busy ? 'disabled' : ''} title="แสดงเป็นตัวเลือกในหน้า บด TC">${i.grind ? '✓ บดได้' : 'ปิด'}</button>` : i.grind ? '<span class="tag st-ready">บดได้</span>' : '<span class="muted smt">–</span>'}</td>`}<td>${ctl ? `<button type="button" class="tg sm" aria-pressed="${!!i.bin}" data-binuse="${esc(i.code)}" data-on="${i.bin ? '0' : '1'}" ${S.busy ? 'disabled' : ''} title="ใช้กับถัง Batching">${i.bin ? '✓ เปิด' : 'ปิด'}</button>` : i.bin ? '<span class="tag st-ready">เปิด</span>' : '<span class="muted smt">–</span>'}</td><td class="smt">${i.status === 'Active' ? '' : 'ไม่ใช้งาน'}</td></tr>`;
+    <td class="smt">${esc([...new Set([...(inbin[i.code] || []), ...(use[i.code] || [])])].join(' '))}</td><td class="num">${cell(i)}</td>${ncp ? '' : `<td>${canG ? `<button type="button" class="tg sm" aria-pressed="${!!i.grind}" data-grindset="${esc(i.code)}" data-on="${i.grind ? '0' : '1'}" ${S.busy ? 'disabled' : ''} title="แสดงเป็นตัวเลือกในหน้า บด TC">${i.grind ? '✓ บดได้' : 'ปิด'}</button>` : i.grind ? '<span class="tag st-ready">บดได้</span>' : '<span class="muted smt">–</span>'}</td>`}<td>${ctl ? `<button type="button" class="tg sm" aria-pressed="${!!i.bin}" data-binuse="${esc(i.code)}" data-on="${i.bin ? '0' : '1'}" ${S.busy ? 'disabled' : ''} title="ใช้กับถัง Batching">${i.bin ? '✓ เปิด' : 'ปิด'}</button>` : i.bin ? '<span class="tag st-ready">เปิด</span>' : '<span class="muted smt">–</span>'}</td><td class="smt">${i.status === 'Active' ? '' : 'ไม่ใช้งาน '}${canM && !ncp ? `<button type="button" class="ghost sm" data-mfedit="${esc(i.code)}" ${S.busy ? 'disabled' : ''}>แก้ไข</button>` : ''}${i.src === 'WH' ? ' <span class="tag" style="font-size:10px" title="เพิ่ม/แก้โดย WH — sync RM_Master ไม่เขียนทับ">WH</span>' : ''}</td></tr>`;
   // กลุ่มตามรหัส 4 ตัวแรก (01PT, 01FA, …) ย่อ/ขยายได้ · ค้นหา/กรองอยู่ = ขยายอัตโนมัติ
   const gk = (i) => String(i.code).slice(0, 4).toUpperCase(); const groups = {};
   rows.forEach((i) => (groups[gk(i)] = groups[gk(i)] || []).push(i));
   const auto = q.length > 0; const keys = Object.keys(groups).sort((a, b) => a.localeCompare(b, 'en', { numeric: true }));
   const body = keys.map((k) => { const gs = groups[k]; const open = auto || !!M.open[k]; const nod = gs.filter((i) => !(i.density > 0)).length; const nb = gs.filter((i) => use[i.code] || inbin[i.code]).length; const nbu = gs.filter((i) => i.bin).length;
     return `<tr class="mg"><td colspan="11"><button type="button" class="mgb" data-mstg="${esc(k)}" aria-expanded="${open}"><span aria-hidden="true">${open ? '▾' : '▸'}</span> <b class="mono">${esc(k)}</b> <span>${gs.length} รายการ · เปิดใช้กับถัง ${nbu}${nb ? ' · batch ดึง ' + nb : ''}${nod ? ' · ไม่มี density ' + nod : ''}</span><span class="muted smt">${esc(gs[0].category || '')}</span></button></td></tr>${open ? gs.map(row).join('') : ''}`; }).join('');
-  return `<div><h1>Master วัตถุดิบ / NCP</h1><p class="lead">ใช้กับถัง Batching = เปิด → เลือกได้ในตั้งยอดถัง / ใบสั่งเท / เบิกเข้าถัง (Control เปิด-ปิดได้) · density (กก./ลบ.ม. = กรัม/ลิตร) ใช้แปลงปริมาตรถังเป็น กก. · ความจุถัง = ลบ.ม. ตามไฟล์ Batching_Bin_Size × density · ชื่อ/หมวด/สถานะมาจาก RM_Master และ NCP Detail (แก้ที่ต้นทาง)</p></div>
+  return `<div><h1>Master วัตถุดิบ / NCP</h1><p class="lead">ใช้กับถัง Batching = เปิด → เลือกได้ในตั้งยอดถัง / ใบสั่งเท / เบิกเข้าถัง (Control เปิด-ปิดได้) · density (กก./ลบ.ม. = กรัม/ลิตร) ใช้แปลงปริมาตรถังเป็น กก. · ความจุถัง = ลบ.ม. ตามไฟล์ Batching_Bin_Size × density · ชื่อ/หมวด/สถานะมาจาก RM_Master และ NCP Detail · WH / admin เพิ่ม-แก้รหัสวัตถุดิบได้ที่นี่ (NCP แก้ที่ระบบ NCP)</p></div>
     <div class="chips" role="group" aria-label="ประเภท"><button type="button" class="tg" aria-pressed="${!ncp}" data-msttab="rm">วัตถุดิบ / สารเสริม (${d.s.items.filter((i) => i.category !== 'NCP').length})</button><button type="button" class="tg" aria-pressed="${ncp}" data-msttab="ncp">NCP รีเวิร์ค (${d.s.items.filter((i) => i.category === 'NCP').length})</button>
       ${ncp && ctl ? `<button type="button" class="ghost sm" data-ncpsync="1" ${S.busy ? 'disabled' : ''}>ดึงรายการ NCP ล่าสุด</button><span class="muted smt">NCP Detail sync ${dtm((M.data || {}).ncp_synced)}</span>` : ''}</div>
     ${binNo ? `<div class="note smt">รหัสที่ใช้กับถัง (ตั้งในถัง หรือ batch ดึง 30 วัน) แต่ยังไม่มี density: <b>${binNo}</b> รหัส — ถังเหล่านี้คำนวณ % ความจุ และวัดระยะว่างเป็น กก. ไม่ได้</div>` : ''}
+    ${canM && !ncp ? (S.mf ? mfBox(d) : `<div><button type="button" data-mfadd="1" ${S.busy ? 'disabled' : ''}>+ เพิ่มรหัสวัตถุดิบ / สารเสริมใหม่</button> <span class="muted smt">แก้ข้อมูลรหัสเดิม กดปุ่ม "แก้ไข" ท้ายแถว · รหัส NCP แก้ที่ระบบ NCP</span></div>`) : ''}
     <div class="card" style="display:flex;flex-direction:column;gap:10px">
       <div class="chips"><input data-bind="mst.q" value="${esc(M.q)}" placeholder="ค้นหารหัส / ชื่อ" autocomplete="off" style="flex:1 1 220px">
         <button type="button" class="tg" aria-pressed="${M.only === 'bu'}" data-mstonly="bu">เปิดใช้กับถัง (${all.filter((i) => i.bin).length})</button><button type="button" class="tg" aria-pressed="${M.only === 'nbu'}" data-mstonly="nbu">ปิด</button><button type="button" class="tg" aria-pressed="${M.only === 'bin'}" data-mstonly="bin">batch ดึง/อยู่ในถัง</button><button type="button" class="tg" aria-pressed="${M.only === 'nod'}" data-mstonly="nod">ยังไม่มี density</button><button type="button" class="tg" aria-pressed="${M.only === 'act'}" data-mstonly="act">ใช้งานอยู่</button><button type="button" class="ghost sm" data-mstall="1">ขยายทั้งหมด</button><button type="button" class="ghost sm" data-mstall="0">ย่อทั้งหมด</button></div>
@@ -1719,6 +1721,33 @@ function viewMaster(d) {
         <details ${M.bulk ? 'open' : ''}><summary class="smt">วางหลายรหัสจาก Excel (รหัส, density ต่อบรรทัด)</summary><div style="display:flex;flex-direction:column;gap:8px;margin-top:8px"><textarea data-bind="mst.bulk" data-nore="1" rows="5" placeholder="01PT004-2000000, 620&#10;04RW003-18NA000, 450" style="font-family:'IBM Plex Mono',monospace;font-size:13px">${esc(M.bulk)}</textarea><div><button type="button" class="ghost sm" data-mstbulk="1">เติมลงตาราง</button></div></div></details>` : '<p class="muted smt" style="margin:0">ดูอย่างเดียว — แก้ density ได้เฉพาะ Control / admin</p>'}
       <div class="tw"><table><thead><tr><th>รหัส</th><th>ชื่อ</th>${ncp ? '<th>กลุ่ม</th><th>สี</th><th>โปรตีน</th>' : '<th>คลัง</th><th>หมวด</th><th>หน่วย</th>'}<th>ถัง</th><th class="num">density<br><span class="smt">กก./ลบ.ม.</span></th>${ncp ? '' : '<th>บด TC<br><span class="smt">ตัวเลือกบด</span></th>'}<th>ใช้กับถัง<br><span class="smt">Batching</span></th><th></th></tr></thead><tbody>${body || '<tr><td colspan="10" class="muted">ไม่พบรายการ</td></tr>'}</tbody></table></div>
       <span class="muted smt">${rows.length} รายการ · ${keys.length} กลุ่ม${auto ? ' · กำลังค้นหา = ขยายทุกกลุ่ม' : ''}</span></div>`;
+}
+
+// ===== เพิ่ม / แก้ master วัตถุดิบ (WH / admin · ผู้ใช้ 20 พ.ย. 2026) =====
+function mfBox(d) {
+  const F = S.mf; const add = F.mode === 'add'; const it = d.items[F.code] || {};
+  const tg = (k, v, l) => `<button type="button" class="tg" aria-pressed="${F[k] === v}" data-set="mf.${k}" data-val="${v}">${l}</button>`;
+  const dup = add && F.code && d.items[String(F.code).trim().toUpperCase()];
+  const rop = Number(F.rop), mx = Number(F.max); const badMax = F.rop !== '' && F.max !== '' && mx < rop;
+  const ok = (add ? /^[0-9A-Za-z][0-9A-Za-z._/-]{2,29}$/.test(String(F.code).trim()) && !dup : true) && String(F.name).trim().length >= 2 && !badMax && (add || String(F.reason).trim().length >= 3);
+  return `<div class="card" style="display:flex;flex-direction:column;gap:10px;border-color:var(--acc)">
+    <b style="font-size:16px">${add ? 'เพิ่มรหัสใหม่' : 'แก้ไขรหัส ' + esc(F.code)}</b>
+    <div class="grid3">
+      <label class="fld">รหัสวัตถุดิบ${add ? '' : ' (แก้ไม่ได้)'}<input data-bind="mf.code" value="${esc(F.code)}" ${add ? '' : 'disabled'} autocomplete="off" placeholder="เช่น 01PT099-1000000" style="text-transform:uppercase"></label>
+      <label class="fld" style="grid-column:span 2">ชื่อวัตถุดิบ<input data-bind="mf.name" value="${esc(F.name)}" autocomplete="off"></label></div>
+    ${dup ? `<p class="err" style="margin:0">มีรหัส ${esc(String(F.code).trim().toUpperCase())} อยู่แล้ว (${esc(dup.name)}) — ใช้ปุ่มแก้ไขที่แถวนั้น</p>` : ''}
+    <div class="chips">หมวด ${tg('category', 'Rawmat', 'Rawmat')}${tg('category', 'Premix', 'Premix')}${tg('category', '', 'ไม่ระบุ')}
+      <span class="muted smt">|</span> คลังหลัก ${tg('store', 'RM', 'RM')}${tg('store', 'PX', 'PX')}
+      <span class="muted smt">|</span> หน่วย ${tg('unit', 'BAG', 'ถุง/กระสอบ (BAG)')}${tg('unit', 'BULK', 'Bulk')}${tg('unit', 'TANK', 'แท็งก์ (TANK)')}
+      <span class="muted smt">|</span> สถานะ ${tg('status', 'Active', 'ใช้งาน')}${tg('status', 'Inactive', 'ไม่ใช้งาน')}</div>
+    <div class="grid3">
+      <label class="fld">ROP (กก.) <span class="muted smt">สต็อกพอใช้ 5 วัน</span><input data-bind="mf.rop" value="${esc(F.rop)}" inputmode="decimal" autocomplete="off"></label>
+      <label class="fld">Max (กก.)<input data-bind="mf.max" value="${esc(F.max)}" inputmode="decimal" autocomplete="off"></label>
+      <label class="fld">เหตุผล${add ? ' (ถ้ามี)' : ' (ต้องใส่)'}<input data-bind="mf.reason" value="${esc(F.reason)}" autocomplete="off"></label></div>
+    ${badMax ? '<p class="err" style="margin:0">Max ต้องไม่น้อยกว่า ROP</p>' : ''}
+    ${!add && it.status === 'Active' && F.status === 'Inactive' ? '<p class="note smt" style="margin:0">ปิดใช้งานแล้ว รหัสนี้จะไม่แสดงเป็นตัวเลือกตอนรับเข้า · ยอดคงเหลือเดิมยังอยู่</p>' : ''}
+    <div class="chips"><button type="button" data-mfsave="1" ${ok && !S.busy ? '' : 'disabled'}>${add ? 'เพิ่มรหัส' : 'บันทึกการแก้ไข'}</button><button type="button" class="ghost" data-mfcancel="1">ยกเลิก</button>
+      <span class="muted smt">บันทึกแล้ว sync จาก RM_Master จะไม่เขียนทับรหัสนี้ · มีประวัติใน audit</span></div></div>`;
 }
 
 // ---------- รายงาน (หน่วยงาน: รายงาน) ----------
@@ -3073,7 +3102,11 @@ document.addEventListener('click', async (e) => {
   if (ds.mstall !== undefined) { const d = D(); const on = ds.mstall === '1'; S.mst.open = {}; if (on) d.s.items.forEach((i) => { S.mst.open[String(i.code).slice(0, 4).toUpperCase()] = true; }); render(); return; }
   if (ds.grindset) { S.keepScroll = true; act('rm_item_grind', { p: { codes: [ds.grindset], on: ds.on === '1' } }, (r) => (r.on ? 'เปิด' : 'ปิด') + 'ตัวเลือกบด TC แล้ว', null); return; }
   if (ds.binuse) { S.keepScroll = true; act('rm_item_binuse', { p: { codes: ds.binuse.split(','), on: ds.on === '1' } }, (r) => (r.on ? 'เปิด' : 'ปิด') + 'ใช้กับถัง Batching ' + r.updated + ' รหัสแล้ว', null); return; }
-  if (ds.msttab) { S.mst.tab = ds.msttab; S.mst.chg = {}; render(); return; }
+  if (ds.msttab) { S.mst.tab = ds.msttab; S.mst.chg = {}; S.mf = null; render(); return; }
+  if (ds.mfadd) { S.mf = { mode: 'add', code: '', name: '', category: 'Rawmat', store: 'RM', unit: 'BAG', status: 'Active', rop: '', max: '', reason: '' }; render(); return; }
+  if (ds.mfedit) { const it = D().items[ds.mfedit]; if (!it) return; S.mf = { mode: 'edit', code: it.code, name: it.name || '', category: it.category || '', store: it.store || 'RM', unit: it.unit || 'BAG', status: it.status || 'Active', rop: it.rop == null ? '' : String(it.rop), max: it.max == null ? '' : String(it.max), reason: '' }; window.scrollTo({ top: 0, behavior: 'smooth' }); render(); return; }
+  if (ds.mfcancel) { S.mf = null; render(); return; }
+  if (ds.mfsave) { const F = S.mf; act('rm_item_save', { p: { mode: F.mode, code: String(F.code).trim().toUpperCase(), name: String(F.name).trim(), category: F.category, store: F.store, unit: F.unit, status: F.status, rop_kg: F.rop, max_kg: F.max, reason: F.reason } }, (r) => (r.mode === 'add' ? 'เพิ่มรหัส ' : 'แก้ไขรหัส ') + r.code + ' แล้ว', () => { S.mf = null; }); return; }
   if (ds.mstonly !== undefined) { S.mst.only = S.mst.only === ds.mstonly ? '' : ds.mstonly; render(); return; }
   if (ds.mstsave) { const items = Object.entries(S.mst.chg).filter(([c, v]) => { const it = D().items[c]; return it && String(v).trim() !== String(it.density ?? ''); }).map(([code, density]) => ({ code, density: String(density).trim() }));
     if (!items.length) { S.toast = 'ยังไม่มีค่า density ที่แก้'; S.toastErr = true; render(); return; }
