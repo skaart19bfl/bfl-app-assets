@@ -1,0 +1,1251 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0F2744">
+<title>BFL Coating Control</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=Sarabun:wght@400;600;700&display=swap">
+<style>
+/* BFL theme = Packing app (user 9 Nov 2026): grey-blue page, navy top bar, blue for actions / selected */
+:root{--bg:#EEF2F7;--ink:#0F2744;--ink2:#1F3A5C;--mute:#566779;--line:#D5DEE8;--line2:#BCC9D7;--soft:#E2E9F1;--blue:#1E5BD8;--blue2:#E7EFFC;--ok:#157A43;--red:#C0392B;
+  --ext:#34449C;--ext-t:#E3E6F6;--dyer:#C9661A;--dyer-t:#FCE6CF;--sieve:#0F7A6D;--sieve-t:#D5EEEA;--pack:#4E5D6E;--pack-t:#DFE5EC}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:'IBM Plex Sans Thai',sans-serif;font-size:17px;-webkit-tap-highlight-color:transparent}
+button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
+button{cursor:pointer}
+#app{max-width:480px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column}
+.top{display:flex;align-items:center;gap:12px;padding:16px 18px;background:var(--ink);color:#fff}
+.top .sub{font-size:14px;color:#B6C3D1}
+.top .t{font-size:20px;font-weight:700;line-height:26px}
+.back{width:44px;height:44px;border-radius:22px;background:var(--ink2);border:0;display:flex;align-items:center;justify-content:center;flex:none}
+.pill{display:inline-flex;align-items:center;height:32px;padding:0 12px;border-radius:9px;font-weight:700;font-size:17px}
+.pad{padding:16px 18px;display:flex;flex-direction:column;gap:12px;flex:1}
+h1{font-size:26px;line-height:32px;margin:4px 0 0}
+.card{background:#fff;border:2px solid var(--line);border-radius:16px;padding:12px 14px}
+.lot{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:#fff;border:2px solid var(--line);border-radius:16px;padding:12px 14px}
+.line{display:inline-flex;align-items:center;justify-content:center;width:62px;height:34px;border-radius:9px;font-size:17px;font-weight:700;color:#fff;flex:none}
+.grp{display:flex;align-items:center;gap:8px;font-weight:700;padding-top:6px}
+.dot{width:12px;height:12px;border-radius:6px;display:inline-block}
+.big{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:66px;border-radius:18px;border:0;background:var(--blue);color:#fff;font-size:23px;font-weight:700;text-decoration:none}
+.big:disabled{background:#C0CAD5;color:var(--mute)}
+.big.alt{background:#fff;border:2px solid var(--ink);color:var(--ink);font-size:20px;min-height:58px}
+.foot{padding:12px 18px 22px;display:flex;flex-direction:column;gap:10px;position:sticky;bottom:0;background:var(--bg)}
+.link{background:none;border:0;color:var(--blue);font-size:17px;padding:8px;text-decoration:underline}
+.nav{display:flex;background:#fff;border-top:1px solid var(--line);position:sticky;bottom:0}
+.nav button{flex:1;border:0;background:none;height:62px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:14px;font-weight:600;color:var(--mute)}
+.nav button.on{color:var(--blue)}
+.steps{display:flex;gap:6px}
+.steps div{flex:1;display:flex;flex-direction:column;gap:4px;font-size:14px;color:#697686}
+.steps span{height:6px;border-radius:3px;background:#C0CAD5}
+.steps .on{color:var(--blue);font-weight:700}.steps .on span,.steps .done span{background:var(--blue)}.steps .done{color:var(--blue)}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.tile{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;height:160px;border-radius:22px;background:#fff;border:2px solid var(--line);padding:8px}
+.tile b{font-size:23px}.tile small{font-size:15px;color:var(--mute)}
+.tile .ic{display:flex;width:62px;height:62px;border-radius:31px;align-items:center;justify-content:center}
+.tile .n{position:absolute;top:10px;right:10px;width:30px;height:30px;border-radius:15px;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px}
+.kgbox{display:flex;align-items:baseline;justify-content:flex-end;gap:8px;height:84px;border-radius:18px;background:#fff;border:3px solid var(--blue);padding:0 18px}
+.kgbox b{font-size:52px;line-height:80px}
+.keys{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.keys button{height:54px;border-radius:14px;background:#fff;border:1px solid var(--line);font-size:26px;font-weight:600}
+.chip{min-height:44px;padding:0 14px;border-radius:12px;background:#fff;border:1px solid var(--line2);font-size:16px}
+.chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.ev{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;text-align:left;padding:10px 12px;border-radius:12px;background:#fff;border:1px solid var(--line2)}
+.ev.on{border:3px solid var(--dyer);background:var(--dyer-t)}
+.ev small{color:var(--mute);font-size:14px}
+input.f,select.f,textarea.f{width:100%;min-height:50px;border-radius:12px;border:1px solid var(--line2);padding:0 14px;background:#fff;font-size:17px}
+textarea.f{padding:10px 14px;min-height:64px}
+.st{width:56px;height:56px;border-radius:16px;background:#fff;border:1px solid var(--line2);font-size:30px;font-weight:600;flex:none}
+.part{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border-radius:18px}
+.bar{display:flex;height:14px;border-radius:7px;overflow:hidden;background:#D5DCE4}
+.bag{display:flex;align-items:center;gap:14px;width:100%;text-align:left;padding:12px 14px;border-radius:16px;background:#fff;border:1px solid var(--line)}
+.hole{width:14px;height:14px;border-radius:7px;border:3px solid var(--line);flex:none}
+.tag{display:inline-flex;align-items:center;height:26px;padding:0 9px;border-radius:8px;font-size:14px;font-weight:600}
+.pinwho{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.who{display:flex;flex-direction:column;align-items:center;gap:6px;background:none;border:0;font-size:14px;font-weight:500;padding:4px 0}
+.av{width:60px;height:60px;border-radius:30px;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;background:#fff;border:2px solid var(--line)}
+.who.on .av{background:var(--ink);color:#fff;border-color:var(--ink);box-shadow:0 0 0 4px #A9C4F5}
+.dots{display:flex;gap:18px;justify-content:center}
+.dots span{width:22px;height:22px;border-radius:11px;border:3px solid #8794A3}.dots span.on{background:var(--ink);border-color:var(--ink)}
+.toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:12px 18px;border-radius:14px;font-size:16px;max-width:92vw;z-index:50;text-align:center}
+.toast.err{background:var(--red)}
+.sheet{position:fixed;inset:0;background:rgba(30,43,58,.5);display:flex;align-items:flex-end;justify-content:center;z-index:40}
+.sheet>div{background:var(--bg);width:100%;max-width:480px;max-height:92vh;overflow:auto;border-radius:22px 22px 0 0;padding:18px;display:flex;flex-direction:column;gap:12px}
+.spin{text-align:center;color:var(--mute);padding:40px 0}
+.sw{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.sw input{width:52px;height:30px;accent-color:var(--ok)}
+:focus-visible{outline:3px solid #F2A33A;outline-offset:2px}
+.lot.on{border-color:var(--blue);background:var(--blue2)}
+/* PC (user 9 Nov 2026): wide screens get 2 columns — Lot list left, the Lot / add NCP right. Phones unchanged. */
+body.wide #app{max-width:none}
+.wcols{display:grid;grid-template-columns:minmax(360px,420px) minmax(0,1fr);height:100vh;height:100dvh}
+.wl,.wr{height:100vh;height:100dvh;overflow:auto;display:flex;flex-direction:column}
+.wl{border-right:1px solid var(--line);background:var(--bg)}
+.wr .pad,.wr .foot{width:100%;max-width:880px;margin:0 auto}
+.wr .tiles{grid-template-columns:repeat(4,minmax(0,1fr))}
+.wr .kgbox,.wr .keys{width:100%;max-width:460px;align-self:center}
+.wempty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--mute);font-size:18px;text-align:center;padding:40px}
+.wfull{min-height:100vh;display:flex;flex-direction:column}
+.wfull .pad{width:100%;max-width:1180px;margin:0 auto}
+.wfull .nav,.wl .nav{justify-content:center}.wfull .nav button{flex:0 1 140px}
+.cgrid{display:flex;flex-direction:column;gap:12px}
+body.wide .cgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}
+@media (min-width:900px){.sheet{align-items:center}.sheet>div{max-width:600px;border-radius:22px}}
+/* forms printed to PDF (TH Sarabun PSK when the font file is set, else Sarabun) */
+.form{font-family:'TH Sarabun PSK','Sarabun',sans-serif;font-size:15px;color:#000}
+.psk .form{font-size:20px}
+.rj{width:560px;min-height:397px;background:#fff;color:#000;padding:16px 26px;display:flex;flex-direction:column;gap:.55em}
+.rj .f{display:flex;align-items:baseline;gap:8px}
+.rj .v{flex:1;border-bottom:1.5px dotted #000;padding:0 6px;font-size:1.13em;color:#000;min-height:1.4em}
+.rj .cb{display:inline-flex;width:.75em;height:.75em;border:1.2px solid #000;margin-right:6px;align-items:center;justify-content:center;font-size:.8em;color:#000;font-weight:700}
+</style>
+</head>
+<body>
+<script>/*CS-SRC Code.gs v30*/const CS_SRC = "/**\n * BFL Coating Control — mobile web app (standalone Apps Script project).\n * The Coating team records NCP one Bigbag at a time into tab NCP of BFL Production-Dep:\n * one row per Process; a bag holding two processes = two rows sharing one NCP_No (COA-yyyyMMdd-nnnn).\n * Never deletes rows (cancel = Cancelled TRUE). Adds one tab: Coating_App_Users. Settings live in Script Properties.\n * PDFs (ป้าย Reject F-SP-QAS06-05, แบบรับเข้า Rework F-SP-PRD04-01) are drawn on the phone and saved to Drive.\n */\nconst CFG = {\n  SHEET_ID: '1jDn7AWFrLgwDXzPr5Lju8BU_PYgtMs_Z7BamDldSr3Q', // BFL Production-Dep\n  NCP: 'NCP', PLOT: 'Production_Lot', PRODUCT: 'Product_Detail', NCP_DETAIL: 'NCP_Detail', NCP_MAP: 'Production_NCP_Map',\n  RUNTIME: 'Extruder_Runtime', USERS: 'Coating_App_Users', COATER: 'Coater_Records',\n  COATER_GAP_MIN: 180, // a record longer than this after the previous one = the line stopped: its kg counts, its time is left out of kg/hr\n  USER_HEADERS: ['User_ID', 'Name', 'Role', 'PIN_Hash', 'Active', 'Updated_At', 'Updated_By'],\n  ROLES: ['coat', 'sup', 'admin'], // coat = record bags · sup = + edit any bag, export Rework form, settings · admin = + users\n  SEED_USERS: [['Admin', 'admin', '9999']],\n  START_PINS: ['0000', '1234', '9999'], // a PIN still equal to one of these must be changed at login\n  LOT_STATES: ['Extruder', 'Packing'], // Production_Lot.State shown in the app (user, 15 Oct 2026)\n  PROCESSES: ['Extruder', 'Dyer', 'Sieve', 'Packing'], // = NCP.Process values\n  CAUSE_PROCESS: 'Dyer', // only Dyer carries a cause (ExtruderRuntimeID) + comment\n  MAX_KG: 2000, // per row\n  TOKEN_HOURS: 14,\n  OUT_FOLDER: '15gngnzvTB-srdWRX95zzAQmR9C7-9Qmv', // PDFs go to sub-folders made on first save\n  REJECT_SUB: 'Reject_PDF', REWORK_SUB: 'Rework_PDF',\n  REJECT_KEEP_HOURS: 24, // Reject PDFs are trashed after a day (cleanupRejectPdf, daily trigger made by setup)\n  HOOK_URL: 'https://script.google.com/macros/s/AKfycbwVXGDr7xCs5fSCrot8Dm1Ictg5glYOEdurMgnxbLBkT3BsGaFhh98bVOJNt1OteMhQEA/exec',\n  NO_PREFIX: 'COA-', SOURCE: 'CoatingApp',\n  REJECT_FORM_ID: '1xwohw1AIAGT7qHn7y32Ea2_HljhF-lB2', // Form/F-SP-QAS06-05 R.03 ป้ายบ่งชี้การ Reject สินค้า.pdf\n  REWORK_FORM_ID: '1EInLYEMUpmblaQjTq-V4O_9ZEF6i_qJl', // Form/F-SP-PRD04-01 R.03 แบบบันทึกการรับเข้า Rework.pdf\n  FONT_ID: '10ZfUaoD3IDxDi0bVQ2sEZJR6lFhQRvg1', // Form/THSarabun.ttf\n  RUNTIME_LIST: 40,\n  REQUIRED: ['ID', 'Extruder_Number', 'Lot_Number', 'ProductID', 'DateTime', 'Process', 'Weight', 'CreateTimestamp', 'UpdatedTimestamp',\n    'State', 'Comment', 'LotProductKey', 'ProductionID', 'Cancelled', 'SourceModule', 'SourceRecordID', 'NCP_Detail_ID', 'Weight_Kg',\n    'Status', 'NCP_No', 'CreateMethod', 'Visible', 'ExtruderRuntimeID']\n};\nconst HOUR = 3600e3, TZ = 'Asia/Bangkok';\n\n/* ---------- pure helpers ---------- */\n\nfunction truthy_(v) { return v === true || /^(true|y|yes|1)$/i.test(String(v == null ? '' : v).trim()); }\nfunction toObjs_(h, values) { return values.map(function (v) { const o = {}; h.forEach(function (k, i) { o[k] = v[i]; }); return o; }); }\nfunction str_(v, max) { return String(v == null ? '' : v).trim().slice(0, max || 500); }\nfunction ms_(v) { return v instanceof Date ? v.getTime() : (v ? new Date(v).getTime() || 0 : 0); }\nfunction roleOk_(have, need) { return !need || have === need || have === 'admin' || (need === 'coat' && have === 'sup'); }\n// Production day starts 08:00 (UTC+7, no DST). Shift = 08–16 / 16–24 / 00–08 of that production day.\nfunction prodDateKey_(ms) { return new Date(ms + 7 * HOUR - 8 * HOUR).toISOString().slice(0, 10); }\nfunction shiftOf_(ms) {\n  const h = new Date(ms + 7 * HOUR).getUTCHours(), start = h >= 16 ? 16 : h >= 8 ? 8 : 0;\n  return prodDateKey_(ms) + '|' + start;\n}\nfunction shiftRange_(key) { // 'yyyy-MM-dd|8' → [from, to) ms\n  const p = String(key).split('|'), d = new Date(p[0] + 'T08:00:00+07:00').getTime(), s = Number(p[1]);\n  if (isNaN(d) || [0, 8, 16].indexOf(s) < 0) throw new Error('กะไม่ถูกต้อง');\n  const from = d + ((s === 0 ? 24 : s) - 8) * HOUR;\n  return [from, from + 8 * HOUR];\n}\nfunction live_(r) { return !truthy_(r.Cancelled) && String(r.State || '').toLowerCase() !== 'cancel'; }\nfunction bagKey_(r) { return str_(r.NCP_No) || 'ID:' + str_(r.ID); }\nfunction shortNcp_(id) { return String(id || '').replace(/000$/, ''); }\n// Rows of one lot → bags (one bag = rows sharing NCP_No; old rows without NCP_No = one bag each), numbered by time.\n// Rows of one lot → BBs (one BB = rows sharing NCP_No; old rows without NCP_No = one BB each), numbered by first time.\n// A BB can be filled over time (e.g. Dyer 08:44, then Sieve 11:31), so every part keeps its own time.\nfunction bags_(rows) {\n  const by = {}, list = [];\n  rows.forEach(function (r) {\n    const k = bagKey_(r), at = ms_(r.DateTime) || ms_(r.CreateTimestamp), cm = String(r.CreateMethod || '');\n    if (!by[k]) { by[k] = { key: k, parts: [] }; list.push(by[k]); }\n    by[k].parts.push({ rowId: str_(r.ID), process: str_(r.Process), kg: Number(r.Weight) || 0, at: at, created: ms_(r.CreateTimestamp) || at,\n      by: cm.indexOf(CFG.SOURCE + ':') === 0 ? cm.slice(CFG.SOURCE.length + 1) : '', app: String(r.SourceModule) === CFG.SOURCE,\n      runtimeId: str_(r.ExtruderRuntimeID), comment: str_(r.Comment), ncpId: str_(r.NCP_Detail_ID) });\n  });\n  list.forEach(function (b) {\n    b.parts.sort(function (x, y) { return x.at - y.at || x.created - y.created; });\n    b.at = b.parts[0].at; b.last = b.parts[b.parts.length - 1].at; b.by = b.parts[0].by;\n    b.total = b.parts.reduce(function (s, p) { return s + p.kg; }, 0);\n    b.comment = b.parts.map(function (p) { return p.comment; }).filter(String).join(' / ');\n    b.ncpId = (b.parts.find(function (p) { return p.ncpId; }) || {}).ncpId || '';\n  });\n  list.sort(function (a, b) { return a.at - b.at; });\n  list.forEach(function (b, i) { b.no = i + 1; });\n  return list;\n}\nfunction nextNo_(rows, now) {\n  const prefix = CFG.NO_PREFIX + Utilities.formatDate(now, TZ, 'yyyyMMdd') + '-';\n  const n = rows.reduce(function (m, r) { const s = String(r.NCP_No || ''); return s.indexOf(prefix) === 0 ? Math.max(m, Number(s.slice(prefix.length)) || 0) : m; }, 0);\n  return prefix + String(n + 1).padStart(4, '0');\n}\n// d.parts = [{process, kg}] — 1 or 2 different processes.\nfunction parts_(parts) {\n  if (!Array.isArray(parts) || parts.length < 1 || parts.length > 2) throw new Error('เลือกที่มา 1 หรือ 2 Process');\n  const seen = {};\n  return parts.map(function (p) {\n    const pr = String(p && p.process), kg = Number(p && p.kg);\n    if (CFG.PROCESSES.indexOf(pr) < 0) throw new Error('Process ไม่ถูกต้อง');\n    if (seen[pr]) throw new Error('เลือก Process ซ้ำ');\n    seen[pr] = true;\n    if (!(kg > 0 && kg <= CFG.MAX_KG)) throw new Error('น้ำหนัก ' + pr + ' ต้องมากกว่า 0 และไม่เกิน ' + CFG.MAX_KG + ' kg');\n    return { process: pr, kg: Math.round(kg * 10) / 10 };\n  });\n}\n\n/* ---------- sheet access ---------- */\n\nlet SS_;\nfunction ss_() { return SS_ || (SS_ = SpreadsheetApp.openById(CFG.SHEET_ID)); }\nfunction sheet_(name) { const sh = ss_().getSheetByName(name); if (!sh) throw new Error('ไม่พบแท็บ ' + name); return sh; }\nfunction table_(name) {\n  if (csOn_() && CS.TABS[name]) return csTable_(name);   // v30 (step E)\n  const v = tcValues_(name), h = v[0].map(String), rows = toObjs_(h, v.slice(1));\n  rows.forEach(function (r, i) { r._row = i + 2; });\n  return { get sh() { return sheet_(name); }, h: h, rows: rows };\n}\n\n/* ---------- read cache (user 13 Nov 2026 \"coating ยังโหลดช้า\" — same scheme as the Production App v47) ---------- */\n// LIVE tabs: a cached copy is used only while its stamp = the sheet's stamp now (row count : newest UpdatedTimestamp in the last\n// 400 rows # this app's write mark). AGE tabs (small masters) by age, users by USERS_TTL. Inside withLock_ (every write) and after\n// it in the same call everything is read from the sheet, as in v28.\nconst TC = { TTL: 300, LIVE_TTL: 900, USERS_TTL: 60, REFRESH_AGE: 150e3, FRESH_LS: 20e3, STAMP_EVERY: 4e3, POLL_MS: 2500, CH: 90000, P: 'ctc1_' };\nconst LIVE = { TABS: [CFG.NCP, CFG.PLOT, CFG.COATER, CFG.RUNTIME], PAGE: 3 };   // PAGE = how many go into the stamp the page sees (v28: 3)\nconst TC_AGE = [CFG.PRODUCT, CFG.NCP_DETAIL, CFG.NCP_MAP];\nlet NOCACHE_ = false, TC_ST_ = null, TC_DIRTY_ = {}, TC_MEMO_ = {};\nfunction tcLive_(n) { return LIVE.TABS.indexOf(n) >= 0; }\nfunction tcDel_(n) { try { CacheService.getScriptCache().remove(TC.P + n); } catch (e) { } }\n// values of a tab (header row first): this call's copy → cache (stamp / age) → sheet (then cached)\nfunction tcValues_(name) {\n  const cached = !NOCACHE_ && (tcLive_(name) || TC_AGE.indexOf(name) >= 0 || name === CFG.USERS);\n  if (!cached) return (name === CFG.USERS ? usersSheet_() : sheet_(name)).getDataRange().getValues();\n  if (TC_MEMO_[name]) return TC_MEMO_[name];\n  let v = tcGet_(name);\n  if (!v) {\n    const st = tcLive_(name) ? tcStamps_(false)[name] : '';   // taken before the read, so a copy made now is never newer than its stamp\n    v = (name === CFG.USERS ? usersSheet_() : sheet_(name)).getDataRange().getValues();\n    tcPut_(name, v, st);\n  }\n  return (TC_MEMO_[name] = v);\n}\nfunction tcGet_(n) {\n  try {\n    const st = tcLive_(n) ? tcStamps_(false)[n] : null;\n    const c = CacheService.getScriptCache(), head = c.get(TC.P + n); if (!head) return null;\n    const hp = head.split('|');   // pieces | id | stamp | saved at\n    if (st != null && hp[2] !== st) return null;   // the sheet changed since → read it\n    const k = Number(hp[0]), keys = []; for (let i = 0; i < k; i++) keys.push(TC.P + n + '_' + hp[1] + '_' + i);\n    const got = c.getAll(keys); let b = '';\n    for (let i = 0; i < k; i++) { if (got[keys[i]] == null) return null; b += got[keys[i]]; }\n    const txt = Utilities.ungzip(Utilities.newBlob(Utilities.base64Decode(b), 'application/x-gzip')).getDataAsString('UTF-8');\n    return JSON.parse(txt, function (key, v) { return v && typeof v === 'object' && v.$d != null && Object.keys(v).length === 1 ? new Date(v.$d) : v; });\n  } catch (e) { console.warn('cache read ' + n + ': ' + e); return null; }\n}\nfunction tcPut_(n, v, stamp) {\n  try {\n    const live = tcLive_(n);\n    const txt = JSON.stringify(v, function (key, x) { return this[key] instanceof Date ? { $d: this[key].getTime() } : x; });\n    const b = Utilities.base64Encode(Utilities.gzip(Utilities.newBlob(txt, 'application/json')).getBytes());\n    if (b.length > TC.CH * 40) return;   // > 3.6 MB: not worth it\n    const id = Date.now().toString(36), o = {}; let k = 0;\n    for (let i = 0; i < b.length; i += TC.CH) o[TC.P + n + '_' + id + '_' + (k++)] = b.slice(i, i + TC.CH);\n    const c = CacheService.getScriptCache(), ttl = live ? TC.LIVE_TTL : n === CFG.USERS ? TC.USERS_TTL : TC.TTL;\n    c.putAll(o, ttl + 30); c.put(TC.P + n, k + '|' + id + '|' + (live ? stamp : '') + '|' + Date.now(), ttl);\n  } catch (e) { console.warn('cache write ' + n + ': ' + e); }\n}\n// stamps of the LIVE tabs, once per call: from the last worked-out stamp (any phone) when newer than FRESH_LS, else now\nfunction tcStamps_(fresh) {\n  if (TC_ST_ && !fresh) return TC_ST_;\n  const c = CacheService.getScriptCache(), keys = LIVE.TABS.map(function (t) { return 'cls_' + t; });\n  if (!fresh && Date.now() - Number(c.get('cls_at') || 0) < TC.FRESH_LS) {\n    const g = c.getAll(keys);\n    if (keys.every(function (k) { return g[k] != null; })) return tcSetStamps_(keys.map(function (k) { return g[k]; }));\n  }\n  const ed = edMarks_(LIVE.TABS, ss_), put = {};\n  const v = LIVE.TABS.map(function (t, i) { const sh = ss_().getSheetByName(t); return (put['cls_' + t] = String(sh ? sh.getLastRow() : 0) + ':' + (ed[i] || '0')); });\n  put.cls_at = String(Date.now()); c.putAll(put, 21600);\n  return tcSetStamps_(v);\n}\nfunction tcSetStamps_(v) {\n  const wv = CacheService.getScriptCache().getAll(LIVE.TABS.map(function (t) { return 'cwv_' + t; })), o = { rows: v };\n  LIVE.TABS.forEach(function (t, i) { o[t] = v[i] + '#' + (wv['cwv_' + t] || '0'); });\n  return (TC_ST_ = o);\n}\n// end of withLock_: the sheet is committed, then the written tabs' copies stop matching (an edit that keeps the row count and\n// UpdatedTimestamp still counts) · users: dropped after any write (PIN / user changes happen inside the lock)\nfunction tcMarkWrites_() {\n  const tabs = Object.keys(TC_DIRTY_); TC_DIRTY_ = {}; TC_ST_ = null; TC_MEMO_ = {};\n  try {\n    SpreadsheetApp.flush();\n    const c = CacheService.getScriptCache(), o = {}, v = Date.now().toString(36);\n    tabs.forEach(function (t) { if (tcLive_(t)) o['cwv_' + t] = v; else c.remove(TC.P + t); });\n    if (Object.keys(o).length) c.putAll(o, 21600);\n    c.remove(TC.P + CFG.USERS);\n  } catch (e) { console.warn('cache mark: ' + e.message); }\n}\n// put changed / old tabs into the cache (one phone at a time; stops after `budget` ms, the rest next time)\nfunction tcRefresh_(budget) {\n  // one refresher at a time: the user lock (web app runs as the owner → shared by every phone; separate from the write lock)\n  const t0 = Date.now(), c = CacheService.getScriptCache(), l = LockService.getUserLock(), out = [];\n  if (!l.tryLock(0)) return 'busy';\n  try {\n    const st = tcStamps_(false), tabs = LIVE.TABS.concat(TC_AGE), heads = c.getAll(tabs.map(function (t) { return TC.P + t; })), now = Date.now();\n    const need = tabs.map(function (t) {\n      const h = heads[TC.P + t], p = (h || '').split('|'), live = tcLive_(t);\n      return { t: t, pri: !h || (live && p[2] !== st[t]) ? 2 : now - Number(p[3] || 0) > TC.REFRESH_AGE ? 1 : 0 };\n    }).filter(function (x) { return x.pri; }).sort(function (a, b) { return b.pri - a.pri; });\n    for (let i = 0; i < need.length; i++) {\n      if (Date.now() - t0 > budget) { out.push('+' + (need.length - i)); break; }\n      const t = need[i].t, sh = ss_().getSheetByName(t); if (!sh) continue;\n      tcPut_(t, sh.getDataRange().getValues(), tcLive_(t) ? st[t] : '');\n      out.push(t);\n    }\n  } finally { l.releaseLock(); }\n  return out.join(',');\n}\nfunction appendRows_(sh, h, objs) {\n  if (sh.cs) return csAppend_(sh.cs, objs);   // v30\n  const out = objs.map(function (o) { return h.map(function (c) { return c in o ? o[c] : ''; }); }), at = sh.getLastRow() + 1;\n  sh.getRange(at, 1, out.length, h.length).setValues(out); TC_DIRTY_[sh.getName()] = 1;\n  if (sh.getName() === CFG.NCP) for (let i = 0; i < out.length; i++) NCP_TOUCHED_.push(at + i);   // → Supabase when the lock ends\n}\nfunction setCells_(t, r, vals) {\n  if (t.cs) return csSet_(t, r, vals);   // v30\n  Object.keys(vals).forEach(function (k) { const c = t.h.indexOf(k) + 1; if (c) t.sh.getRange(r._row, c).setValue(vals[k]); });\n  TC_DIRTY_[t.sh.getName()] = 1;\n  if (t.sh.getName() === CFG.NCP) NCP_TOUCHED_.push(r._row);\n}\nfunction withLock_(fn) {\n  const l = LockService.getScriptLock(); l.waitLock(20000);\n  NOCACHE_ = true; TC_MEMO_ = {};   // writes (and the rest of this call) read the sheet, as in v28\n  CS_T_ = {}; CS_OPS_ = [];   // v30: Supabase rows read again inside the lock\n  try { const out = fn(); csFlush_(); ncpFlush_(); return out; } finally { NCP_TOUCHED_ = []; CS_OPS_ = []; tcMarkWrites_(); l.releaseLock(); try { CacheService.getScriptCache().put('live_v', Date.now().toString(36), 21600); } catch (e) { } } // a write here → other phones reload (liveStamp)\n}\n// Realtime (user 9 Nov 2026): every phone asks every 5 s. Reads only sheet sizes + the write mark above (no rows) — cheap.\n// AppSheet แก้แถวเดิม (user 10 Nov 2026): จำนวนแถวไม่เปลี่ยน แต่ UpdatedTimestamp เปลี่ยน → ค่าใหม่สุดของ UpdatedTimestamp ใน TAIL แถวท้าย\n// ของแต่ละแท็บเป็นส่วนหนึ่งของ stamp · คำนวณครั้งเดียวต่อ EVERY วิ ใช้ร่วมทุกเครื่อง (CacheService) ไม่อ่านซ้ำทุกคน\nconst EDMARK = { TAIL: 400, EVERY: 5, COLS: ['UpdatedTimestamp', 'Updated_At', 'UpdatedAt'] };\nfunction edMarks_(tabs, ssFn) {\n  const c = CacheService.getScriptCache(), key = 'edm_' + tabs.join(',').length + '_' + tabs.length, hit = c.get(key);\n  if (hit) return hit.split('.');\n  const out = tabs.map(function (t) {\n    try {\n      const sh = ssFn().getSheetByName(t); if (!sh) return '0';\n      const last = sh.getLastRow(); if (last < 2) return '0';\n      let col = Number(c.get('edc_' + t) || 0);\n      if (!col) {\n        const h = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(function (x) { return String(x).trim(); });\n        col = -1; EDMARK.COLS.some(function (k) { const i = h.indexOf(k); if (i >= 0) { col = i + 1; return true; } return false; });\n        c.put('edc_' + t, String(col), 21600);\n      }\n      if (col < 1) return '0';\n      const n = Math.min(EDMARK.TAIL, last - 1); let m = 0;\n      sh.getRange(last - n + 1, col, n, 1).getValues().forEach(function (r) { const d = r[0] instanceof Date ? r[0].getTime() : 0; if (d > m) m = d; });\n      return m.toString(36);\n    } catch (e) { return '0'; }\n  });\n  c.put(key, out.join('.'), EDMARK.EVERY);\n  return out;\n}\nfunction liveStamp(token) {\n  session_(token);\n  // v29: worked out at most once per STAMP_EVERY for all phones (row counts + edit marks of the LIVE tabs), then one phone at a time\n  // refreshes the cached copies that changed or got old. Same value to the page as v28 (NCP, Production_Lot, Coater_Records).\n  const c = CacheService.getScriptCache(), fresh = Date.now() - Number(c.get('cls_at') || 0) >= TC.STAMP_EVERY, st = tcStamps_(fresh);\n  try { tcRefresh_(TC.POLL_MS); } catch (e) { console.warn('cache refresh: ' + e.message); }\n  return st.rows.slice(0, LIVE.PAGE).join('.') + '|' + (c.get('live_v') || '');\n}\n\n/* ---------- users & sessions (same scheme as the Packing app) ---------- */\n\nfunction prop_(k, make) {\n  const p = PropertiesService.getScriptProperties();\n  let v = p.getProperty(k);\n  if (!v && make) { v = Utilities.getUuid() + Utilities.getUuid(); p.setProperty(k, v); }\n  return v;\n}\nlet SALT_;\nfunction hash_(id, pin) {\n  SALT_ = SALT_ || prop_('SALT', true);\n  return Utilities.base64Encode(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, SALT_ + '|' + id + '|' + pin, Utilities.Charset.UTF_8));\n}\nfunction pinOk_(u, pin) { return String(u.PIN_Hash).replace(/^!/, '') === hash_(u.id, String(pin)); }\nfunction mustChange_(u) { return String(u.PIN_Hash).charAt(0) === '!' || CFG.START_PINS.some(function (p) { return pinOk_(u, p); }); }\nfunction sign_(s) { return Utilities.base64EncodeWebSafe(Utilities.computeHmacSha256Signature(s, prop_('SECRET', true))); }\nfunction usersSheet_() {\n  let sh = ss_().getSheetByName(CFG.USERS);\n  if (!sh) { sh = ss_().insertSheet(CFG.USERS, ss_().getNumSheets()); sh.appendRow(CFG.USER_HEADERS); }\n  return sh;\n}\nfunction users_() {\n  const all = tcValues_(CFG.USERS), h = all[0].map(String), v = all.slice(1);\n  return toObjs_(h, v).map(function (u, i) { u.row = i + 2; u.id = String(u.User_ID); u.active = truthy_(u.Active); return u; });\n}\nfunction publicUsers_() { return users_().map(function (u) { return { id: u.id, name: String(u.Name), role: u.Role, active: u.active }; }); }\nfunction addUser_(sh, name, role, pin, by) {\n  const id = 'C' + Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36);\n  sh.appendRow([id, name, role, '!' + hash_(id, pin), true, new Date(), by]);\n}\nfunction session_(token, role, pinChange) {\n  const p = String(token || '').split('|');\n  if (p.length !== 3 || p[2] !== sign_(p[0] + '|' + p[1]) || Date.now() > Number(p[1])) throw new Error('AUTH');\n  const u = users_().find(function (x) { return x.id === p[0] && x.active; });\n  if (!u) throw new Error('AUTH');\n  if (!roleOk_(u.Role, role)) throw new Error('สิทธิ์ไม่พอสำหรับรายการนี้');\n  if (!pinChange && mustChange_(u)) throw new Error('PIN_CHANGE');\n  return u;\n}\n\n/* ---------- entry & setup ---------- */\n\nfunction doGet() {\n  return HtmlService.createHtmlOutputFromFile('Index').setTitle('BFL Coating Control')\n    .addMetaTag('viewport', 'width=device-width, initial-scale=1, viewport-fit=cover')\n    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL); // BFL Hub shows this app inside its page (user 9 Nov 2026)\n}\n\n/* ---------- BFL Hub single login (user 9 Nov 2026) ----------\n * The Hub opens this app with ?hub=<one-time ticket>. Supabase (bfl-production · hub_redeem) accepts the ticket once and names the\n * Coating_App_Users account this Hub user is mapped to; we then issue our normal token. PIN login here works exactly as before. */\nconst HUB = { URL: 'https://kdytxuufvigwjccebrki.supabase.co/rest/v1/rpc/hub_redeem', KEY: 'sb_publishable_IYCMIaN7tJleWINprA42CQ_dX10sXFF', APP: 'coat' };\nfunction hubRedeem_(ticket) {\n  const t = String(ticket || ''); if (!/^[0-9a-f]{48}$/.test(t)) throw new Error('ลิงก์จาก Hub ไม่ถูกต้อง — เปิดจาก Hub ใหม่');\n  const res = UrlFetchApp.fetch(HUB.URL, { method: 'post', contentType: 'application/json', headers: { apikey: HUB.KEY, Authorization: 'Bearer ' + HUB.KEY },\n    payload: JSON.stringify({ p_ticket: t, p_app: HUB.APP }), muteHttpExceptions: true });\n  const r = res.getResponseCode() === 200 ? JSON.parse(res.getContentText()) : null;\n  if (!r || !r.ok) throw new Error('Hub ยืนยันตัวตนไม่ได้ — กลับไปที่ Hub แล้วเปิดใหม่');\n  return r;\n}\nfunction hubLogin(ticket) {\n  const r = hubRedeem_(ticket);\n  const u = users_().find(function (x) { return x.id === String(r.account) && x.active; });\n  if (!u) throw new Error('บัญชีที่ Hub ผูกไว้ไม่มีหรือปิดใช้งานในแอปนี้ — แจ้ง Admin');\n  const exp = Math.min(Number(r.exp) || 0, Date.now() + CFG.TOKEN_HOURS * HOUR);\n  if (!(exp > Date.now())) throw new Error('เซสชัน Hub หมดอายุ — login ที่ Hub ใหม่');\n  const s = u.id + '|' + exp;\n  return { token: s + '|' + sign_(s), me: { id: u.id, name: String(u.Name), role: u.Role }, mustChange: mustChange_(u) };\n}\n\n/* ---------- v30 — step E (user 14 Nov 2026 \"E2,e3\"): NCP + Production_Lot kept in Supabase ----------\n * With the Production App, Extruder Log, packing and prod-calc (claude/Step_E_Production_Lot_NCP_plan.md). Switch = Script Property\n * E_NCP_DB ('1' = Supabase), set by coatCutoverNcp at step E4 after the Supabase SQL step. Off = v29. Rows are read whole once per call\n * (fresh inside withLock_) and every change of the call goes in ONE pkp_put just before the lock is let go (all or nothing). */\nconst CS = { URL: 'https://kdytxuufvigwjccebrki.supabase.co/rest/v1/rpc/', KEY: 'sb_publishable_IYCMIaN7tJleWINprA42CQ_dX10sXFF', SOURCE: 'coating',\n  FN: 'https://kdytxuufvigwjccebrki.supabase.co/functions/v1/prod-calc', TABS: { NCP: 'ID', Production_Lot: 'ProductionID' } };\nlet CS_ON_ = null, CS_T_ = {}, CS_OPS_ = [];\nfunction csOn_() { if (CS_ON_ == null) CS_ON_ = PropertiesService.getScriptProperties().getProperty('E_NCP_DB') === '1'; return CS_ON_; }\nfunction csCall_(fn, body) {\n  const key = PropertiesService.getScriptProperties().getProperty('CS_KEY');\n  if (!key) throw new Error('ฐานข้อมูล: ยังไม่ได้ตั้ง CS_KEY (รัน coatStoreSetup)');\n  const r = UrlFetchApp.fetch(CS.URL + fn, { method: 'post', contentType: 'application/json', muteHttpExceptions: true,\n    headers: { apikey: CS.KEY, Authorization: 'Bearer ' + CS.KEY }, payload: JSON.stringify(Object.assign({ p_source: CS.SOURCE, p_key: key }, body)) });\n  const code = r.getResponseCode(), txt = r.getContentText();\n  if (code >= 300) { let m = txt; try { m = JSON.parse(txt).message || txt; } catch (e) { /* text */ } throw new Error('ฐานข้อมูล: ' + String(m).slice(0, 300)); }\n  return txt ? JSON.parse(txt) : null;\n}\nfunction csEnc_(v) {\n  if (v === '' || v == null) return null;\n  if (v instanceof Date) return isNaN(v.getTime()) ? null : { $d: v.getTime() };\n  if (typeof v === 'number') return isFinite(v) ? v : null;\n  if (typeof v === 'boolean') return v;\n  return String(v);\n}\nfunction csDec_(v) { return v == null ? '' : typeof v === 'object' && v.$d != null ? new Date(v.$d) : v; }\n// a tab as table_ gives it, from Supabase (rows in Supabase order; _row = position, never a sheet row)\nfunction csTable_(name) {\n  if (CS_T_[name]) return CS_T_[name];\n  const res = csCall_('pkp_get', { p_tab: name, p_col: null, p_vals: null, p_tail: null }), h = res.h.map(String);\n  const rows = res.rows.map(function (d, i) { const o = {}; h.forEach(function (c) { o[c] = csDec_(d[c]); }); o._row = i + 2; o._k = String(d._k); return o; });\n  const sh = { cs: name, getName: function () { return name; } };\n  return (CS_T_[name] = { cs: name, sh: sh, h: h, rows: rows });\n}\nfunction csAppend_(name, objs) {\n  const t = CS_T_[name], kc = CS.TABS[name];\n  objs.forEach(function (o) {\n    const k = String(o[kc] == null ? '' : o[kc]).trim();\n    if (!k) throw new Error('ฐานข้อมูล: แถวใหม่ไม่มีรหัส (' + kc + ')');\n    const d = {}; Object.keys(o).forEach(function (c) { if (t.h.indexOf(c) < 0) return; const e = csEnc_(o[c]); if (e !== null) d[c] = e; });\n    CS_OPS_.push({ tab: name, op: 'ins', rows: [{ k: k, d: d }] });\n    const r = {}; t.h.forEach(function (c) { r[c] = c in o ? o[c] : ''; }); r._row = t.rows.length + 2; r._k = k; t.rows.push(r);\n  });\n}\nfunction csSet_(t, r, vals) {\n  const set = {};\n  Object.keys(vals).forEach(function (c) { if (t.h.indexOf(c) < 0) return; set[c] = csEnc_(vals[c]); r[c] = vals[c]; });\n  if (Object.keys(set).length) CS_OPS_.push({ tab: t.cs, op: 'upd', rows: [{ k: r._k, set: set }] });\n}\nfunction csFlush_() {\n  if (!CS_OPS_.length) return 0;\n  const ops = CS_OPS_; CS_OPS_ = [];\n  csCall_('pkp_put', { p_ops: ops });\n  CS_T_ = {};\n  return ops.length;\n}\n// the Lot KPI by prod-calc (the main script's own code in Supabase) — same answer as before for the page (a response code)\nfunction csKpi_(body) {\n  try {\n    const r = UrlFetchApp.fetch(CS.FN, { method: 'post', contentType: 'application/json', muteHttpExceptions: true, headers: { apikey: CS.KEY },\n      payload: JSON.stringify({ mode: 'run', source: CS.SOURCE, srckey: PropertiesService.getScriptProperties().getProperty('CS_KEY'), jobs: [body], apply: true }) });\n    let j = {}; try { j = JSON.parse(r.getContentText()); } catch (e) { /* text */ }\n    if (r.getResponseCode() !== 200 || !j.e || !j.e.saved) { console.warn('prod-calc KPI ' + body.productionID + ': ' + r.getContentText().slice(0, 300)); return 500; }\n    return 200;\n  } catch (e) { console.warn('prod-calc KPI: ' + e); return 0; }\n}\n// editor, once: this app's own Supabase key (kept in Script Properties, registered hashed — never shown)\nfunction coatStoreSetup() {\n  const p = PropertiesService.getScriptProperties();\n  if (p.getProperty('CS_KEY')) return 'CS_KEY already set';\n  const key = Utilities.getUuid().replace(/-/g, '') + Utilities.getUuid().replace(/-/g, '');\n  const r = UrlFetchApp.fetch(CS.URL + 'pk_register', { method: 'post', contentType: 'application/json', muteHttpExceptions: true,\n    headers: { apikey: CS.KEY, Authorization: 'Bearer ' + CS.KEY }, payload: JSON.stringify({ p_source: CS.SOURCE, p_key: key }) });\n  if (r.getResponseCode() >= 300) throw new Error('pk_register: ' + r.getContentText().slice(0, 300));\n  p.setProperty('CS_KEY', key);\n  return 'CS_KEY set';\n}\n// step E4 (after the Supabase SQL step gives 'coating' NCP + Production_Lot): read check, then the switch\nfunction coatCutoverNcp() {\n  const n = csCall_('pkp_get', { p_tab: 'NCP', p_col: '_none_', p_vals: [] }).h.length, m = csCall_('pkp_get', { p_tab: 'Production_Lot', p_col: '_none_', p_vals: [] }).h.length;\n  const p = PropertiesService.getScriptProperties(); p.setProperty('E_NCP_DB', '1'); CS_ON_ = null;\n  try { CacheService.getScriptCache().put('live_v', Date.now().toString(36), 21600); } catch (e) { /* phones reload anyway */ }\n  const out = { NCP: n + ' cols', Production_Lot: m + ' cols', store: 'Supabase' }; console.log(JSON.stringify(out)); return out;\n}\nfunction coatRollbackNcp() {\n  PropertiesService.getScriptProperties().setProperty('E_NCP_DB', '0'); CS_ON_ = null;\n  try { CacheService.getScriptCache().put('live_v', Date.now().toString(36), 21600); } catch (e) { /* phones reload anyway */ }\n  return 'sheet (สิ่งที่บันทึกใน Supabase ระหว่างเปิด ลงชีตโดยงานสำเนาของแอปอื่น — ตรวจ pkp_out ค้าง 0 ก่อน)';\n}\n\n/* ---------- NCP → Supabase (user 9 Nov 2026) ----------\n * Every NCP row this app writes in the Sheet goes to Supabase (bfl-production · table ncp, same sheet row number) at the same moment,\n * so NCP System and the Raw material system see it at once. Supabase is what the apps read; the Sheet stays the copy AppSheet and the\n * reports use. A failed send never stops the user: the hourly Sheet → Supabase sync brings the row anyway.\n * The key is made here on the first send, kept in Script Properties (NCP_PUSH_KEY) and registered once in Supabase (stored hashed). */\nconst NCP_SB = { URL: 'https://kdytxuufvigwjccebrki.supabase.co/rest/v1/rpc/', KEY: HUB.KEY, SOURCE: 'coating' };\nlet NCP_TOUCHED_ = [];\nfunction sbRpc_(fn, body) {\n  const res = UrlFetchApp.fetch(NCP_SB.URL + fn, { method: 'post', contentType: 'application/json', muteHttpExceptions: true,\n    headers: { apikey: NCP_SB.KEY, Authorization: 'Bearer ' + NCP_SB.KEY }, payload: JSON.stringify(body) });\n  const txt = res.getContentText();\n  if (res.getResponseCode() !== 200) throw new Error(txt.slice(0, 300));\n  return JSON.parse(txt);\n}\nfunction ncpKey_() {\n  const p = PropertiesService.getScriptProperties(); let k = p.getProperty('NCP_PUSH_KEY');\n  if (k || p.getProperty('NCP_PUSH_OFF')) return k || '';\n  k = (Utilities.getUuid() + Utilities.getUuid()).replace(/-/g, '');\n  try { sbRpc_('ncp_push_register', { p_source: NCP_SB.SOURCE, p_key: k }); p.setProperty('NCP_PUSH_KEY', k); return k; }\n  catch (e) { if (/NCP_KEY_EXISTS/.test(e.message)) p.setProperty('NCP_PUSH_OFF', 'key already registered — ask the Supabase admin to reset ' + NCP_SB.SOURCE); console.warn('NCP key: ' + e.message); return ''; }\n}\nfunction ncpFlush_() {\n  const rows = NCP_TOUCHED_.filter(function (r, i, a) { return r > 1 && a.indexOf(r) === i; }); NCP_TOUCHED_ = [];\n  if (!rows.length) return 0;\n  try {\n    const key = ncpKey_(); if (!key) return 0;\n    SpreadsheetApp.flush();\n    const sh = sheet_(CFG.NCP), w = sh.getLastColumn(), h = sh.getRange(1, 1, 1, w).getValues()[0].map(String);\n    const out = rows.map(function (r) {\n      const v = sh.getRange(r, 1, 1, w).getValues()[0], o = { _row: r };\n      h.forEach(function (k, i) { if (k) o[k] = v[i] instanceof Date ? v[i].toISOString() : v[i]; });\n      return o;\n    });\n    return sbRpc_('ncp_push', { p_source: NCP_SB.SOURCE, p_key: key, p_rows: out }).rows;\n  } catch (e) { console.warn('NCP → Supabase (coating): ' + e.message); return 0; }\n}\n\n// Run once from the editor: users tab + Admin (PIN 9999, must change), daily Reject-PDF cleanup, NCP header check.\nfunction setup() {\n  const sh = usersSheet_(), have = users_().map(function (u) { return String(u.Name); });\n  CFG.SEED_USERS.forEach(function (s) { if (have.indexOf(s[0]) < 0) addUser_(sh, s[0], s[1], s[2], 'setup'); });\n  if (!ScriptApp.getProjectTriggers().some(function (t) { return t.getHandlerFunction() === 'cleanupRejectPdf'; })) {\n    ScriptApp.newTrigger('cleanupRejectPdf').timeBased().everyDays(1).atHour(3).create();\n  }\n  const h = table_(CFG.NCP).h, missing = CFG.REQUIRED.filter(function (c) { return h.indexOf(c) < 0; });\n  Logger.log(missing.length ? 'NCP ขาดคอลัมน์: ' + missing.join(', ') : 'NCP มีครบทุกคอลัมน์');\n}\n\n/* ---------- login ---------- */\n\nfunction listLogin() { return publicUsers_().filter(function (u) { return u.active; }); }\n\nfunction login(id, pin) {\n  const cache = CacheService.getScriptCache(), k = 'fail_' + id, fails = Number(cache.get(k) || 0);\n  if (fails >= 5) throw new Error('ใส่รหัสผิดหลายครั้ง รอ 5 นาทีแล้วลองใหม่');\n  const u = users_().find(function (x) { return x.id === String(id) && x.active; });\n  if (!u || !pinOk_(u, pin)) { cache.put(k, String(fails + 1), 300); throw new Error('รหัสไม่ถูกต้อง'); }\n  cache.remove(k);\n  const s = u.id + '|' + (Date.now() + CFG.TOKEN_HOURS * HOUR);\n  return { token: s + '|' + sign_(s), me: { id: u.id, name: String(u.Name), role: u.Role }, mustChange: mustChange_(u) };\n}\n\nfunction changePin(token, pin) {\n  const me = session_(token, null, true), p = String(pin || '');\n  if (!/^\\d{4}$/.test(p)) throw new Error('รหัสต้องเป็นตัวเลข 4 ตัว');\n  if (CFG.START_PINS.indexOf(p) >= 0) throw new Error('ห้ามใช้ ' + CFG.START_PINS.join(' / ') + ' ตั้งรหัสอื่น');\n  if (pinOk_(me, p)) throw new Error('ใช้รหัสเดิมไม่ได้ ตั้งรหัสใหม่');\n  return withLock_(function () { usersSheet_().getRange(me.row, 4, 1, 4).setValues([[hash_(me.id, p), true, new Date(), String(me.Name)]]); return true; });\n}\n\n/* ---------- lots ---------- */\n\nfunction names_() {\n  const m = {};\n  table_(CFG.PRODUCT).rows.forEach(function (r) { m[str_(r.ProductID)] = str_(r.ProductName).replace(/\\s*-[A-Z0-9.&\\s]*-?\\s*COA\\s*$/i, '').replace(/\\s*-\\s*COA\\s*$/i, ''); });\n  return m;\n}\nfunction plRows_() {\n  return table_(CFG.PLOT).rows.filter(function (r) {\n    return CFG.LOT_STATES.indexOf(str_(r.State)) >= 0 && !truthy_(r.Cancelled) && str_(r.ProductID).toUpperCase() !== 'TEST';\n  });\n}\nfunction lots_() {\n  const pls = plRows_(), names = names_(), sum = {};\n  bagsByLot_().forEach(function (bs, pid) { sum[pid] = { bags: bs.length, kg: bs.reduce(function (s, b) { return s + b.total; }, 0) }; });\n  return pls.map(function (r) {\n    const pid = str_(r.ProductionID), s = sum[pid] || { bags: 0, kg: 0 };\n    return { pid: pid, lot: str_(r.Lot_Number), productId: str_(r.ProductID), name: names[str_(r.ProductID)] || str_(r.ProductID),\n      ext: str_(r.Extruder_Number), state: str_(r.State), bags: s.bags, kg: s.kg };\n  }).sort(function (a, b) { return CFG.LOT_STATES.indexOf(a.state) - CFG.LOT_STATES.indexOf(b.state) || (a.lot < b.lot ? 1 : -1); });\n}\nfunction bagsByLot_(ncpRows) {\n  const by = new Map();\n  (ncpRows || table_(CFG.NCP).rows).forEach(function (r) {\n    if (!live_(r) || str_(r.SourceModule) === MILL.SRC) return;   // แถว NCP Milling ไม่ใช่ BB ของหน้านี้ (ดูที่หน้า Milling)\n    const pid = str_(r.ProductionID);\n    if (!by.has(pid)) by.set(pid, []);\n    by.get(pid).push(r);\n  });\n  by.forEach(function (rows, pid) {\n    const bs = bags_(rows), first = {};\n    rows.forEach(function (r) { const k = bagKey_(r); if (!first[k]) first[k] = { Lot_Number: str_(r.Lot_Number), Extruder_Number: str_(r.Extruder_Number), ProductID: str_(r.ProductID) }; });\n    bs.forEach(function (b) { b.r0 = first[b.key]; });\n    by.set(pid, bs);\n  });\n  return by;\n}\nfunction settings_() { return { writeAlong: prop_('WRITE_ALONG') !== 'off' }; }\n\nfunction boot(token) {\n  const me = session_(token);\n  return { me: { id: me.id, name: String(me.Name), role: me.Role }, lots: lots_(), settings: settings_(), now: Date.now() };\n}\nfunction getLots(token) { session_(token); return lots_(); }\n\nfunction ncpCode_(productId) {\n  const detail = {};\n  table_(CFG.NCP_DETAIL).rows.forEach(function (r) { detail[str_(r.NCP_ID)] = r; });\n  const m = table_(CFG.NCP_MAP).rows.filter(function (r) { return str_(r.ProductID) === productId && truthy_(r.Active) && detail[str_(r.NCP_ID)]; })\n    .sort(function (a, b) { return (truthy_(b.Default_Flag) - truthy_(a.Default_Flag)) || (Number(a.Priority || 9999) - Number(b.Priority || 9999)); })[0];\n  return { detail: detail, id: m ? str_(m.NCP_ID) : '' };\n}\n// all = every runtime event of the lot (Sup / Admin choosing a cause for an old BB, and checking a chosen cause)\nfunction events_(pid, all) {\n  const list = table_(CFG.RUNTIME).rows.filter(function (r) { return str_(r.ProductionID) === pid && !truthy_(r.Cancelled) && ms_(r.DateTime); })\n    .sort(function (a, b) { return ms_(b.DateTime) - ms_(a.DateTime); });\n  return (all ? list : list.slice(0, CFG.RUNTIME_LIST))\n    .map(function (r) { return { id: str_(r.ID), at: ms_(r.DateTime), process: str_(r.Process), reason: str_(r.Reason, 120) }; });\n}\nfunction plRow_(pid) {\n  const r = table_(CFG.PLOT).rows.find(function (x) { return str_(x.ProductionID) === String(pid) && !truthy_(x.Cancelled); });\n  if (!r) throw new Error('ไม่พบล็อตนี้');\n  return r;\n}\n// A part (row) can be changed by Sup/Admin, or by the worker who recorded it during the same shift. AppSheet rows: in AppSheet.\nfunction partEdit_(me, p, now) {\n  if (!p.app) return false;\n  if (me.Role === 'sup' || me.Role === 'admin') return true;\n  return p.by === String(me.Name) && shiftOf_(p.created) === shiftOf_(now);\n}\n\nfunction lotDetail(token, pid) {\n  const me = session_(token), r = plRow_(pid), productId = str_(r.ProductID), code = ncpCode_(productId), now = Date.now();\n  const sup = me.Role === 'sup' || me.Role === 'admin';\n  const bags = (bagsByLot_().get(String(pid)) || []).map(function (b) {\n    b.parts.forEach(function (p) { p.canEdit = partEdit_(me, p, now); p.canCause = sup && p.process === CFG.CAUSE_PROCESS; });\n    b.canEdit = b.parts.some(function (p) { return p.canEdit; }); b.canMerge = sup;\n    return b;\n  }).reverse();\n  const d = code.detail[code.id] || {};\n  return { pid: String(pid), lot: str_(r.Lot_Number), productId: productId, name: names_()[productId] || productId, ext: str_(r.Extruder_Number),\n    state: str_(r.State), ncpId: code.id, ncpName: str_(d.NCP_Name), sieve: sieve_(r.Sieve_Detail), bags: bags, events: events_(String(pid), sup), settings: settings_(), now: now,\n    retro: CFG.LOT_STATES.indexOf(str_(r.State)) < 0 };\n}\n\n/* ---------- ย้อนหลัง (user 10 Nov 2026): Sup / Admin แก้สาเหตุ NCP ของ Lot ที่จบไปแล้ว รวมแถวเก่าจาก AppSheet ----------\n * findLots: ค้นเลข Lot ทุกสถานะ ยกเว้น Batching (ไม่รวมที่ยกเลิก / TEST) · q ว่าง = 20 Lot ล่าสุดที่ไม่อยู่ในหน้าแรก\n * editCause: แก้เฉพาะสาเหตุ (ExtruderRuntimeID) + Comment ของแถว Dyer — น้ำหนักยังแก้ตามกติกาเดิม */\nfunction findLots(token, q) {\n  session_(token, 'sup');\n  q = str_(q, 20).replace(/\\s+/g, '');\n  const names = names_(), sum = {};\n  const pls = table_(CFG.PLOT).rows.filter(function (r) {\n    return !truthy_(r.Cancelled) && str_(r.ProductID).toUpperCase() !== 'TEST' && str_(r.Lot_Number) && str_(r.State) !== 'Batching' &&   // Batching ยังไม่มี NCP (user 10 Nov)\n      (q ? str_(r.Lot_Number).indexOf(q) >= 0 : CFG.LOT_STATES.indexOf(str_(r.State)) < 0);\n  }).sort(function (a, b) { return str_(a.Lot_Number) < str_(b.Lot_Number) ? 1 : -1; }).slice(0, q ? 40 : 20);\n  if (!pls.length) return [];\n  bagsByLot_().forEach(function (bs, pid) { sum[pid] = { bags: bs.length, kg: bs.reduce(function (s, b) { return s + b.total; }, 0) }; });\n  return pls.map(function (r) {\n    const pid = str_(r.ProductionID), s = sum[pid] || { bags: 0, kg: 0 };\n    return { pid: pid, lot: str_(r.Lot_Number), productId: str_(r.ProductID), name: names[str_(r.ProductID)] || str_(r.ProductID),\n      ext: str_(r.Extruder_Number), state: str_(r.State), bags: s.bags, kg: s.kg };\n  });\n}\nfunction editCause(token, pid, rowId, runtimeId, comment) {\n  const me = session_(token, 'sup');\n  return withLock_(function () {\n    const t = table_(CFG.NCP), r = rowOf_(t, pid, rowId);\n    if (str_(r.Process) !== CFG.CAUSE_PROCESS) throw new Error('สาเหตุใส่ได้เฉพาะรายการ ' + CFG.CAUSE_PROCESS);\n    const rid = str_(runtimeId, 40);\n    if (rid && !events_(String(pid), true).some(function (e) { return e.id === rid; })) throw new Error('สาเหตุที่เลือกไม่ใช่ของล็อตนี้');\n    const vals = { ExtruderRuntimeID: rid, Comment: str_(comment, 300), UpdatedTimestamp: new Date() };\n    if (str_(r.ExtruderRuntimeID) === vals.ExtruderRuntimeID && str_(r.Comment) === vals.Comment) return { unchanged: true };\n    setCells_(t, r, vals);\n    console.log('editCause ' + me.Name + ' row ' + rowId + ' lot ' + pid);\n    return { ok: true };\n  });\n}\n/* ---------- ตะแกรงร่อน (user 7 Nov 2026): Production_Lot.Sieve_Detail, same text layout as the AppSheet field; the Control web app shows it ---------- */\nconst SIEVE_KEYS = ['bigOS', 'bigUS', 'smallOS', 'smallUS'];\nfunction sieve_(txt) {\n  const v = [], re = /OS:\\s*([\\d.]*)\\s*ตา\\/นิ้ว\\s*US:\\s*([\\d.]*)/g; let m;\n  while ((m = re.exec(String(txt || ''))) && v.length < 2) v.push([m[1], m[2]]);\n  return { bigOS: (v[0] || [])[0] || '', bigUS: (v[0] || [])[1] || '', smallOS: (v[1] || [])[0] || '', smallUS: (v[1] || [])[1] || '' };\n}\nfunction sieveText_(s) {\n  const f = function (x) { return '   ' + (x || ' ') + '   '; };\n  return 'ร่อนใหญ่ \\nOS:' + f(s.bigOS) + 'ตา/นิ้ว  US:' + f(s.bigUS) + 'ตา/นิ้ว  \\nร่อนเล็ก \\nOS:' + f(s.smallOS) + 'ตา/นิ้ว  US:' + f(s.smallUS) + 'ตา/นิ้ว';\n}\n// s = {bigOS, bigUS, smallOS, smallUS} = mesh per inch (ตา/นิ้ว), blank = not used\nfunction saveSieve(token, pid, s) {\n  session_(token, 'coat');\n  const v = {};\n  SIEVE_KEYS.forEach(function (k) { const x = str_(s && s[k], 10); if (x && !(/^\\d+(\\.\\d+)?$/.test(x) && Number(x) > 0 && Number(x) <= 100)) throw new Error('ตา/นิ้ว ต้องเป็นตัวเลข 1–100'); v[k] = x; });\n  if (!SIEVE_KEYS.some(function (k) { return v[k]; })) throw new Error('ใส่ขนาดตะแกรงอย่างน้อย 1 ช่อง');\n  return withLock_(function () {\n    const t = table_(CFG.PLOT), r = t.rows.find(function (x) { return str_(x.ProductionID) === String(pid) && !truthy_(x.Cancelled); });\n    if (!r) throw new Error('ไม่พบล็อตนี้');\n    setCells_(t, r, { Sieve_Detail: sieveText_(v), UpdatedTimestamp: new Date() });\n    return sieve_(sieveText_(v));\n  });\n}\n/* ---------- record / edit / cancel / merge ---------- */\n\n// Giving a row its BB number (NCP_No). An old AppSheet row also gets the lot's NCP code if it had none, so the daily\n// NCP export never falls back to reading NCP_No as a code. NCP-… numbers belong to Packing rejects (main script): never moved.\nfunction fillNo_(r, no, ncpId, now) {\n  const v = { NCP_No: no, UpdatedTimestamp: now };\n  if (!str_(r.NCP_Detail_ID) && ncpId) v.NCP_Detail_ID = ncpId;\n  return v;\n}\nfunction packNo_(r) { return /^NCP-/.test(str_(r.NCP_No)); }\n\n// d = {id: client uuid (retry-safe), pid, bb: '' = new BB | key of a BB of this lot to add to, parts: [{process, kg}], runtimeId, comment}\nfunction saveBag(token, d) {\n  const me = session_(token, 'coat'), id = str_(d && d.id, 40), parts = parts_(d && d.parts);\n  if (!id) throw new Error('ข้อมูลไม่ครบ');\n  const pl = plRow_(d.pid), pid = str_(pl.ProductionID), productId = str_(pl.ProductID);\n  if (CFG.LOT_STATES.indexOf(str_(pl.State)) < 0) throw new Error('ล็อตนี้ไม่ได้อยู่ในสถานะ Extruder / Packing แล้ว');\n  const dyer = parts.some(function (p) { return p.process === CFG.CAUSE_PROCESS; });\n  const ev = events_(pid), runtimeId = dyer ? str_(d.runtimeId, 40) : '';\n  if (dyer && ev.length && !runtimeId) throw new Error('เลือกสาเหตุของ Dyer');\n  if (runtimeId && !ev.some(function (e) { return e.id === runtimeId; })) throw new Error('สาเหตุที่เลือกไม่ใช่ของล็อตนี้ — โหลดใหม่แล้วเลือกอีกครั้ง');\n  const comment = dyer ? str_(d.comment, 300) : '', ncpId = ncpCode_(productId).id;\n  return withLock_(function () {\n    const t = table_(CFG.NCP), dup = t.rows.find(function (r) { return str_(r.SourceRecordID) === id; });\n    if (dup) return { no: str_(dup.NCP_No), dup: true };\n    const now = new Date();\n    let no;\n    if (d.bb) {\n      const old = bagRows_(t, pid, String(d.bb));\n      no = str_(old[0].NCP_No) || nextNo_(t.rows, now);\n      old.forEach(function (r) { if (!str_(r.NCP_No)) setCells_(t, r, fillNo_(r, no, ncpId, now)); });\n    } else no = nextNo_(t.rows, now);\n    appendRows_(t.sh, t.h, parts.map(function (p) {\n      const isDyer = p.process === CFG.CAUSE_PROCESS;\n      return { ID: Utilities.getUuid().replace(/-/g, '').slice(0, 8), Extruder_Number: str_(pl.Extruder_Number), Lot_Number: str_(pl.Lot_Number),\n        ProductID: productId, DateTime: now, Process: p.process, Weight: p.kg, CreateTimestamp: now, UpdatedTimestamp: now, State: 'Active',\n        Comment: isDyer ? comment : '', LotProductKey: str_(pl.LotProductKey), ProductionID: pid, Cancelled: false, SourceModule: CFG.SOURCE,\n        SourceRecordID: id, NCP_Detail_ID: ncpId, Weight_Kg: p.kg, Status: 'Open', NCP_No: no, CreateMethod: CFG.SOURCE + ':' + me.Name,\n        Visible: true, ExtruderRuntimeID: isDyer ? runtimeId : '' };\n    }));\n    return { no: no };\n  });\n}\n\nfunction bagRows_(t, pid, key) {\n  const rows = t.rows.filter(function (r) { return str_(r.ProductionID) === String(pid) && live_(r) && bagKey_(r) === key; });\n  if (!rows.length) throw new Error('ไม่พบ BB นี้ (อาจถูกยกเลิกไปแล้ว)');\n  return rows;\n}\nfunction rowOf_(t, pid, rowId) {\n  const r = t.rows.find(function (x) { return str_(x.ID) === String(rowId) && str_(x.ProductionID) === String(pid) && live_(x); });\n  if (!r) throw new Error('ไม่พบรายการนี้ (อาจถูกยกเลิกไปแล้ว)');\n  return r;\n}\n// d = {pid, rows: [{rowId, kg, runtimeId, comment}]} — kg of each part; cause + comment on Dyer parts.\nfunction editBag(token, d) {\n  const me = session_(token, 'coat');\n  return withLock_(function () {\n    const t = table_(CFG.NCP), now = Date.now(), ev = events_(String(d.pid), true);\n    const todo = (d.rows || []).map(function (x) {\n      const r = rowOf_(t, d.pid, x.rowId), p = bags_([r])[0].parts[0], kg = Number(x.kg);\n      if (!partEdit_(me, p, now)) throw new Error('แก้รายการนี้ไม่ได้ (แก้ได้เฉพาะของตัวเองในกะนี้ — นอกนั้นให้หัวหน้ากะแก้)');\n      if (!(kg > 0 && kg <= CFG.MAX_KG)) throw new Error('น้ำหนัก ' + p.process + ' ต้องมากกว่า 0 และไม่เกิน ' + CFG.MAX_KG + ' kg');\n      const vals = { Weight: kg, Weight_Kg: kg, UpdatedTimestamp: new Date() };\n      if (p.process === CFG.CAUSE_PROCESS) {\n        const rid = str_(x.runtimeId, 40);\n        if (rid && !ev.some(function (e) { return e.id === rid; })) throw new Error('สาเหตุที่เลือกไม่ใช่ของล็อตนี้');\n        vals.ExtruderRuntimeID = rid; vals.Comment = str_(x.comment, 300);\n      }\n      return [r, vals];\n    });\n    todo.forEach(function (x) { setCells_(t, x[0], x[1]); });\n    return true;\n  });\n}\nfunction cancelRow(token, pid, rowId) {\n  const me = session_(token, 'coat');\n  return withLock_(function () {\n    const t = table_(CFG.NCP), r = rowOf_(t, pid, rowId);\n    if (!partEdit_(me, bags_([r])[0].parts[0], Date.now())) throw new Error('ยกเลิกรายการนี้ไม่ได้ (ได้เฉพาะของตัวเองในกะนี้)');\n    setCells_(t, r, { Cancelled: true, State: 'Cancel', UpdatedTimestamp: new Date() });\n    return true;\n  });\n}\n// Sup: two records that went into the same physical BB (e.g. typed separately in AppSheet) → one BB number.\nfunction mergeBags(token, pid, fromKey, toKey) {\n  session_(token, 'sup');\n  if (String(fromKey) === String(toKey)) throw new Error('เลือก BB อื่น');\n  return withLock_(function () {\n    const t = table_(CFG.NCP), a = bagRows_(t, pid, String(fromKey)), b = bagRows_(t, pid, String(toKey)), now = new Date();\n    if (a.some(packNo_) && b.some(packNo_)) throw new Error('BB จาก Reject ของแอปแพคทั้งคู่ รวมกันไม่ได้');\n    const keep = b.concat(a).find(packNo_) || b.concat(a).find(function (r) { return str_(r.NCP_No); });\n    const no = keep ? str_(keep.NCP_No) : nextNo_(t.rows, now), ncpId = ncpCode_(str_(plRow_(pid).ProductID)).id;\n    a.concat(b).forEach(function (r) { if (str_(r.NCP_No) !== no) setCells_(t, r, fillNo_(r, no, ncpId, now)); });\n    return { no: no };\n  });\n}\n// Sup: take one part out of a BB into a BB of its own (undo a wrong merge / wrong \"add to BB\").\nfunction splitRow(token, pid, rowId) {\n  session_(token, 'sup');\n  return withLock_(function () {\n    const t = table_(CFG.NCP), r = rowOf_(t, pid, rowId), now = new Date();\n    if (packNo_(r)) throw new Error('รายการ Reject จากแอปแพค แยกไม่ได้');\n    if (bagRows_(t, pid, bagKey_(r)).length < 2) throw new Error('BB นี้มีรายการเดียวอยู่แล้ว');\n    const no = nextNo_(t.rows, now);\n    setCells_(t, r, fillNo_(r, no, ncpCode_(str_(r.ProductID)).id, now));\n    return { no: no };\n  });\n}\n\n// Total_NCP of Production_Lot is written by the main script's KPI recalc, not a formula: ask it after every change.\nfunction recalc(token, pid) {\n  const me = session_(token);\n  if (csOn_()) return csKpi_({ action: 'PRODUCTION_LOT_FINISHED', module: 'PRODUCTION_LOT_KPI', productionID: String(pid), rowID: String(pid), requestedBy: CFG.SOURCE + ':' + me.Name });   // v30\n  const r = UrlFetchApp.fetch(prop_('RECALC_URL') || CFG.HOOK_URL, { method: 'post', contentType: 'application/json', muteHttpExceptions: true,\n    payload: JSON.stringify({ action: 'PRODUCTION_LOT_FINISHED', module: 'PRODUCTION_LOT_KPI', productionID: String(pid), rowID: String(pid),\n      requestID: String(pid) + '-' + Date.now(), requestedBy: CFG.SOURCE + ':' + me.Name }) });\n  return r.getResponseCode();\n}\n\n/* ---------- Sup: แบบรับเข้า Rework — every live BB (any source) whose last part falls in the shift ---------- */\n\nfunction shiftRows(token, key) {\n  const me = session_(token, 'sup'), range = shiftRange_(key), detail = ncpCode_('').detail, names = names_(), mapCache = {}, out = [];\n  bagsByLot_().forEach(function (bs) {\n    bs.forEach(function (b) {\n      if (b.last < range[0] || b.last >= range[1]) return;\n      const r0 = b.r0, product = r0.ProductID;\n      if (mapCache[product] == null) mapCache[product] = ncpCode_(product).id;\n      const nid = b.ncpId || mapCache[product], dd = detail[nid] || {};\n      const sum = {}; b.parts.forEach(function (p) { sum[p.process] = (sum[p.process] || 0) + p.kg; });\n      const ps = Object.keys(sum).sort(function (x, y) { return CFG.PROCESSES.indexOf(x) - CFG.PROCESSES.indexOf(y); });\n      out.push({ at: b.last, code: nid, name: names[product] || product, color: str_(dd.Color), lot: r0.Lot_Number, line: r0.Extruder_Number.replace(/\\D/g, ''),\n        kg: b.total, loc: str_(dd.Storage), why: ps.map(function (p) { return ps.length > 1 ? p + ' ' + sum[p] : p; }).join(' + ') + (b.comment ? ': ' + b.comment : '') });\n    });\n  });\n  out.sort(function (a, b) { return a.at - b.at; });\n  return { key: key, rows: out, by: String(me.Name) };\n}\n/* ---------- Coater: kg coated per hour per line (read-only, tab Coater_Records) ---------- */\n// Total_Weight is the lot's running total at DateTimeRecords, so a record's kg = its total − the lot's previous total,\n// and it covers the time since that previous record (the record time is the END of the interval: 09:00 = 08:00–09:00).\n// key = 'yyyy-MM-dd|8|16|0' for a shift or 'yyyy-MM-dd|all' for the whole production day.\nfunction coaterView(token, key) {\n  session_(token);\n  const p = String(key).split('|'), all = p[1] === 'all', range = shiftRange_(p[0] + '|' + (all ? 8 : p[1]));\n  if (all) range[1] = range[0] + 24 * HOUR;\n  // MTD = from the 1st of the production month 08:00 to the end of the picked production day\n  const mFrom = shiftRange_(p[0].slice(0, 8) + '01|8')[0], mTo = shiftRange_(p[0] + '|8')[0] + 24 * HOUR, coatM = {};\n  const n = Math.round((range[1] - range[0]) / HOUR), names = names_(), std = {};\n  table_(CFG.PRODUCT).rows.forEach(function (r) { std[str_(r.ProductID)] = Number(r['Std Cap/hr']) || 0; });\n  const byLot = {};\n  table_(CFG.COATER).rows.forEach(function (r) {\n    const t = ms_(r.DateTimeRecords), w = Number(r.Total_Weight);\n    if (!t || isNaN(w) || truthy_(r.Cancelled) || /^false$/i.test(str_(r.Visible))) return;\n    const k = str_(r.ProductionID) || str_(r.LotProductKey);\n    (byLot[k] = byLot[k] || []).push({ t: t, w: w, r: r });\n  });\n  const lines = {};\n  Object.keys(byLot).forEach(function (k) {\n    const rs = byLot[k].sort(function (a, b) { return a.t - b.t || a.w - b.w; });\n    rs.forEach(function (x, i) {\n      const prev = rs[i - 1], kg = Math.max(0, x.w - (prev ? prev.w : 0)), mins = prev ? (x.t - prev.t) / 60000 : 0;\n      if (x.t > mFrom && x.t <= mTo) { const e = str_(x.r.Extruder_Number) || '—'; coatM[e] = (coatM[e] || 0) + kg; }\n      if (x.t <= range[0] || x.t > range[1]) return;\n      const ext = str_(x.r.Extruder_Number) || '—', product = str_(x.r.ProductID), lot = str_(x.r.Lot_Number);\n      const L = lines[ext] = lines[ext] || { ext: ext, hours: [], lots: {} };\n      // ponytail: a record after a long gap puts all its kg in the record's hour; spread over the gap if that misleads\n      const h = Math.min(n - 1, Math.floor((x.t - 1 - range[0]) / HOUR));\n      const b = L.hours[h] = L.hours[h] || { kg: 0, mix: {} };\n      b.kg += kg; b.mix[product] = (b.mix[product] || 0) + kg;\n      if (str_(x.r.Memo)) (L.notes = L.notes || []).push({ h: h, t: x.t, lot: lot, text: str_(x.r.Memo, 300) }); // Control's comment on the record\n      const o = L.lots[k] = L.lots[k] || { lot: lot, productId: product, name: names[product] || product, std: std[product] || 0, first: prev && mins <= CFG.COATER_GAP_MIN ? prev.t : x.t, last: x.t, kg: 0, rateKg: 0, mins: 0, recs: 0, end: false };\n      o.last = x.t; o.cum = x.w; o.kg += kg; o.recs++; if (mins > 0 && mins <= CFG.COATER_GAP_MIN) { o.rateKg += kg; o.mins += mins; } if (truthy_(x.r.Last_Coat)) o.end = true;\n    });\n  });\n  const out = Object.keys(lines).sort().map(function (ext) {\n    const L = lines[ext], lots = Object.keys(L.lots).map(function (k) { return L.lots[k]; }).sort(function (a, b) { return a.first - b.first; });\n    const hours = [];\n    for (let i = 0; i < n; i++) {\n      const b = L.hours[i];\n      if (!b) { hours.push({ kg: 0, std: 0 }); continue; }\n      const top = Object.keys(b.mix).sort(function (x, y) { return b.mix[y] - b.mix[x]; })[0];\n      hours.push({ kg: b.kg, std: std[top] || 0 });\n    }\n    const rateKg = lots.reduce(function (s, o) { return s + o.rateKg; }, 0), mins = lots.reduce(function (s, o) { return s + o.mins; }, 0);\n    return { ext: ext, hours: hours, notes: (L.notes || []).sort(function (a, b) { return a.t - b.t; }), lots: lots.map(function (o) { return { lot: o.lot, productId: o.productId, name: o.name, std: o.std, first: o.first, last: o.last, kg: o.kg, cum: o.cum, rate: o.mins ? o.rateKg / o.mins * 60 : 0, recs: o.recs, end: o.end }; }),\n      kg: lots.reduce(function (s, o) { return s + o.kg; }, 0), rate: mins ? rateKg / mins * 60 : 0, runH: mins / 60, recs: lots.reduce(function (s, o) { return s + o.recs; }, 0) };\n  });\n  return { key: key, from: range[0], to: range[1], lines: out, mtd: ncpMtd_(mFrom, mTo, coatM) };\n}\n// NCP that happened (row DateTime, production-day basis) in [from, to): kg + rows + BBs by process and by line, with Coat kg per line.\nfunction ncpMtd_(from, to, coatM) {\n  const proc = {}, line = {}, bbs = {};\n  let kg = 0, rows = 0;\n  table_(CFG.NCP).rows.forEach(function (r) {\n    const t = ms_(r.DateTime) || ms_(r.CreateTimestamp), w = Number(r.Weight) || 0;\n    if (!live_(r) || t < from || t >= to || !w) return;\n    const pr = str_(r.Process) || '—', ext = str_(r.Extruder_Number) || '—';\n    kg += w; rows++; bbs[str_(r.ProductionID) + '|' + bagKey_(r)] = 1;\n    proc[pr] = (proc[pr] || 0) + w;\n    (line[ext] = line[ext] || { ext: ext, ncp: 0, coat: 0 }).ncp += w;\n  });\n  Object.keys(coatM).forEach(function (e) { (line[e] = line[e] || { ext: e, ncp: 0, coat: 0 }).coat = coatM[e]; });\n  return { from: from, to: to, kg: kg, rows: rows, bbs: Object.keys(bbs).length,\n    proc: Object.keys(proc).map(function (k) { return { process: k, kg: proc[k] }; }).sort(function (a, b) { return b.kg - a.kg; }),\n    lines: Object.keys(line).sort().map(function (k) { return line[k]; }) };\n}\n\n/* ---------- PDFs to Drive, settings, font ---------- */\n\nfunction folder_(sub) {\n  const root = DriveApp.getFolderById(CFG.OUT_FOLDER), it = root.getFoldersByName(sub);\n  return it.hasNext() ? it.next() : root.createFolder(sub);\n}\n// kind 'reject' (anyone) | 'rework' (Sup). b64 = PDF made on the phone.\nfunction savePdf(token, kind, name, b64) {\n  const me = session_(token, kind === 'rework' ? 'sup' : 'coat');\n  if (kind !== 'reject' && kind !== 'rework') throw new Error('ชนิดไฟล์ไม่ถูกต้อง');\n  const bytes = Utilities.base64Decode(String(b64 || '').replace(/^data:[^,]*,/, ''));\n  if (!bytes.length || bytes.length > 15e6) throw new Error('ไฟล์ไม่ถูกต้อง');\n  const safe = String(name || kind).replace(/[^\\w.\\-ก-๙]/g, '_').slice(0, 120) + '.pdf';\n  const f = folder_(kind === 'reject' ? CFG.REJECT_SUB : CFG.REWORK_SUB).createFile(Utilities.newBlob(bytes, 'application/pdf', safe));\n  f.setDescription('BFL Coating Control · ' + me.Name);\n  return { name: safe, url: f.getUrl() };\n}\nfunction cleanupRejectPdf() {\n  const cut = Date.now() - CFG.REJECT_KEEP_HOURS * HOUR;\n  let n = 0;\n  [CFG.REJECT_SUB, CFG.REWORK_SUB].forEach(function (sub) {\n    const it = folder_(sub).getFiles();\n    while (it.hasNext()) { const f = it.next(); if (f.getDateCreated().getTime() < cut) { f.setTrashed(true); n++; } }\n  });\n  return n;\n}\nfunction setWriteAlong(token, on) {\n  session_(token, 'sup');\n  PropertiesService.getScriptProperties().setProperty('WRITE_ALONG', on ? 'on' : 'off');\n  return settings_();\n}\n// TH Sarabun PSK for the forms: put the .ttf in Drive and set Script Property FONT_FILE_ID. Empty = phone uses Sarabun.\n// TH Sarabun PSK (.ttf in Drive; Script Property FONT_FILE_ID overrides CFG.FONT_ID) for the forms drawn on the phone.\nfunction fontData(token) {\n  session_(token);\n  return Utilities.base64Encode(DriveApp.getFileById(prop_('FONT_FILE_ID') || CFG.FONT_ID).getBlob().getBytes());\n}\n// The official form PDFs (Form folder) — the phone writes the values onto these exact files.\nfunction formPdf(token, kind) {\n  session_(token, kind === 'rework' ? 'sup' : 'coat');\n  const id = kind === 'rework' ? CFG.REWORK_FORM_ID : kind === 'reject' ? CFG.REJECT_FORM_ID : '';\n  if (!id) throw new Error('ไม่มีฟอร์มนี้');\n  return Utilities.base64Encode(DriveApp.getFileById(id).getBlob().getBytes());\n}\n/* ---------- Admin: users ---------- */\n\nfunction listUsers(token) { session_(token, 'admin'); return publicUsers_(); }\nfunction saveUser(token, d) {\n  const me = session_(token, 'admin'), name = str_(d.name, 60), role = CFG.ROLES.indexOf(d.role) >= 0 ? d.role : 'coat', pin = String(d.pin || '');\n  if (!name) throw new Error('ใส่ชื่อก่อน');\n  if (pin && !/^\\d{4}$/.test(pin)) throw new Error('รหัสต้องเป็นตัวเลข 4 ตัว');\n  return withLock_(function () {\n    const sh = usersSheet_(), all = users_(), id = String(d.id || '');\n    if (all.some(function (u) { return u.active && String(u.Name) === name && u.id !== id; })) throw new Error('มีชื่อ ' + name + ' อยู่แล้ว');\n    if (!id) { if (!pin) throw new Error('ผู้ใช้ใหม่ต้องตั้งรหัส'); addUser_(sh, name, role, pin, String(me.Name)); }\n    else {\n      const u = all.find(function (x) { return x.id === id; });\n      if (!u) throw new Error('ไม่พบผู้ใช้');\n      const active = d.active !== false;\n      if (u.id === me.id && (!active || role !== 'admin')) throw new Error('ปิดหรือลดสิทธิ์ตัวเองไม่ได้');\n      sh.getRange(u.row, 1, 1, CFG.USER_HEADERS.length).setValues([[u.id, name, role, pin ? '!' + hash_(u.id, pin) : u.PIN_Hash, active, new Date(), String(me.Name)]]);\n    }\n    return publicUsers_();\n  });\n}\n\n/* ---------- Sup/Admin: สัดส่วน NCP Dyer : Sieve ต่อ lot ในเดือนที่เลือก (V14) ----------\n * เดือน = นับตามวันที่บันทึก NCP (DateTime ของแถว, วันผลิตเริ่ม 08:00) เหมือนการ์ด NCP เดือนนี้ในหน้า Coater\n * อ่านอย่างเดียว · รวมทุกแถวที่ยังไม่ยกเลิก (ทั้งจากแอปนี้และ AppSheet) · ไม่นับ ProductID = TEST\n * plan = Production_Lot.Qty_Plan (ตัน) ของ lot · สาเหตุ Dyer = เหตุการณ์ Extruder_Runtime (Process + Reason) ที่ผูกไว้ · ym = 'yyyy-MM'\n */\nfunction dyerSieve(token, ym) {\n  session_(token, 'sup');\n  ym = String(ym || '');\n  if (!/^\\d{4}-(0[1-9]|1[0-2])$/.test(ym)) throw new Error('เดือนไม่ถูกต้อง');\n  const y = Number(ym.slice(0, 4)), m = Number(ym.slice(5, 7));\n  const nx = m === 12 ? (y + 1) + '-01' : y + '-' + String(m + 1).padStart(2, '0');\n  const from = shiftRange_(ym + '-01|8')[0], to = shiftRange_(nx + '-01|8')[0];\n  const names = names_(), by = {}, lines = {}, plan = {};\n  table_(CFG.PLOT).rows.forEach(function (r) { plan[str_(r.ProductionID)] = Number(r.Qty_Plan) || 0; });\n  let dyer = 0, sieve = 0;\n  const need = {};\n  table_(CFG.NCP).rows.forEach(function (r) {\n    const t = ms_(r.DateTime) || ms_(r.CreateTimestamp), w = Number(r.Weight) || 0, pr = str_(r.Process);\n    if (!live_(r) || !w || t < from || t >= to) return;\n    if (pr !== 'Dyer' && pr !== 'Sieve') return;\n    if (str_(r.ProductID).toUpperCase() === 'TEST') return;\n    const pid = str_(r.ProductionID), k = pid || str_(r.LotProductKey) || str_(r.Lot_Number), ext = str_(r.Extruder_Number) || '—';\n    const o = by[k] = by[k] || { lot: str_(r.Lot_Number), productId: str_(r.ProductID), ext: ext, plan: plan[pid] || 0, dyer: 0, sieve: 0, first: t, last: t, rt: {}, noCause: 0, notes: [] };\n    const L = lines[ext] = lines[ext] || { ext: ext, dyer: 0, sieve: 0 };\n    if (pr === 'Dyer') {\n      o.dyer += w; L.dyer += w; dyer += w;\n      const rid = str_(r.ExtruderRuntimeID);\n      if (rid) { o.rt[rid] = (o.rt[rid] || 0) + w; need[rid] = 1; } else o.noCause += w;\n    } else { o.sieve += w; L.sieve += w; sieve += w; }\n    const cm = str_(r.Comment, 200);\n    if (cm && !o.notes.some(function (n) { return n.process === pr && n.text === cm; })) o.notes.push({ process: pr, text: cm });\n    o.first = Math.min(o.first, t); o.last = Math.max(o.last, t);\n  });\n  const ev = {}, causes = {};\n  if (Object.keys(need).length) table_(CFG.RUNTIME).rows.forEach(function (r) {\n    const id = str_(r.ID);\n    if (need[id]) ev[id] = { at: ms_(r.DateTime), process: str_(r.Process).replace(/^EX-/, ''), reason: str_(r.Reason, 200) };\n  });\n  const lots = Object.keys(by).map(function (k) {\n    const o = by[k]; o.name = names[o.productId] || o.productId;\n    o.causes = Object.keys(o.rt).map(function (id) {\n      const e = ev[id] || { at: 0, process: 'ไม่พบเหตุการณ์ (' + id + ')', reason: '' };\n      const C = causes[e.process] = causes[e.process] || { process: e.process, kg: 0, lots: {} };\n      C.kg += o.rt[id]; C.lots[k] = 1;\n      return { id: id, at: e.at, process: e.process, reason: e.reason, kg: o.rt[id] };\n    }).sort(function (a, b) { return a.at - b.at; });\n    if (o.noCause) { const C = causes['ไม่ระบุสาเหตุ'] = causes['ไม่ระบุสาเหตุ'] || { process: 'ไม่ระบุสาเหตุ', kg: 0, lots: {} }; C.kg += o.noCause; C.lots[k] = 1; }\n    delete o.rt; return o;\n  })\n    .sort(function (a, b) { return a.first - b.first; });\n  return { ym: ym, from: from, to: to, dyer: dyer, sieve: sieve, lots: lots,\n    causes: Object.keys(causes).map(function (c) { const C = causes[c]; return { process: C.process, kg: C.kg, lots: Object.keys(C.lots).length }; })\n      .sort(function (a, b) { return b.kg - a.kg; }),\n    lines: Object.keys(lines).sort().map(function (k) { return lines[k]; }) };\n}\n\n/* ---------- GitHub Pages (user 10 Nov 2026) ----------\n * หน้าแอปบน GitHub Pages (skaart19bfl.github.io/bfl-app-assets/<app>/) เรียกฟังก์ชันเดิมของสคริปต์นี้ผ่าน POST แทน google.script.run\n * __page = ส่ง Index.html ไปให้หน้า GitHub Pages (ส่ง hash มาตรงกัน = ไม่ส่งซ้ำ) · ลิงก์ /exec เดิมยังเปิดได้เหมือนเดิม\n * เรียกได้เฉพาะชื่อที่ google.script.run เรียกได้อยู่แล้ว และกันชื่องานหลังบ้าน (setup / store / sync / migrate / trigger …) ออกเพิ่ม */\nvar GLOBAL__ = this;\n/* ---------- NCP Milling (ผงที่ถ่ายจากถังรออัดก่อน Extruder) — user 12 Nov 2026 ----------\n * ลงตรง Supabase (ncp_mill) · NCP System ดึงไปเป็น IN_MILL เข้า PD-RW (ไม่ผ่าน WH)\n * + แท็บ NCP ด้วย (user 12 Nov 2026 \"NCP milling ถือเป็น NCP ของ lot\" · ไม่ใช้ AppSheet แล้ว): 1 แถวต่อ BB / คันรถ, Process \"Milling\",\n *   Lot = lot ต้นทางที่บันทึก → main script นับเข้า Total_NCP ของ lot นั้น · SourceModule \"CoatingMill\", SourceRecordID \"MILL:<batch>-<seq>\"\n *   NCP System ไม่นับแถวนี้ซ้ำ (เข้าคลังทาง IN_MILL แล้ว) · หน้า BB ของแอปนี้ไม่แสดง · แอป Production แก้ไม่ได้ (แก้ / ยกเลิกที่นี่)\n * 1 ครั้งที่กดบันทึก = 1 batch: ทีละ Bigbag หรือทั้งคันรถเป็นน้ำหนัก · รหัส NCP ตามสูตร/สินค้า (Production_NCP_Map) */\nfunction millFind(token, q) {\n  session_(token, 'coat');\n  q = str_(q, 20).replace(/\\s+/g, '');\n  if (q.length < 3) return [];\n  const names = names_();\n  return table_(CFG.PLOT).rows.filter(function (r) { return !truthy_(r.Cancelled) && str_(r.ProductID).toUpperCase() !== 'TEST' && str_(r.Lot_Number).indexOf(q) >= 0; })\n    .sort(function (a, b) { return str_(a.Lot_Number) < str_(b.Lot_Number) ? 1 : -1; }).slice(0, 15)\n    .map(function (r) { return { pid: str_(r.ProductionID), lot: str_(r.Lot_Number), productId: str_(r.ProductID), name: names[str_(r.ProductID)] || '' }; });\n}\nfunction millPl_(pid) {\n  const pl = table_(CFG.PLOT).rows.filter(function (r) { return str_(r.ProductionID) === str_(pid) && !truthy_(r.Cancelled); })[0];\n  if (!pl) throw new Error('ไม่พบ Lot ผลิต');\n  return pl;\n}\nfunction millInfo(token, pid) {\n  session_(token, 'coat');\n  const pl = millPl_(pid), n = ncpCode_(str_(pl.ProductID));\n  const codes = Object.keys(n.detail).filter(function (id) { const a = str_(n.detail[id].Active); return id && (a === '' || truthy_(n.detail[id].Active) || id === n.id); })\n    .sort().map(function (id) { return { id: id, name: str_(n.detail[id].NCP_Name) }; });\n  return { pid: str_(pl.ProductionID), lot: str_(pl.Lot_Number), productId: str_(pl.ProductID), name: names_()[str_(pl.ProductID)] || '', code: n.id, codes: codes };\n}\nconst MILL = { PROC: 'Milling', SRC: 'CoatingMill' };\nfunction millSid_(m) { return 'MILL:' + m.batch + '-' + m.seq; }\n// ncp_mill rows → แท็บ NCP: สร้างแถวที่ยังไม่มี, ยกเลิกแถวของ batch ที่ยกเลิกแล้ว · คืนจำนวนแถวที่เปลี่ยน\nfunction millSheet_(list) {\n  list = (list || []).filter(function (m) { return m && m.batch && m.seq; });\n  if (!list.length) return 0;\n  return withLock_(function () {\n    const t = table_(CFG.NCP), have = {}, pls = {}, add = [], now = new Date();\n    let n = 0;\n    t.rows.forEach(function (r) { const s = str_(r.SourceRecordID); if (/^MILL:/.test(s)) have[s] = r; });\n    list.forEach(function (m) {\n      const sid = millSid_(m), r = have[sid];\n      if (m.cancelled) {\n        if (r && live_(r)) { setCells_(t, r, { Cancelled: true, State: 'Cancel', UpdatedTimestamp: now }); n++; }\n        return;\n      }\n      if (r) return;\n      const pid = str_(m.production_id);\n      if (!(pid in pls)) { try { pls[pid] = millPl_(pid); } catch (e) { pls[pid] = null; } }\n      const pl = pls[pid], kg = Number(m.kg), at = new Date(m.at);\n      if (!pl || !(kg > 0) || isNaN(at)) return;\n      add.push({ ID: Utilities.getUuid().replace(/-/g, '').slice(0, 8), Extruder_Number: str_(pl.Extruder_Number), Lot_Number: str_(m.lot_number) || str_(pl.Lot_Number),\n        ProductID: str_(pl.ProductID), DateTime: at, Process: MILL.PROC, Weight: kg, CreateTimestamp: now, UpdatedTimestamp: now, State: 'Active',\n        Comment: 'NCP Milling ' + (m.unit === 'truck' ? 'คันรถ' : 'BB ' + m.seq) + ' · ' + m.batch, LotProductKey: str_(pl.LotProductKey), ProductionID: pid,\n        Cancelled: false, SourceModule: MILL.SRC, SourceRecordID: sid, NCP_Detail_ID: str_(m.item_code).toUpperCase(), Weight_Kg: kg, Status: '', NCP_No: '',\n        CreateMethod: CFG.SOURCE + ':' + (str_(m.by_name) || str_(m.by_user)), Visible: true, ExtruderRuntimeID: '' });\n    });\n    if (add.length) { appendRows_(t.sh, t.h, add); n += add.length; }\n    return n;\n  });\n}\n// รายการ 2 วันล่าสุดตรงกับแท็บ NCP หรือยัง (ตรวจเมื่อรายการเปลี่ยน — ครั้งแรกหลังอัปเดตนี้ = เติมรายการที่บันทึกไว้ก่อนหน้า)\nfunction millHeal_(rows) {\n  try {\n    const sig = rows.map(function (m) { return m.batch + '-' + m.seq + (m.cancelled ? 'x' : ''); }).join('|');\n    const c = CacheService.getScriptCache(), k = 'mill_sig', h = Utilities.base64Encode(Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, sig));\n    if (c.get(k) === h) return;\n    millSheet_(rows); c.put(k, h, 21600);\n  } catch (e) { console.warn('NCP Milling → NCP tab: ' + e.message); }\n}\nfunction millKey_() { const k = ncpKey_(); if (!k) throw new Error('ยังเชื่อม Supabase ไม่ได้ (NCP key) — แจ้ง Admin'); return k; }\nfunction millSave(token, req) {\n  const me = session_(token, 'coat');\n  req = req || {};\n  const pl = millPl_(req.pid), n = ncpCode_(str_(pl.ProductID)), code = str_(req.code, 30).toUpperCase();\n  if (!code || !n.detail[code]) throw new Error('เลือกรหัส NCP');\n  const unit = req.unit === 'truck' ? 'truck' : 'bb', rows = (req.rows || []).map(Number);\n  if (!rows.length) throw new Error('ใส่น้ำหนัก');\n  if (unit === 'truck' && rows.length !== 1) throw new Error('คันรถบันทึกเป็นน้ำหนักรวม 1 รายการ');\n  if (rows.length > 50) throw new Error('บันทึกได้ครั้งละไม่เกิน 50 Bigbag');\n  rows.forEach(function (k, i) { if (!(k > 0) || k > 50000) throw new Error((unit === 'truck' ? 'น้ำหนักคันรถ' : 'BB ที่ ' + (i + 1)) + ': ใส่ กก. มากกว่า 0'); });\n  const at = req.at ? new Date(String(req.at).length === 16 ? req.at + ':00+07:00' : req.at) : new Date();\n  if (isNaN(at)) throw new Error('เวลาไม่ถูกต้อง');\n  if (at.getTime() > Date.now() + 60000) throw new Error('เวลาต้องไม่เกินตอนนี้');\n  if (at.getTime() < Date.now() - 3 * 86400000) throw new Error('ย้อนหลังได้ไม่เกิน 3 วัน');\n  const batch = 'MLC-' + Utilities.formatDate(new Date(), 'Asia/Bangkok', 'yyMMddHHmmss') + '-' + Utilities.getUuid().slice(0, 4).toUpperCase();\n  const out = sbRpc_('ncp_mill_push', { p_source: NCP_SB.SOURCE, p_key: millKey_(), p: { batch: batch, unit: unit, item: code, lot: str_(pl.Lot_Number), pid: str_(pl.ProductionID),\n    product: names_()[str_(pl.ProductID)] || str_(pl.ProductID), line: str_(req.line, 10), plate: unit === 'truck' ? str_(req.plate, 40) : '', note: str_(req.note, 200),\n    at: at.toISOString(), by: me.id, by_name: String(me.Name || ''), rows: rows } });\n  try {   // → แท็บ NCP (Total_NCP ของ lot) · พลาดตอนนี้ = เติมให้ตอนเปิดหน้า Milling ครั้งถัดไป (millHeal_)\n    out.sheet = millSheet_(rows.map(function (k, i) { return { batch: batch, seq: i + 1, unit: unit, item_code: code, lot_number: str_(pl.Lot_Number), production_id: str_(pl.ProductionID),\n      kg: Math.round(k * 100) / 100, at: at.toISOString(), by_user: me.id, by_name: String(me.Name || ''), cancelled: false }; }));\n  } catch (e) { console.warn('NCP Milling → NCP tab: ' + e.message); }\n  return out;\n}\nfunction millRows_() { return sbRpc_('ncp_mill_list', { p_source: NCP_SB.SOURCE, p_key: millKey_(), p_from: new Date(Date.now() - 2 * 86400000).toISOString() }) || []; }\nfunction millList(token) { session_(token, 'coat'); const rows = millRows_(); millHeal_(rows); return rows; }\nfunction millCancel(token, batch, reason) {\n  const me = session_(token, 'coat');\n  const rows = millRows_().filter(function (r) { return r.batch === batch && !r.cancelled; });\n  if (!rows.length) throw new Error('ไม่พบรายการ หรือยกเลิกไปแล้ว');\n  const sup = roleOk_(me.Role, 'sup');\n  if (!sup && rows[0].by_user !== me.id) throw new Error('ยกเลิกได้เฉพาะรายการที่ตัวเองบันทึก (Sup / Admin ยกเลิกได้ทุกรายการ)');\n  if (!sup && prodDateKey_(new Date(rows[0].at).getTime()) !== prodDateKey_(Date.now())) throw new Error('ยกเลิกย้อนหลังให้ Sup / Admin');\n  if (str_(reason, 200).length < 3) throw new Error('ใส่เหตุผลอย่างน้อย 3 ตัวอักษร');\n  const out = sbRpc_('ncp_mill_cancel', { p_source: NCP_SB.SOURCE, p_key: millKey_(), p_batch: batch, p_reason: str_(reason, 200), p_by: me.id });\n  try { out.sheet = millSheet_(rows.map(function (r) { return Object.assign({}, r, { cancelled: true }); })); } catch (e) { console.warn('NCP Milling cancel → NCP tab: ' + e.message); }\n  return out;\n}\n\nfunction doPost(e) {\n  var out;\n  try {\n    var b = JSON.parse((e && e.postData && e.postData.contents) || '{}');\n    var fn = String(b.fn || '');\n    if (fn === '__page') {\n      var html = HtmlService.createHtmlOutputFromFile('Index').getContent();\n      var hsh = Utilities.base64EncodeWebSafe(Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, html, Utilities.Charset.UTF_8));\n      out = { ok: true, v: b.hash === hsh ? { same: true, hash: hsh } : { html: html, hash: hsh } };\n    } else {\n      if (!/^[A-Za-z][A-Za-z0-9]*$/.test(fn) || /^(do|on)[A-Z]/.test(fn) ||\n          /^(setup|store|sync|install|migrate|debug|test|cron|seed|reset|purge|wipe|backfill)/i.test(fn) || /(Trigger|Now)$/.test(fn) ||\n          typeof GLOBAL__[fn] !== 'function' || !Object.prototype.propertyIsEnumerable.call(GLOBAL__, fn)) throw new Error('API: ไม่มีฟังก์ชัน ' + fn);\n      out = { ok: true, v: GLOBAL__[fn].apply(null, b.args || []) };\n    }\n  } catch (err) {\n    out = { ok: false, e: String((err && err.message) || err) };\n  }\n  return ContentService.createTextOutput(JSON.stringify(out)).setMimeType(ContentService.MimeType.JSON);\n}\n";
+/* Coating Control บนมือถือ — รันโค้ดของแอปเอง (Code.gs v30, ฝังในหน้าเป็น CS_SRC) ในเครื่อง บนแถวที่อ่านจาก Supabase ตรง (csr_get + ตั๋ว)
+ * (20 พ.ย. 2026, ผู้ใช้ "ย้าย Coating ไปใช้ Supabase อย่างเดียว แล้วดาวน์โหลดจากมือถือตรง") — แบบเดียวกับ lr.js ของแพค / แอปผลิต
+ * อ่าน: แท็บที่ run ยังไม่มี → หยุด → อ่าน → run ใหม่ (7 แท็บ: NCP, Production_Lot, Product_Detail, NCP_Detail, Production_NCP_Map, Extruder_Runtime, Coater_Records)
+ * เขียน: pkp_put ของ run เก็บไว้ในสำเนาของ run · จบ run → csw_commit ครั้งเดียว พร้อมลายนิ้วมือของทุกแท็บที่อ่าน
+ *        (Supabase บันทึกเมื่อแท็บที่อ่านไม่เปลี่ยน = ที่ script lock เคยทำ · เปลี่ยน → อ่านใหม่ run ใหม่ สูงสุด 4 ครั้ง)
+ * อย่างอื่น (เขียนชีต, Drive, webhook, ตั้ง property) = ถูกกัน → error (ไม่มี Apps Script ให้ถอยไปแล้ว)
+ * ใช้ได้ทั้งในเบราว์เซอร์และ node (ทดสอบ) */
+function makeCoatLR(o) {
+  // o = { src, store: async (ticket, reqs) → [{h, rows, v, kc}], commit: async (ticket, fn, reads, ops) → {ok} | {ok:false, conflict}, env (tests) }
+  const RealDate = Date, BKK = 7 * 3600e3;
+  const NAMES = ['Date', 'Math', 'SpreadsheetApp', 'PropertiesService', 'CacheService', 'LockService', 'Session', 'Logger', 'HtmlService',
+    'ContentService', 'ScriptApp', 'DriveApp', 'Utilities', 'UrlFetchApp', 'console', '__LR'];
+  const RTABS = { NCP: 1, Production_Lot: 1, Product_Detail: 1, NCP_Detail: 1, Production_NCP_Map: 1, Extruder_Runtime: 1, Coater_Records: 1 };
+  const last = {}, seen = new Map(), X = o.env || {};   // seen: แท็บที่เคยอ่าน — ฟังก์ชันที่ยังไม่เคยรัน ขอพร้อมกันรอบแรก (ส่วนใหญ่ได้ {same})
+  let factory = null, factoryFns = '';
+
+  function patch(src, a, b) { if (src.split(a).length !== 2) throw new Error('LR_SRC ' + a.slice(0, 40)); return src.replace(a, b); }
+  function compile(fns) {
+    let src = o.src;
+    // ผู้ใช้มาจาก cs_ctx (Supabase ตรวจ token แล้ว) · ตรวจสิทธิ์ตามบทบาทเหมือนเดิม
+    src = patch(src, 'function session_(token, role, pinChange) {',
+      'function session_(token, role, pinChange) { const u = users_().find(function (x) { return x.id === __LR.meId && x.active; });\n' +
+      "  if (!u) throw new Error('AUTH'); if (!roleOk_(u.Role, role)) throw new Error('สิทธิ์ไม่พอสำหรับรายการนี้'); return u; }\n" +
+      'function session__srv(token, role, pinChange) {');
+    src = patch(src, 'function users_() {',
+      'function users_() { return __LR.users.map(function (u, i) { return { User_ID: u.id, Name: u.name, Role: u.role, PIN_Hash: \'\', Active: !!u.active, row: i + 2, id: String(u.id), active: !!u.active }; }); }\n' +
+      'function users__srv() {');
+    // ทุกแท็บที่ Coating อ่าน มาจาก Supabase (เดิมเฉพาะ NCP + Production_Lot)
+    src = patch(src, 'if (csOn_() && CS.TABS[name]) return csTable_(name);', 'if (csOn_() && (CS.TABS[name] || __LR.rtab[name])) return csTable_(name);');
+    // eslint-disable-next-line no-new-func
+    return new Function(...NAMES, src + '\nreturn {' + fns.map((f) => JSON.stringify(f) + ': typeof ' + f + " === 'function' ? " + f + ' : null').join(', ') + '};');
+  }
+
+  const pad = (n) => String(n).padStart(2, '0');
+  function fmtDate(d, tz, f) {
+    const t = new RealDate(d.getTime() + (tz === 'UTC' ? 0 : BKK));
+    const m = { yyyy: t.getUTCFullYear(), yy: String(t.getUTCFullYear()).slice(2), MM: pad(t.getUTCMonth() + 1), M: String(t.getUTCMonth() + 1), dd: pad(t.getUTCDate()), d: String(t.getUTCDate()),
+      HH: pad(t.getUTCHours()), H: String(t.getUTCHours()), mm: pad(t.getUTCMinutes()), ss: pad(t.getUTCSeconds()) };
+    return String(f).replace(/yyyy|yy|MM|M|dd|d|HH|H|mm|ss/g, (k) => m[k]);
+  }
+  const b64 = (bytes) => { let s = ''; for (const b of bytes) s += String.fromCharCode(b & 255); return typeof btoa === 'function' ? btoa(s) : Buffer.from(s, 'binary').toString('base64'); };
+  function pseudoDigest(s) {   // cache keys only (no cache here) — not a real digest
+    s = String(s); const out = []; let h = 2166136261;
+    for (let k = 0; k < 16; k++) { for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i) + k; h = Math.imul(h, 16777619) >>> 0; } out.push(h & 255); }
+    return out;
+  }
+  const nz = (v) => (v == null ? null : v);
+  const key = (b) => JSON.stringify([b.p_tab, nz(b.p_col), nz(b.p_vals), nz(b.p_tail)]);
+  const unkey = (k) => { const a = JSON.parse(k); return { p_tab: a[0], p_col: a[1], p_vals: a[2], p_tail: a[3] }; };
+  const txt = (v) => (v == null ? null : typeof v === 'object' ? JSON.stringify(v) : String(v));
+  const strip = (d) => { const r = {}; Object.keys(d || {}).forEach((k) => { if (d[k] !== null && d[k] !== undefined) r[k] = d[k]; }); return r; };
+  const clone = (v) => JSON.parse(JSON.stringify(v));
+
+  function load(S, q, res) {
+    const t = S.tabs[q.p_tab] || (S.tabs[q.p_tab] = { h: res.h, kc: res.kc, rows: new Map() });
+    t.h = res.h; if (res.kc != null) t.kc = res.kc;
+    (res.rows || []).forEach((r) => { const d = Object.assign({}, r); delete d._k; delete d._s; delete d._v; t.rows.set(String(r._k), { d: d, s: r._s }); });
+    S.reqs.set(key(q), res.v);
+  }
+  function runView(S) {
+    const tabs = {};
+    Object.keys(S.tabs).forEach((n) => { const t = S.tabs[n]; tabs[n] = { h: t.h, kc: t.kc, rows: new Map(Array.from(t.rows, ([k, r]) => [k, { d: r.d, s: r.s }])) }; });
+    return { tabs: tabs, ops: [], used: new Set(), blocked: [] };
+  }
+  function answer(V, q) {
+    const t = V.tabs[q.p_tab];
+    let rows = Array.from(t.rows, ([k, r]) => ({ k: k, d: r.d, s: r.s })).sort((a, b) => a.s - b.s);
+    if (q.p_col == null) { if (q.p_tail != null) rows = rows.slice(-q.p_tail); }
+    else { const vals = (q.p_vals || []).map(String), byKey = t.kc && q.p_col === t.kc; rows = rows.filter((r) => vals.indexOf(byKey ? r.k : txt(r.d[q.p_col])) >= 0); }
+    return { h: t.h, rows: rows.map((r) => Object.assign({}, clone(r.d), { _k: r.k, _s: r.s })) };
+  }
+  function applyPut(V, ops) {
+    let n = 0;
+    ops.forEach((op) => {
+      if (op.tab !== 'NCP' && op.tab !== 'Production_Lot') { V.blocked.push('put ' + op.tab); throw new Error('LR_BLOCKED'); }
+      const t = V.tabs[op.tab];
+      if (!t) { V.blocked.push('put ' + op.tab + ' (not read)'); throw new Error('LR_BLOCKED'); }
+      (op.rows || []).forEach((x) => {
+        if (!x.k) throw new Error('PKP_KEY ' + op.tab + ' (no key)');
+        const k = String(x.k), cur = t.rows.get(k);
+        if (op.op === 'ins') {
+          if (cur) throw new Error('PKP_DUP ' + op.tab + ' ' + k);
+          let mx = 0; t.rows.forEach((r) => { if (r.s > mx) mx = r.s; });
+          t.rows.set(k, { d: strip(x.d), s: mx + 1 });
+        } else if (op.op === 'upd' || op.op === 'rep') {
+          if (!cur) throw new Error('PKP_NOROW ' + op.tab + ' ' + k);
+          let d;
+          if (op.op === 'upd') { d = strip(Object.assign({}, cur.d, x.set)); Object.keys(x.set || {}).forEach((c) => { if (x.set[c] === null) delete d[c]; }); }
+          else d = strip(x.d);
+          t.rows.set(k, { d: d, s: cur.s });
+        } else throw new Error('PKP_OP ' + op.op);
+        n++;
+      });
+    });
+    V.ops.push(...clone(ops));
+    return { ok: true, n: n };
+  }
+
+  function env(ctx, S, V, miss, write) {
+    const off = ctx.serverNow - ctx.at;
+    class SD extends RealDate {
+      constructor(...a) { if (!a.length) super(RealDate.now() + off); else super(...a); }
+      static now() { return RealDate.now() + off; }
+    }
+    const D = X.Date || SD;
+    const W = (what) => { V.blocked.push(what); throw new Error('LR_BLOCKED ' + what); };
+    const ss = { getSheetByName: (n) => W('sheet ' + n), insertSheet: () => W('insertSheet'), getNumSheets: () => 99, getSheets: () => [] };
+    const resp = (v) => ({ getResponseCode: () => 200, getContentText: () => JSON.stringify(v) });
+    const noop = () => {};
+    const read = (q) => {
+      if (!RTABS[q.p_tab]) W('tab ' + q.p_tab);
+      const k = key(q); if (!S.reqs.has(k)) { miss.push(q); throw new Error('LR_MISS store'); }
+      V.used.add(k); return answer(V, q);
+    };
+    const math = X.random ? Object.assign(Object.create(Math), { random: X.random }) : Math;
+    return {
+      Date: D, Math: math,
+      SpreadsheetApp: { openById: () => ss, getActive: () => ss, flush: noop },
+      PropertiesService: { getScriptProperties: () => ({
+        getProperty: (k) => (k === 'CS_KEY' ? 'phone' : Object.prototype.hasOwnProperty.call(ctx.props, k) ? ctx.props[k] : null),
+        getProperties: () => Object.assign({}, ctx.props), setProperty: (k) => W('prop ' + k), deleteProperty: (k) => W('prop ' + k) }) },
+      CacheService: { getScriptCache: () => ({ get: () => null, getAll: () => ({}), put: noop, putAll: noop, remove: noop, removeAll: noop }) },
+      LockService: { getScriptLock: () => ({ waitLock: noop, tryLock: () => true, releaseLock: noop, hasLock: () => true }), getUserLock: () => ({ tryLock: () => true, releaseLock: noop }) },
+      Session: { getActiveUser: () => ({ getEmail: () => '' }), getEffectiveUser: () => ({ getEmail: () => '' }), getScriptTimeZone: () => 'Asia/Bangkok' },
+      Logger: { log: noop }, HtmlService: {}, ContentService: {}, ScriptApp: {}, DriveApp: { getFileById: () => W('drive'), getFolderById: () => W('drive') },
+      Utilities: {
+        formatDate: fmtDate, getUuid: X.uuid || (() => (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : 'u' + Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2))),
+        Charset: { UTF_8: 'utf8' }, DigestAlgorithm: { MD5: 'md5', SHA_256: 'sha256' },
+        computeDigest: (alg, s) => pseudoDigest(s), computeHmacSha256Signature: () => W('hmac'),
+        base64Encode: b64, base64EncodeWebSafe: (b) => b64(b).replace(/\+/g, '-').replace(/\//g, '_'),
+        newBlob: () => W('blob'), gzip: () => W('gzip'), ungzip: () => W('gzip'), base64Decode: () => W('b64d'), sleep: noop
+      },
+      UrlFetchApp: { fetch: (url, opt) => {
+        const fn = String(url).split('/rpc/')[1], b = fn ? JSON.parse(opt.payload) : {};
+        if (fn === 'pkp_get') return resp(read(b));
+        if (write && fn === 'pkp_put') return resp(applyPut(V, b.p_ops || []));
+        return W('fetch ' + (fn || String(url).slice(0, 60)));
+      } },
+      console: { log: noop, info: noop, warn: noop, error: noop },
+      __LR: { meId: ctx.me.id, users: ctx.users || [], rtab: RTABS }
+    };
+  }
+
+  // fn(token, ...args) รันในเครื่อง → คืน JSON เดียวกับที่ server ส่ง · write: บันทึกลง Supabase ครั้งเดียวแบบตรวจ
+  async function run(fns, fn, ctx, token, args, write) {
+    if (!factory || factoryFns !== fns.join(',')) { factory = compile(fns); factoryFns = fns.join(','); }
+    if (!ctx || !ctx.ticket) throw new Error('LR_OFF');
+    ctx = Object.assign({}, ctx, { at: ctx.at || RealDate.now() });
+    const lk = fn + JSON.stringify(args);
+    for (let attempt = 0; attempt < 4; attempt++) {
+      const S = { tabs: {}, reqs: new Map() };
+      let conflict = false, pre = (last[lk] || last['@' + fn] || Array.from(seen.values())).slice();
+      for (let round = 0; round < 12; round++) {
+        const need = pre.filter((q, i) => !S.reqs.has(key(q)) && pre.findIndex((x) => key(x) === key(q)) === i);
+        if (need.length) {
+          const res = await o.store(ctx.ticket, need.map((q) => ({ tab: q.p_tab, col: nz(q.p_col), vals: nz(q.p_vals), tail: nz(q.p_tail) })));
+          need.forEach((q, i) => load(S, q, res[i]));
+        }
+        const miss = [], V = runView(S), E = env(ctx, S, V, miss, write);
+        let out, err = null;
+        if (X.onRun) X.onRun();
+        try { const G = factory(...NAMES.map((n) => E[n])); if (!G[fn]) throw new Error('ไม่มีฟังก์ชัน ' + fn); out = G[fn](token, ...args); } catch (e) { err = e; }
+        if (miss.length) { pre = pre.concat(miss); continue; }
+        if (V.blocked.length) throw new Error('LR_BLOCKED ' + V.blocked[0]);
+        if (err) throw err;
+        last[lk] = last['@' + fn] = Array.from(S.reqs.keys()).map(unkey); S.reqs.forEach((v, k) => seen.set(k, unkey(k)));
+        const result = JSON.parse(JSON.stringify(out === undefined ? null : out));
+        if (!V.ops.length) return result;
+        if (!write) throw new Error('LR_WRITE (read mode)');
+        const reads = Array.from(V.used).map((k) => { const q = unkey(k); return { tab: q.p_tab, col: q.p_col, vals: q.p_vals, tail: q.p_tail, v: S.reqs.get(k) }; });
+        const c = await o.commit(ctx.ticket, fn, reads, V.ops);
+        if (c && c.ok) return result;
+        if (c && c.off) throw new Error('ระบบ Coating บน Supabase ปิดอยู่ — แจ้ง Admin');
+        if (!c || !c.conflict) throw new Error('LR_COMMIT ' + JSON.stringify(c).slice(0, 200));
+        conflict = true;
+        break;   // มีคนแก้แท็บที่ run นี้อ่าน → อ่านใหม่ run ใหม่
+      }
+      if (!conflict) throw new Error('LR_LOOP');
+    }
+    throw new Error('มีการบันทึกพร้อมกันหลายเครื่อง ลองอีกครั้ง');
+  }
+  return { run };
+}
+// node only: if (typeof module !== 'undefined') module.exports = { makeCoatLR };
+
+</script>
+<div id="app"><div class="spin">กำลังโหลด…</div></div>
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+// ---------- coat-sa (20 พ.ย. 2026): Supabase อย่างเดียว — ไม่มี Apps Script ----------
+const CSA = { URL: 'https://kdytxuufvigwjccebrki.supabase.co', KEY: 'sb_publishable_IYCMIaN7tJleWINprA42CQ_dX10sXFF',
+  OFF: 'ระบบ Coating บน Supabase ยังไม่เปิด/ปิดอยู่ — ใช้ลิงก์ Coating เดิมจาก Hub แล้วแจ้ง Admin',
+  R: ['boot', 'getLots', 'lotDetail', 'findLots', 'coaterView', 'shiftRows', 'dyerSieve', 'millFind', 'millInfo'],
+  W: ['saveBag', 'editBag', 'cancelRow', 'mergeBags', 'splitRow', 'editCause', 'saveSieve'] };
+async function sbRpc(fn, body) {
+  let r;
+  try { r = await fetch(CSA.URL + '/rest/v1/rpc/' + fn, { method: 'POST', cache: 'no-store', headers: { apikey: CSA.KEY, Authorization: 'Bearer ' + CSA.KEY, 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) }); }
+  catch (e) { throw new Error('เชื่อมต่อไม่ได้ ตรวจสัญญาณเน็ตแล้วลองใหม่'); }
+  const t = await r.text(); let j = null; try { j = t ? JSON.parse(t) : null; } catch (e) { /* text */ }
+  if (!r.ok) throw new Error(String((j && (j.message || j.hint)) || ('Supabase ตอบ ' + r.status)).replace(/^VALIDATION:\s*/, ''));
+  return j;
+}
+const offErr = (r) => { if (r && r.off) throw new Error(CSA.OFF); return r; };
+let CTX = null;
+async function ctxFor(token) {
+  const n = Date.now();
+  if (CTX && CTX.token === token && n - CTX.got < 10 * 60e3 && CTX.exp - CTX.serverNow - (n - CTX.got) > 10 * 60e3) return CTX;
+  const c = offErr(await sbRpc('cs_ctx', { p_token: token }));
+  c.token = token; c.got = Date.now(); c.at = c.got;
+  return (CTX = c);
+}
+// แท็บที่อ่านแล้วเก็บในเครื่อง (IndexedDB — เปิดใหม่ไม่ต้องโหลดซ้ำ) · Supabase ตอบ {same} เมื่อไม่เปลี่ยน หรือ {d} = เฉพาะแถวที่เปลี่ยน (ver > since)
+const RC = new Map();
+const IDB = { db: null, ready: null };
+function idbOpen() {
+  if (IDB.ready) return IDB.ready;
+  IDB.ready = new Promise((ok) => {
+    try {
+      const rq = indexedDB.open('coat-sa', 1);
+      rq.onupgradeneeded = () => rq.result.createObjectStore('rc');
+      rq.onerror = () => ok(null);
+      rq.onsuccess = () => {
+        IDB.db = rq.result;
+        try { const tx = IDB.db.transaction('rc', 'readonly'), st = tx.objectStore('rc'), c = st.openCursor();
+          c.onsuccess = () => { const cur = c.result; if (cur) { if (!RC.has(cur.key)) RC.set(cur.key, cur.value); cur.continue(); } else ok(IDB.db); };
+          c.onerror = () => ok(IDB.db);
+        } catch (e) { ok(IDB.db); }
+      };
+    } catch (e) { ok(null); }
+  });
+  return IDB.ready;
+}
+function idbPut(k, v) { try { if (IDB.db) IDB.db.transaction('rc', 'readwrite').objectStore('rc').put(v, k); } catch (e) { /* no space: memory only */ } }
+const markOf = (rows) => { let n = 0, s = BigInt(0); rows.forEach((r) => { n++; s += BigInt(r._v || 0); }); return n + '#' + s.toString(); };
+async function csStore(ticket, reqs) {
+  await idbOpen();
+  const ks = reqs.map((q) => JSON.stringify([q.tab, q.col, q.vals, q.tail]));
+  const full = (q) => q.col == null && q.tail == null;
+  const send = reqs.map((q, i) => { const c = RC.get(ks[i]); if (!c) return q; const o = Object.assign({}, q, { have: c.a });
+    if (full(q) && c.res.m) { let mx = 0; c.res.rows.forEach((r) => { if (r._v > mx) mx = r._v; }); o.since = mx; } return o; });
+  const res = await sbRpc('csr_get', { p_ticket: ticket, p_reqs: send });
+  const again = [];
+  const out = res.map((x, i) => {
+    const c = RC.get(ks[i]);
+    if (x.same && c) { c.res.v = x.v; return c.res; }
+    if (x.d && c) {   // รวมแถวที่เปลี่ยนเข้ากับที่มี แล้วตรวจ จำนวน#ผลรวม ver
+      const by = new Map(c.res.rows.map((r) => [String(r._k), r])); x.rows.forEach((r) => by.set(String(r._k), r));
+      const rows = Array.from(by.values()).sort((p, q) => p._s - q._s);
+      if (markOf(rows) === x.m) { const r = { h: x.h, kc: x.kc, v: x.v, m: x.m, rows: rows }; const e = { a: x.a, res: r }; RC.set(ks[i], e); idbPut(ks[i], e); return r; }
+      again.push(i); return null;
+    }
+    if (x.same || x.d) { again.push(i); return null; }
+    const e = { a: x.a, res: x }; RC.set(ks[i], e); if (full(reqs[i])) idbPut(ks[i], e); return x;
+  });
+  if (again.length) {   // ไม่ตรง (มีแถวถูกลบ / ไม่มีสำเนา) → ขอทั้งแท็บ
+    const r2 = await sbRpc('csr_get', { p_ticket: ticket, p_reqs: again.map((i) => reqs[i]) });
+    again.forEach((i, j) => { const e = { a: r2[j].a, res: r2[j] }; RC.set(ks[i], e); if (full(reqs[i])) idbPut(ks[i], e); out[i] = r2[j]; });
+  }
+  return out;
+}
+const csLR = makeCoatLR({ src: CS_SRC, store: csStore,
+  commit: (ticket, fn, reads, ops) => sbRpc('csw_commit', { p_ticket: ticket, p_fn: fn, p_reads: reads, p_ops: ops }) });
+const ASSETS = {};
+async function csAsset(kind, token) {
+  const c = await ctxFor(token), lk = 'coat-sa-' + kind;
+  let have = null; try { have = JSON.parse(localStorage.getItem(lk) || 'null'); } catch (e) { have = null; }
+  const r = await sbRpc('cs_asset_get', { p_ticket: c.ticket, p_kind: kind, p_have: have && have.hash ? have.hash : null });
+  if (r.same && have && have.b64) return have.b64;
+  try { localStorage.setItem(lk, JSON.stringify({ hash: r.hash, b64: r.b64 })); } catch (e) { /* full: keep in memory only */ }
+  return r.b64;
+}
+async function call(fn, ...a) {
+  if (fn === 'listLogin') return offErr(await sbRpc('cs_login_list'));
+  if (fn === 'login') { const r = offErr(await sbRpc('cs_login', { p_id: a[0], p_pin: a[1] })); if (r.err) throw new Error(r.err); CTX = null; return r; }
+  if (fn === 'hubLogin') { const r = offErr(await sbRpc('cs_hub_login', { p_ticket: a[0] })); CTX = null; return r; }
+  if (fn === 'changePin') { await sbRpc('cs_change_pin', { p_token: a[0], p_pin: a[1] }); CTX = null; return true; }
+  if (fn === 'fontData') return csAsset('font', a[0]);
+  if (fn === 'formPdf') { if (a[1] !== 'reject' && a[1] !== 'rework') throw new Error('ไม่มีฟอร์มนี้'); return csAsset(a[1], a[0]); }
+  if (fn === 'savePdf') return { name: a[2], local: true };   // ไม่เก็บลง Drive แล้ว — ไฟล์อยู่ในเครื่องที่ดาวน์โหลด
+  const c = await ctxFor(a[0]);
+  if (fn === 'liveStamp') return sbRpc('cs_stamp', { p_ticket: c.ticket });
+  if (fn === 'setWriteAlong') { await sbRpc('cs_set_write_along', { p_ticket: c.ticket, p_on: !!a[1] }); CTX = null; return { writeAlong: !!a[1] }; }
+  if (fn === 'listUsers') return sbRpc('cs_users', { p_ticket: c.ticket });
+  if (fn === 'saveUser') { const r = await sbRpc('cs_user_save', { p_ticket: c.ticket, d: a[1] }); CTX = null; return r; }
+  if (fn === 'millList') return sbRpc('cs_mill_list', { p_ticket: c.ticket });
+  if (fn === 'millSave') return sbRpc('cs_mill_save', { p_ticket: c.ticket, req: a[1] });
+  if (fn === 'millCancel') return sbRpc('cs_mill_cancel', { p_ticket: c.ticket, p_batch: a[1], p_reason: a[2] });
+  if (fn === 'recalc') {   // Total_NCP ของ lot: prod-calc (โค้ดของสคริปต์หลักใน Supabase) ด้วยตั๋วของมือถือ
+    const r = await fetch(CSA.URL + '/functions/v1/prod-calc', { method: 'POST', headers: { apikey: CSA.KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mode: 'run', ticket: c.ticket, jobs: [{ action: 'PRODUCTION_LOT_FINISHED', module: 'PRODUCTION_LOT_KPI', productionID: String(a[1]), rowID: String(a[1]), requestedBy: 'CoatingApp:' + c.me.name }], apply: true }) });
+    return r.status;
+  }
+  if (CSA.R.indexOf(fn) >= 0 || CSA.W.indexOf(fn) >= 0) {
+    try { return await csLR.run(CSA.R.concat(CSA.W), fn, c, a[0], a.slice(1), CSA.W.indexOf(fn) >= 0); }
+    catch (e) { const m = String(e && e.message || e); if (/^LR_/.test(m)) { console.warn(fn, m); throw new Error('ทำรายการไม่ได้ (' + m.slice(0, 60) + ') — ลองใหม่ หรือแจ้ง Admin'); } throw e; }
+  }
+  throw new Error('ไม่มีฟังก์ชัน ' + fn);
+}
+const H = 3600e3;
+const S = { token: '', me: null, view: 'login', lots: [], L: null, d: null, users: [], who: null, pin: '', pin1: '', busy: false, settings: { writeAlong: true } };
+const PROC = {
+  Extruder: { th: 'หน้าเครื่องอัด', c: 'var(--ext)', t: 'var(--ext-t)', ic: 'M2 9h15v6H2zM17 12h5M6 9v6M10 9v6M14 9v6' },
+  Dyer: { th: 'เครื่องอบ', c: 'var(--dyer)', t: 'var(--dyer-t)', ic: 'M7 4c-2 3 2 5 0 8s2 5 0 8M12 4c-2 3 2 5 0 8s2 5 0 8M17 4c-2 3 2 5 0 8s2 5 0 8' },
+  Sieve: { th: 'ตะแกรงร่อน', c: 'var(--sieve)', t: 'var(--sieve-t)', ic: 'M3 5h18v14H3zM3 10h18M3 14h18M9 5v14M15 5v14' },
+  Packing: { th: 'เครื่องบรรจุ', c: 'var(--pack)', t: 'var(--pack-t)', ic: 'M4 8l8-4 8 4v8l-8 4-8-4zM4 8l8 4 8-4M12 12v8' }
+};
+const ORDER = Object.keys(PROC);
+const svg = (d, c, w) => '<svg width="' + (w || 24) + '" height="' + (w || 24) + '" viewBox="0 0 24 24" fill="none" stroke="' + (c || 'currentColor') + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="' + d + '"></path></svg>';
+const BACK = svg('M15 5l-7 7 7 7', '#fff');
+const num = (n) => Number(n || 0).toLocaleString('en-US', { maximumFractionDigits: 1 });
+const bkk = (ms) => new Date(ms + 7 * H).toISOString(); // yyyy-MM-ddTHH:mm in Bangkok
+const fmt = (ms) => { const s = bkk(ms); return s.slice(8, 10) + '/' + s.slice(5, 7) + ' ' + s.slice(11, 16); };
+const dmy = (ms, full) => { const s = bkk(ms); return s.slice(8, 10) + '/' + s.slice(5, 7) + '/' + (full ? s.slice(0, 4) : s.slice(2, 4)); };
+const LOGO = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAKAAAACKCAMAAAAaJrFPAAAAwFBMVEUAAAAFY8b7/f5XtSL2+vxjpOlemtlbw+1Mj9U2h9MgbrZUo957ff1/f39jwi2NtuOqy+kAAP+h0/BWVqoGbe5zuS2Rzm4A//85g9BywkWIy2JWqasyfM16xFCm91o2lV8AAH+u25cAP798/3yLtuMA/wAMaq8Af3+CtOTH5rFVqlUAfwB///8inOCqqlX//wD7/P7+/v8/vz9Cn01Stqovj4Q9hNWJteOHzF+lx+k/v39vtIJbwbSv25Ot2J//AP94FG0bAAAAQHRSTlMA/f7+CBpY/p/kA/YCAv0rHgH/AwMDXgGo3Y8Do7IL/gImBAL/Af8CSxwDAgIFAwGeYQT///9Mp+1UBGD/QP8BxfyxTQAACbVJREFUeNrtnOt2ozgSgIVTYIRwADc2jt322p1kc092enpndvb6/m+1ktAVBDiOI3vPdv3IiQ2GT1WlqtIFEHqnpCjEAxLHUZQBOzmZIO8SoijYS+Ioo6eXcLaAVHCUsx+cLyDTY8684owBgyACv0p8N2CAM5ScNSBVok/CQwAp4eq8AYPMX085DDCAsjpvwBh9OSkgIUOEoa9g0wE4Gt30Ay5QeVoTj0bTfsLcUz/pAiRDhL6CYWcnGY1GpN/GxWkBqQpH/ZEGwckByRkE605APBrwwns/gaZXg6Mz6CX/u4DTMwFc9YSZswBMuwP1QCf5w08nSTpT3VCYATTx54O4efebQQsT8JlJMHYYuN/CsR8XBAFIHAYeYVkc3twQglsW9pJIIKt9cIzbfLwiJNORlBtiKdBPtSUBiUkomLQvSpkS7YHo2QsfQA2Ix5pwKhVGbDwT8Q9fA08JGIzH49rNyKhfOOLvaOVpmgtyqAGpCikildGwTH+Hra9pOGpjEajJmMsefKO/eKpVaz4JyAmNPtstvyBvfBQwV4A0GO7Dx9Tnb5rV1OAeHYTxeVRfU4MyQA/YF04HaIS9blv/4tnEJqBh4fHZdBJwmnhKBvrJ80kAseIbiIc+CV0+SPnIYKxJ/QMShUcrh4GISHwlO1UsKA+c8pyHB1RIYk/ljKwHdZVVp+ShmD2mo04/U6wKkJgKJC3Ahslp9QiF38mjKYeY1gokukdLQItwSs/wNI+upz6mUzIVfKy6bhl1ahatFNDTJLAxN0PvWtuXGC6pAYlEnIo2+Bl4mpNHvCKU48uWEzKqqdIxU7KXQGNNfWBz9Nsai4wtwZ7mWDtnt4LmkG7cAvQSaZLupbB+QF8TcD1rdaTPxsTX9EzfYiLpAayXSran9EHWZyxAbHsgPe5jLadXg7YOA6VC2dl9aLAHEI9tK/P5ESNSUhMnJwbEFiFhcdKc6oxPDkisnnJzknn+vjBT9wVi2Li56r46KaDsrKQL0MscUjcgFuFYE5LmirHvaqZlYTntSpwq9LOvons5VgdkVRzaKoQ7dErAsQl441BhdNr1YqJKgg4v9LW1pwMQW3yq9DLWnmB70m0pxOZTIxT/28vcgNjwP6cTRt62YboBm3zNQONxi2P49hu745+p2AbGzvq/1m/ocQvm39E//tSUv/748c8fJrC9fhfnHrfZTtDD5YVbfmWoSrFEAuIIedwgevsdrbsADVCKKQBJBGjrcZp/g+ZDfILy13+LKX6vu6gf0W4/Pi5Xf1tuuPJm15743mZwdfEeuby8Ws4fmGv4YZwNO6CD8eJqvqM/ftrA2ThgC/JizRm/f64ar293h/FJRqrB283tJwKi9cVHhPojU+OnWXq2h4EvTelU4+cgdkcYDnNFZb1eL7XQT/Q7cdhQI0N8PD4iuCIMJ1sv5/P57sF9S3jYzefLJefUiLtP0OIMLS+b0YOi7Yyl4Nun2eP3mZTvj7Mn3SGAcV4JSuqMNDZu3j4rwgg2qbPbx9nm9XrSocHr6w2lVZTLNYesDf16xBrmVtYwDI7qjX/7NJs9wn5hAxgn/+9hXhucIT4dLS6+8ghD275e1nBPs83k3SZ6m2xmvD27+ZojHs0VH5mBWYx44O44u/7AZeGVaxIo49V6w6LrMSL05upyybyGJv3XI7R5MnvijLTc2R0nhcw5HTXr8cLWhilys1z+61g7W4+iugYjdcjd7jg6/KQEej1D5y5vgH7KT/kp/7eScPnI+mSxYlcIeyJJUd/kRC1Ucx7JJ0weVSiMuYQHrw5tEWQRe+dC5wVA3iRD7364d4LCj62vFQWK5JxmHFZOgC/6Jt0VQ5koof+mDsDDVg9SFBtT2OBUUboPYIfjfBTQfvTpK5ToUMDYkIi9WaL2uQ8CAgJ7kelwwOZ6R1QTfhBQ766hrY5x5u5phwDSK/Kntz4MuJCPPaPuTcqHAVKPLquPA36tnQ8lIY3DxVEBqce8vBsQ0tR8LO2b0GA8SXhQlbGHnjapBgCrSWpOAyhPob6il+4LG7DiYUiS2p+orF5EyFrpLFlrMDYyWZpsRQRPoBMQ5Ekq+0il8aN688M7NDhhmoM8Z9M0hWq60KAOX/wscZq4ZguwCOtL5VAfNgBDKqrrRSg0AVORkepgAepTbSva0iyudz7R79hVC6CHhT/zU2vj51F9GjUX1GGnCUj/gLAjpumvJjQW+8KVG1CCYxHJI+UI/GMeW++/SSs7BtbP/EEUW6/y4VvnG4ApMp8TCOL6NTACKU3TldJghp73BWwuftKQFzoAW0ukEbOyDThBOWmeFLp9EN2hPQEde+FoVnMAZu33QoANmN4BDhzNkKbJ8jBSfSTdExDuwEgYcm8C9UH17Cd/zRUUSV064EWMjX1cNqCqLpQH02YUyBUGU7QnYCIvyhNGrPQFAKIXs+c76BdVBcypWOeUumz4oLpszE4C1VrkeM3TCu0J+Ixy6bQvYViCubou4qDcMVihjDUiKUv984kBmG6RAueRU6XKZp5j3XtfwBfx71dZGUnjFSUIwOpF1Kr0r6hoMrXLwgBM5Nf15oZQHokcJo7hrtoPsBTtJPdRpFMRplr7pjQoB0QrHqczKpELMNVXreqkKPd7yY1fiwU2HwXes5Ng1xYVnosbgCULwbjxZg1Lg8KmorAoxQUCM8yoMLlvoG7FEwlYNAHv9ADFDSiN8VX8QAMLpKQszEBYpEcFtAYovYALBRg3NJio59d53wkPBsQ0EDZMbKQbTGLSr8GtW4P8Qkn6m97p9w4fjMCSpg8W0uODKNet6vJBu+JdmICFSly9gGmrF0etEswCTHUIocVgEfb24rxkNcx/KrDDTPStLBNtMreJAwifIXXEQfpvmNFyI2UlG6+tLEBdhJQhfElyF+BKNiJGJRRFqusWsxdnC+nmW1cnEZrKsX41BhjpSQ44WxoMtWG+FQi542CFAkfdspCpjheWOAg6CtZMvUsQ8sgYGKiG4ihj3kdr0hjddZp4ATrLNgB1LuYeLYNS6Bw0US3bg6YtuF8uUtCUpsOb2HOes9rO7iS6txtvOGsA6sBivEkkVuVWI9UVNqD7CQhWD4IyuF1ldoaZoBOwKlt5KYakXW6xvWBVc+BuB9r4XlfUqbaZuWG/EahL+/dOQDZdEjf42Bis+W5SqIexd2YE4KnKaAGIGauiHuhYww0SVaVOBGJjI5uLM4YabkDWv4yEyMoqRpJFSu75aE/Ni+ZcRP8sWLInJGYtSCC7j+7lpCNs+YCNHmRviM1lX87u+RX1pIL4Pb1tyY7d8wtDfRM54N4yHn4ldiGeff8LBbetYWbYMp8AAAAASUVORK5CYII=';
+const SHIFTS = { 8: '08:00–16:00', 16: '16:00–00:00', 0: '00:00–08:00' };
+const shiftStart = (ms) => { const h = new Date(ms + 7 * H).getUTCHours(); return h >= 16 ? '16' : h >= 8 ? '8' : '0'; };
+const shiftOf = (ms) => SHIFTS[shiftStart(ms)];
+// the date picked is the production day (starts 08:00): its 00:00–08:00 shift is the next calendar morning
+const shiftKey = (cal, s) => cal + '|' + s;
+const uuid = () => (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2));
+const isSup = () => S.me && (S.me.role === 'sup' || S.me.role === 'admin');
+
+let tT;
+function toast(m, err) {
+  let t = document.querySelector('.toast');
+  if (!t) { t = document.createElement('div'); document.body.appendChild(t); }
+  t.className = 'toast' + (err ? ' err' : ''); t.textContent = m; t.setAttribute('role', 'status');
+  clearTimeout(tT); tT = setTimeout(() => t.remove(), err ? 5000 : 2600);
+}
+async function api(fn, ...a) {
+  try { return await call(fn, S.token, ...a); }
+  catch (e) {
+    const m = String(e && e.message || e);
+    if (m.indexOf('AUTH') >= 0) { S.token = ''; try { localStorage.removeItem('coat_token'); } catch (x) {} toLogin(); toast('หมดเวลาเข้าใช้งาน แตะชื่อแล้วใส่รหัสใหม่', true); }
+    else if (m.indexOf('PIN_CHANGE') >= 0) go('newpin');
+    else toast(m.replace(/^Error:\s*/, ''), true);
+    throw e;
+  }
+}
+function go(v) { const t = document.querySelector('.toast.err'); if (t) t.remove(); S.view = v; render(); window.scrollTo(0, 0); }
+
+/* ---------- screens ---------- */
+
+const V = {};
+V.login = () => {
+  const u = S.users.find((x) => x.id === S.who);
+  return '<div class="pad" style="gap:18px;padding-top:26px"><div style="display:flex;align-items:center;gap:14px"><img src="' + LOGO + '" alt="Bluefalo" style="height:60px;width:auto"><div><div style="font-size:22px;font-weight:700">BFL Coating</div><div style="font-size:15px;color:var(--mute)">บันทึก NCP ทีละ BB</div></div></div>'
+    + '<h1>แตะชื่อของคุณ</h1><div class="pinwho">' + S.users.map((x) => '<button class="who' + (x.id === S.who ? ' on' : '') + '" data-act="who" data-arg="' + esc(x.id) + '"><span class="av">' + esc(x.name.slice(0, 1)) + '</span>' + esc(x.name) + '</button>').join('') + '</div>'
+    + (u ? pinPad('ใส่รหัส 4 ตัว', S.pin) : '<div style="color:var(--mute)">ไม่เห็นชื่อ? บอกหัวหน้ากะ</div>') + '</div>';
+};
+function pinPad(title, val) {
+  return '<div style="display:flex;flex-direction:column;align-items:center;gap:12px"><div style="font-size:20px;font-weight:600">' + title + '</div><div class="dots" aria-label="ใส่แล้ว ' + val.length + ' จาก 4">'
+    + [0, 1, 2, 3].map((i) => '<span class="' + (i < val.length ? 'on' : '') + '"></span>').join('') + '</div></div>'
+    + '<div class="keys" style="margin-top:auto">' + ['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', '⌫'].map((k) => k ? '<button data-act="pinKey" data-arg="' + k + '"' + (k === '⌫' ? ' aria-label="ลบ"' : '') + ' style="height:66px">' + k + '</button>' : '<span></span>').join('') + '</div>';
+}
+V.newpin = () => '<div class="pad" style="gap:18px;padding-top:26px"><h1>ตั้งรหัสของคุณเอง</h1><div style="color:var(--mute)">' + (S.pin1 ? 'ใส่รหัสเดิมอีกครั้ง' : 'รหัสใหม่ 4 ตัว ห้ามใช้ 0000 / 1234 / 9999') + '</div>' + pinPad(S.pin1 ? 'ยืนยันรหัส' : 'รหัสใหม่', S.pin) + '</div>';
+
+function topBar(title, sub, back, extra) {
+  return '<div class="top">' + (back ? '<button class="back" data-act="go" data-arg="' + back + '" aria-label="กลับ">' + BACK + '</button>' : '')
+    + '<div style="flex:1;min-width:0"><div class="sub">' + sub + '</div><div class="t">' + title + '</div></div>' + (extra || '') + '</div>';
+}
+function nav(on) {
+  const items = [['home', 'บันทึก', 'M12 5v14M5 12h14'], ['coater', 'Coater', 'M4 20V11M10 20V5M16 20v-6M2 20h20'], ['mill', 'Milling', 'M4 7h16M6 7l2 13h8l2-13M9 4h6']].concat(isSup() ? [['export', 'เอกสาร', 'M7 3h7l5 5v13H7zM14 3v5h5'], ['ratio', 'สัดส่วน', 'M12 3a9 9 0 1 0 9 9h-9zM15 3.5A9 9 0 0 1 20.5 9H15z']] : [],
+    S.me && S.me.role === 'admin' ? [['users', 'ผู้ใช้', 'M16 19c0-2.5-2-4-4-4s-4 1.5-4 4M12 12a3 3 0 1 0 0-6 3 3 0 0 0 0 6']] : [], [['guide', 'วิธีใช้', 'M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.5V14M12 17h.01']]);
+  return '<div class="nav">' + items.map(([v, l, d]) => '<button class="' + (on === v ? 'on' : '') + '" data-act="nav" data-arg="' + v + '">' + svg(d, null, 26) + l + '</button>').join('') + '</div>';
+}
+function lotBtn(l) {
+  return '<button class="lot' + (S.view !== 'home' && S.L && S.L.pid === l.pid ? ' on' : '') + '" data-act="openLot" data-arg="' + esc(l.pid) + '"><span class="line" style="background:' + (l.ext === 'EXT-2' ? 'var(--ink)' : 'var(--mute)') + '">' + esc(l.ext || '—') + '</span>'
+    + '<span style="flex:1;min-width:0;display:flex;flex-direction:column"><b style="font-size:23px;letter-spacing:1px;line-height:30px">' + esc(l.lot) + '</b><span style="font-size:15px;color:var(--mute);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(l.name) + '</span></span>'
+    + '<span style="display:flex;flex-direction:column;align-items:flex-end;font-size:14px;color:var(--mute)"><b style="font-size:18px;color:var(--ink)">' + l.bags + ' BB</b>' + num(l.kg) + ' kg</span></button>';
+}
+V.home = () => {
+  const g = (st, label, c) => { const ls = S.lots.filter((l) => l.state === st); return ls.length ? '<div class="grp"><span class="dot" style="background:' + c + '"></span>' + label + '</div>' + ls.map(lotBtn).join('') : ''; };
+  const body = S.lots.length ? g('Extruder', 'กำลังผลิต (Extruder)', 'var(--ok)') + g('Packing', 'กำลังบรรจุ (Packing)', '#E8862A') : '<div class="card">ตอนนี้ไม่มีล็อตที่อยู่ในสถานะ Extruder หรือ Packing</div>';
+  return topBar('กะ ' + shiftOf(Date.now()), esc(S.me.name), '', '<button class="back" style="width:auto;padding:0 14px;color:#fff;border-radius:12px" data-act="logout">ออก</button>')
+    + '<div class="pad"><h1>แตะ Lot ที่จะบันทึก NCP</h1>' + body + '<button class="link" data-act="reload">โหลดล็อตใหม่</button>' + retroBox() + '</div>' + nav('home');
+};
+// ย้อนหลัง (user 10 Nov 2026): หัวหน้ากะ / Admin ค้น Lot ที่จบแล้ว เพื่อแก้สาเหตุ NCP
+function retroBox() {
+  if (!isSup()) return '';
+  const F = S.found;
+  return '<div class="grp" style="margin-top:14px"><span class="dot" style="background:var(--mute)"></span>Lot ย้อนหลัง · แก้สาเหตุ NCP</div>'
+    + '<div style="display:flex;gap:8px"><input class="f" id="rq" inputmode="numeric" placeholder="เลข Lot (ว่าง = ล่าสุด)" value="' + esc(S.rq || '') + '" aria-label="ค้นเลข Lot ย้อนหลัง" style="flex:1">'
+    + '<button class="big" style="width:auto;padding:0 18px;min-height:48px" data-act="findLots">ค้นหา</button></div>'
+    + (F ? (F.length ? F.map((l) => lotBtn(l).replace('</span></span><span style="display:flex', ' · ' + esc(l.state) + '</span></span><span style="display:flex')).join('') : '<div class="card">ไม่พบ Lot</div>') : '');
+}
+// kg per process of a BB (a BB filled over time can hold the same process twice)
+function sums(b) { const s = {}; b.parts.forEach((p) => { s[p.process] = (s[p.process] || 0) + p.kg; }); return s; }
+function partTags(b) { const s = sums(b), ks = ORDER.filter((p) => s[p]); return ks.map((p) => '<span class="tag" style="background:' + PROC[p].t + '">' + p + (ks.length > 1 ? ' ' + num(s[p]) : '') + '</span>').join(' '); }
+const hm = (ms) => bkk(ms).slice(11, 16);
+const bbTime = (b) => fmt(b.at) + (b.last - b.at >= 60000 ? '–' + hm(b.last) : '');
+const bbNo = (key) => { const b = S.L.bags.find((x) => x.key === key); return b ? b.no : ''; };
+function bbBtn(b, act) {
+  return '<button class="bag" data-act="' + act + '" data-arg="' + esc(b.key) + '"><span class="hole"></span><span style="flex:1;display:flex;flex-direction:column;gap:4px"><b style="font-size:20px">BB ที่ ' + b.no + '</b>'
+    + '<span style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">' + partTags(b) + '<span style="font-size:14px;color:var(--mute)">' + bbTime(b) + (b.comment ? ' ' + esc(b.comment) : '') + '</span></span></span>'
+    + '<b style="font-size:26px">' + num(b.total) + '<span style="font-size:15px;font-weight:500"> kg</span></b></button>';
+}
+V.lot = () => {
+  const L = S.L;
+  if (!L) return '<div class="spin">กำลังโหลด…</div>';
+  const tot = L.bags.reduce((s, b) => s + b.total, 0), by = {};
+  L.bags.forEach((b) => b.parts.forEach((p) => { by[p.process] = (by[p.process] || 0) + p.kg; }));
+  const bar = tot ? ORDER.filter((p) => by[p]).map((p) => '<span style="width:' + (by[p] / tot * 100) + '%;background:' + PROC[p].c + '"></span>').join('') : '';
+  return '<div class="top" style="flex-direction:column;align-items:stretch;gap:6px"><div style="display:flex;align-items:center;gap:12px"><button class="back" data-act="go" data-arg="home" aria-label="กลับ">' + BACK + '</button>'
+    + '<span class="pill" style="background:#fff;color:var(--ink)">' + esc(L.ext || '—') + '</span><span class="sub">' + esc(L.state) + '</span></div>'
+    + '<div style="font-size:30px;font-weight:700;letter-spacing:1px">' + esc(L.lot) + '</div><div class="sub" style="font-size:16px">' + esc(L.name) + (L.ncpId ? ', Rework ' + esc(L.ncpId.replace(/000$/, '')) : '') + '</div></div>'
+    + '<div class="pad"><div style="display:flex;gap:10px"><div class="card" style="flex:1;border:0"><div style="font-size:14px;color:var(--mute)">ทั้งล็อต</div><b style="font-size:26px">' + L.bags.length + ' BB</b></div>'
+    + '<div class="card" style="flex:1.4;border:0"><div style="font-size:14px;color:var(--mute)">รวม</div><b style="font-size:26px">' + num(tot) + ' kg</b></div></div>'
+    + (tot ? '<div class="bar">' + bar + '</div><div style="display:flex;flex-wrap:wrap;gap:4px 14px;font-size:14px;color:var(--mute)">' + ORDER.filter((p) => by[p]).map((p) => p + ' ' + num(by[p])).join('<span></span>') + '</div>' : '')
+    + sieveCard(L)
+    + (L.bags.length ? L.bags.map((b) => bbBtn(b, 'openBag')).join('')
+      + '<div style="font-size:14px;color:var(--mute);text-align:center">แตะ BB เพื่อดู แก้ไข หรือรวม BB</div>' : '<div class="card">ยังไม่มี NCP ในล็อตนี้</div>')
+    + (L.retro ? '<div class="card" style="border:0;background:var(--blue-weak,#E7EFFC);font-size:15px">Lot ย้อนหลัง (State ' + esc(L.state) + ') · แตะ BB เพื่อแก้สาเหตุ / หมายเหตุของ Dyer</div>' : '')
+    + '</div>' + (L.retro ? '' : '<div class="foot"><button class="big" data-act="newBag">' + svg('M12 5v14M5 12h14', '#fff', 28) + 'เพิ่ม NCP</button></div>');
+};
+function sieveCard(L) {
+  const s = L.sieve || {}, has = ['bigOS', 'bigUS', 'smallOS', 'smallUS'].some((k) => s[k]);
+  return '<button class="card" data-act="sieveForm" style="width:100%;text-align:left;display:flex;justify-content:space-between;align-items:center;gap:10px;font:inherit;color:inherit"><span><span style="font-size:14px;color:var(--mute)">ตะแกรงร่อน (ตา/นิ้ว)</span><br><b style="font-size:17px">'
+    + (has ? 'ใหญ่ OS ' + esc(s.bigOS || '-') + ' / US ' + esc(s.bigUS || '-') + ' · เล็ก OS ' + esc(s.smallOS || '-') + ' / US ' + esc(s.smallUS || '-') : 'ยังไม่ได้ใส่ — แตะเพื่อใส่') + '</b></span><span style="color:var(--blue);font-weight:600">' + (has ? 'แก้' : 'ใส่') + '</span></button>';
+}
+function steps(n) { return '<div class="steps">' + ['BB', 'ที่มา', 'น้ำหนัก'].map((l, i) => '<div class="' + (i + 1 === n ? 'on' : i + 1 < n ? 'done' : '') + '"><span></span>' + (i + 1) + ' ' + l + '</div>').join('') + '</div>'; }
+function bagTop(back) { return topBar(S.d.bb ? 'เติมลง BB ที่ ' + bbNo(S.d.bb) : 'BB ใหม่ (BB ที่ ' + (S.L.bags.length + 1) + ')', esc(S.L.ext) + ' Lot ' + esc(S.L.lot), back); }
+V.bb = () => topBar('เพิ่ม NCP', esc(S.L.ext) + ' Lot ' + esc(S.L.lot), 'lot') + '<div class="pad">' + steps(1) + '<h1>ใส่ BB ไหน?</h1>'
+  + '<button class="big" data-act="chooseBB" data-arg="">' + svg('M12 5v14M5 12h14', '#fff', 28) + 'BB ใหม่</button>'
+  + '<div style="color:var(--mute);margin-top:6px">หรือเติมลง BB ที่ยังไม่เต็ม</div>' + S.L.bags.slice(0, 4).map((b) => bbBtn(b, 'chooseBB')).join('') + '</div>';
+V.src = () => '<div>' + bagTop(S.L.bags.length ? 'bb' : 'lot') + '</div><div class="pad">' + steps(2) + '<h1>มาจาก Process ไหน?</h1><div style="color:var(--mute)">ชั่งรวม 2 ที่ในครั้งเดียว? แตะ 2 อัน</div><div class="tiles">'
+  + ORDER.map((p) => { const i = S.d.sel.indexOf(p), on = i >= 0, P = PROC[p];
+    return '<button class="tile" data-act="pick" data-arg="' + p + '" aria-pressed="' + on + '" style="' + (on ? 'background:' + P.t + ';border:3px solid ' + P.c : '') + '">' + (on ? '<span class="n">' + (i + 1) + '</span>' : '')
+      + '<span class="ic" style="color:' + P.c + ';background:' + (on ? '#fff' : P.t) + '">' + svg(P.ic, null, 38) + '</span><b>' + p + '</b><small>' + P.th + '</small></button>'; }).join('')
+  + '</div><div class="card" style="border:0">เลือกแล้ว: <b>' + (S.d.sel.join(' + ') || '-') + '</b></div></div><div class="foot"><button class="big" data-act="toKg"' + (S.d.sel.length ? '' : ' disabled') + '>ถัดไป: ใส่น้ำหนัก</button></div>';
+function causeBlock() {
+  if (S.d.sel.indexOf('Dyer') < 0) return '';
+  const ev = S.L.events, more = S.d.more ? ev : ev.slice(0, 5);
+  return '<div style="font-weight:700;font-size:18px;margin-top:4px">สาเหตุ Dyer <span style="font-weight:400;color:var(--mute);font-size:15px">(แตะเหตุการณ์ที่ทำให้เกิด NCP นี้)</span></div>'
+    + (ev.length ? more.map((e) => '<button class="ev' + (S.d.runtimeId === e.id ? ' on' : '') + '" data-act="cause" data-arg="' + esc(e.id) + '"><b>' + esc(e.process.replace(/^EX-/, '')) + '</b><small>' + fmt(e.at) + (e.reason ? ' ' + esc(e.reason) : '') + '</small></button>').join('')
+      + (ev.length > 5 && !S.d.more ? '<button class="link" data-act="moreEv">ดูเหตุการณ์ก่อนหน้า</button>' : '') : '<div class="card">ล็อตนี้ยังไม่มีเหตุการณ์ใน Extruder_Runtime</div>')
+    + '<label style="display:flex;flex-direction:column;gap:6px;font-size:15px;color:var(--mute)">Comment เพิ่มเติม (ไม่ใส่ก็ได้)<textarea class="f" id="cmt" maxlength="300">' + esc(S.d.comment) + '</textarea></label>';
+}
+V.kg = () => {
+  const p = S.d.sel[0], P = PROC[p];
+  return bagTop('src') + '<div class="pad">' + steps(3) + '<div style="display:flex;align-items:center;gap:10px"><span class="pill" style="background:' + P.t + ';color:' + P.c + '">' + p + '</span><span style="color:var(--mute)">ชั่งแล้วได้กี่ kg?</span></div>'
+    + '<div class="kgbox"><b>' + (S.d.kg || '0') + '</b><span style="font-size:22px;font-weight:600;color:var(--mute)">kg</span></div>'
+    + '<div class="keys">' + ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'ล้าง', '0', 'ลบ'].map((k) => '<button data-act="kgKey" data-arg="' + k + '">' + k + '</button>').join('') + '</div>'
+    + causeBlock() + '</div><div class="foot"><button class="big" data-act="save">บันทึก</button></div>';
+};
+V.mix = () => {
+  const [a, b] = S.d.sel, A = PROC[a], B = PROC[b], tot = Number(S.d.total) || 0, av = Math.min(Number(S.d.a) || 0, tot), pct = tot ? Math.round(av / tot * 100) : 50;
+  return bagTop('src') + '<div class="pad">' + steps(3)
+    + '<div class="card" style="border:0"><div style="font-weight:700">ชั่งรวม 2 ที่ได้กี่ kg?</div><div style="display:flex;align-items:center;gap:10px;margin-top:6px"><button class="st" data-act="tot" data-arg="-10" aria-label="ลด 10 kg">−</button>'
+    + '<input class="f" id="tot" inputmode="decimal" value="' + esc(S.d.total) + '" aria-label="น้ำหนักรวม kg" style="text-align:center;font-size:34px;font-weight:700;height:64px"><button class="st" data-act="tot" data-arg="10" aria-label="เพิ่ม 10 kg">+</button></div></div>'
+    + '<div style="font-weight:700">แบ่งให้แต่ละที่</div><div style="display:flex;height:40px;border-radius:12px;overflow:hidden;font-weight:700;font-size:15px">'
+    + '<span style="width:' + pct + '%;background:' + A.c + ';color:#fff;display:flex;align-items:center;padding-left:10px">' + a + '</span><span style="width:' + (100 - pct) + '%;background:' + B.c + ';color:#fff;display:flex;align-items:center;justify-content:flex-end;padding-right:10px">' + b + '</span></div>'
+    + '<div class="part" style="background:' + A.t + ';border:2px solid ' + A.c + '"><div><b style="font-size:18px">' + a + '</b><div style="font-size:14px;color:var(--mute)">แตะ − + ทีละ 10 kg</div></div><div style="display:flex;align-items:center;gap:8px">'
+    + '<button class="st" data-act="partA" data-arg="-10" aria-label="' + a + ' ลด 10 kg">−</button><input class="f" id="pa" inputmode="decimal" value="' + esc(S.d.a) + '" aria-label="' + a + ' kg" style="width:84px;text-align:center;font-size:24px;font-weight:700;padding:0 4px"><button class="st" data-act="partA" data-arg="10" aria-label="' + a + ' เพิ่ม 10 kg">+</button></div></div>'
+    + '<div class="part" style="background:' + B.t + ';border:2px solid ' + B.c + '"><div><b style="font-size:18px">' + b + '</b><div style="font-size:14px;color:var(--mute)">คิดให้เอง = ที่เหลือ</div></div><b style="font-size:28px;padding-right:64px" id="pb">' + num(Math.max(tot - av, 0)) + '</b></div>'
+    + causeBlock() + '</div><div class="foot"><button class="big" data-act="save">บันทึก</button></div>';
+};
+// On-screen copy of ป้าย Reject F-SP-QAS06-05 R.03 (white paper, black text) for writing by hand; the PDF uses the real form file.
+function tagHtml(b, L, by) {
+  const kg = sums(b);
+  const box = (label, p, extra) => '<div class="f"><span style="width:9.5em"><span class="cb">' + (kg[p] ? '✓' : '') + '</span>' + label + '</span><span class="v" style="flex:0 0 6.5em;text-align:center">' + (kg[p] ? num(kg[p]) : '') + '</span><span>Kg.</span>' + (extra || '') + '</div>';
+  return '<div class="form rj"><div style="text-align:center;font-weight:700">บริษัท บลูฟาโล่ จำกัด</div><div style="display:flex;align-items:baseline"><span style="flex:1"></span><span style="font-size:2em;flex:1;text-align:center">Reject</span><span style="flex:1;text-align:right;font-size:.85em">F-SP-QAS06-05 Rev.03</span></div>'
+    + '<div class="f"><b>ชื่อสินค้า</b><span class="v">' + esc((L.ncpId || '').replace(/000$/, '') + ' / ' + L.productId.replace(/^98-/, '')) + '</span></div>'
+    + '<div class="f"><b>LOT No.</b><span class="v">' + esc(L.lot) + '</span></div>'
+    + '<div class="f"><b>วันที่รับ/ผลิต</b><span class="v" style="flex:0 0 9em">' + dmy(b.at) + '</span><b style="margin-left:1.5em">วันหมดอายุ</b><span class="v"></span></div>'
+    + '<div style="display:flex;gap:12px"><b>สาเหตุ</b><div style="flex:1;display:flex;flex-direction:column;gap:.4em">'
+    + box('Extruder', 'Extruder') + box('Dryer', 'Dyer') + box('Sieve', 'Sieve')
+    + box('อื่นๆ (' + (kg.Packing ? 'Packing' : '..............') + ')', 'Packing', '<b style="margin-left:1em">รวมทั้งหมด</b><span class="v" style="text-align:center">' + num(b.total) + '</span><span>Kg.</span>') + '</div></div>'
+    + '<div class="f"><b>การดำเนินการ</b><span class="v"></span></div><div class="f"><b>ผู้ดำเนินการ reject</b><span class="v">' + esc(by) + '</span><b>วันที่</b><span class="v" style="flex:0 0 8em">' + dmy(b.at) + '</span></div></div>';
+}
+V.done = () => {
+  const b = S.done, sc = Math.min(1, (Math.min(innerWidth, 480) - 36) / 560);
+  return '<div class="pad" style="padding-top:28px;gap:16px;align-items:stretch"><div style="display:flex;flex-direction:column;align-items:center;gap:8px"><div style="width:88px;height:88px;border-radius:44px;background:var(--ok);display:flex;align-items:center;justify-content:center">'
+    + svg('M5 12.5l4.5 4.5L19 7.5', '#fff', 52) + '</div><div style="font-size:30px;font-weight:700">บันทึกแล้ว</div><div style="color:var(--mute)">' + (S.settings.writeAlong ? 'เขียนป้าย Reject ตามนี้ ติดที่ BB ที่ ' : 'ติดป้าย Reject ที่ BB ที่ ') + b.no + '</div></div>'
+    + (S.settings.writeAlong ? '<div style="overflow:hidden;border:1px solid var(--line2);border-radius:4px;background:#fff"><div style="zoom:' + sc + '">' + tagHtml(b, S.L, b.by || S.me.name) + '</div></div>' : '')
+    + '</div><div class="foot"><button class="big alt" data-act="tagPdf" data-arg="' + esc(b.key) + '">' + svg('M12 4v11M7 10l5 5 5-5M5 20h14', null, 24) + 'ป้าย Reject เป็น PDF</button>'
+    + '<button class="big" data-act="newBag">เพิ่ม NCP ต่อ</button><button class="link" data-act="go" data-arg="lot">กลับไปดู Lot</button></div>';
+};
+V.export = () => {
+  const E = S.E || {};
+  const rows = E.rows || [];
+  return topBar('เอกสาร', esc(S.me.name) + ' (' + S.me.role + ')') + '<div class="pad"><div style="font-weight:700;font-size:18px">แบบรับเข้า Rework (F-SP-PRD04-01)</div><label style="display:flex;align-items:center;gap:12px;font-weight:700">วันที่<input type="date" class="f" id="exDate" value="' + esc(E.cal) + '" style="flex:1"></label>'
+    + '<div style="display:flex;gap:8px">' + ['8', '16', '0'].map((s) => '<button class="chip' + (E.s === s ? ' on' : '') + '" style="flex:1;min-height:52px;font-weight:600;white-space:nowrap;padding:0 6px;font-size:15px" data-act="exShift" data-arg="' + s + '" aria-pressed="' + (E.s === s) + '">' + SHIFTS[s] + '</button>').join('') + '</div>'
+    + (E.key ? (E.loading ? '<div class="spin">กำลังโหลด…</div>' : '<div class="card" style="border:0"><div style="display:flex;justify-content:space-between;align-items:baseline"><b>กะนี้มี</b><b style="font-size:24px">' + rows.length + ' BB, ' + num(rows.reduce((s, r) => s + r.kg, 0)) + ' kg</b></div>'
+      + rows.slice(0, 40).map((r) => '<div style="display:flex;justify-content:space-between;gap:8px;font-size:15px;padding:5px 0;border-top:1px solid var(--soft)"><span>' + esc(r.lot) + ' ' + esc(r.why) + '</span><b>' + num(r.kg) + '</b></div>').join('') + '</div>'
+      + '<button class="big" data-act="reworkPdf"' + (rows.length ? '' : ' disabled') + '>สร้าง PDF</button><div style="font-size:14px;color:var(--mute);text-align:center">ไฟล์เก็บในโฟลเดอร์ Rework_PDF บน Drive และโหลดลงเครื่องนี้</div>') : '<div style="color:var(--mute)">แตะกะที่ต้องการ</div>')
+    + '<div class="card sw" style="margin-top:8px"><span><b>หน้าจอเขียนป้ายตาม</b><br><span style="font-size:14px;color:var(--mute)">หลังกดบันทึก โชว์ป้าย Reject ให้พนักงานเขียนตาม</span></span><input type="checkbox" role="switch" data-act="writeAlong"' + (S.settings.writeAlong ? ' checked' : '') + ' aria-label="หน้าจอเขียนป้ายตาม"></div>'
+    + '<div style="font-size:14px;color:var(--mute)">ไฟล์ป้าย Reject (PDF) ถูกลบเองทุก 1 วัน</div></div>' + nav('export');
+};
+// Coater: kg coated per hour, one chart per line (bars = kg in that hour, orange tick = Std Cap/hr of the product)
+const kfmt = (v) => v >= 1000 ? num(v / 1000) + 'k' : num(v);
+function coChart(hours, from, notes) {
+  notes = notes || [];
+  const W = 440, Ht = 180, L = 36, B = 22, T = notes.length ? 28 : 16, n = hours.length, slot = (W - L - 4) / n, bw = Math.max(4, slot * 0.68);
+  const top = Math.max(1000, ...hours.map((h) => Math.max(h.kg, h.std))), step = top > 4000 ? 2000 : 1000, ymax = Math.ceil(top / step) * step;
+  const y = (v) => T + (Ht - T - B) * (1 - v / ymax);
+  let s = '';
+  for (let v = 0; v <= ymax; v += step) s += '<line x1="' + L + '" x2="' + W + '" y1="' + y(v) + '" y2="' + y(v) + '" stroke="#DFE5EC"/><text x="' + (L - 5) + '" y="' + (y(v) + 4) + '" text-anchor="end" font-size="11" fill="#4E5D6E">' + kfmt(v) + '</text>';
+  hours.forEach((h, i) => {
+    const x = L + 2 + i * slot + (slot - bw) / 2, cx = x + bw / 2;
+    if (h.kg > 0) s += '<rect x="' + x + '" y="' + y(h.kg) + '" width="' + bw + '" height="' + (y(0) - y(h.kg)) + '" rx="2" fill="#1B5FA8"><title>' + hm(from + i * H) + ' ' + num(h.kg) + ' kg</title></rect>'
+    if (h.std > 0) s += '<line x1="' + (x - 2) + '" x2="' + (x + bw + 2) + '" y1="' + y(h.std) + '" y2="' + y(h.std) + '" stroke="#C9661A" stroke-width="3"/>';
+    // value inside the bar top (white) when it fits, else just above it
+    if (n <= 8 && h.kg > 0) { const inBar = y(0) - y(h.kg) > 22; s += '<text x="' + cx + '" y="' + (inBar ? y(h.kg) + 14 : y(h.kg) - 4) + '" text-anchor="middle" font-size="11" font-weight="600" fill="' + (inBar ? '#fff' : '#1E2B3A') + '">' + kfmt(h.kg) + '</text>'; }
+    if (n <= 8 || i % 3 === 0) s += '<text x="' + cx + '" y="' + (Ht - 6) + '" text-anchor="middle" font-size="11" fill="#4E5D6E">' + hm(from + i * H).slice(0, 2) + '</text>';
+  });
+  // Memo of a Coater record = numbered orange marker above its hour; the text is listed under the chart
+  notes.forEach((m, k) => { const cx = L + 2 + m.h * slot + slot / 2; s += '<line x1="' + cx + '" x2="' + cx + '" y1="20" y2="' + y(0) + '" stroke="#F2A33A" stroke-dasharray="3 3"/><circle cx="' + cx + '" cy="11" r="9" fill="#F2A33A"><title>' + esc(m.text) + '</title></circle><text x="' + cx + '" y="15" text-anchor="middle" font-size="11" font-weight="700" fill="#1E2B3A">' + (k + 1) + '</text>'; });
+  return '<svg viewBox="0 0 ' + W + ' ' + Ht + '" width="100%" role="img" aria-label="kg ต่อชั่วโมง">' + s + '</svg>';
+}
+const pct = (rate, std) => std ? ' <span style="color:' + (rate >= std ? 'var(--ok)' : 'var(--red)') + '">(' + Math.round(rate / std * 100) + '% Std)</span>' : '';
+// NCP month-to-date (by the date the NCP was recorded, 08:00 production day), Coat kg of the same days for scale
+function mtdCard(m) {
+  if (!m) return '';
+  const row = (l, r) => '<div style="display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-top:1px solid var(--soft);font-size:15px">' + l + r + '</div>';
+  return '<div class="card" style="border:0"><div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px"><b>NCP เดือนนี้ <span style="font-weight:500;color:var(--mute);font-size:14px">' + dmy(m.from).slice(0, 5) + '–' + dmy(m.to - 1 - 8 * H).slice(0, 5) + '</span></b><b style="font-size:24px">' + num(m.kg) + ' kg</b></div>'
+    + '<div style="font-size:14px;color:var(--mute);padding-bottom:4px">' + m.bbs + ' BB · ' + m.rows + ' รายการ</div>'
+    + m.proc.map((x) => row('<span class="tag" style="background:' + (PROC[x.process] ? PROC[x.process].t : 'var(--soft)') + '">' + esc(x.process) + '</span>', '<b>' + num(x.kg) + ' kg</b>')).join('')
+    + m.lines.map((l) => row('<span><b>' + (l.ext === '—' ? 'ไม่ระบุไลน์' : esc(l.ext)) + '</b> NCP</span>', '<span><b>' + num(l.ncp) + '</b> kg' + (l.coat ? ' <span style="color:var(--mute);font-size:14px">· Coat ' + num(l.coat) + ' kg</span>' : '') + '</span>')).join('') + '</div>';
+}
+V.coater = () => {
+  const C = S.C || {}, d = C.data, lines = d ? d.lines : [];
+  const chips = [['8', '08–16'], ['16', '16–00'], ['0', '00–08'], ['all', 'ทั้งวัน']].map(([s, l]) => '<button class="chip' + (C.s === s ? ' on' : '') + '" style="flex:1;min-height:48px;font-weight:600;padding:0 4px;font-size:15px" data-act="coShift" data-arg="' + s + '" aria-pressed="' + (C.s === s) + '">' + l + '</button>').join('');
+  let body;
+  if (!d || C.loading) body = '<div class="spin">กำลังโหลด…</div>';
+  else if (!lines.length) body = '<div class="card">ช่วงนี้ไม่มีข้อมูล Coater</div>' + mtdCard(d.mtd);
+  else body = '<div class="card" style="border:0"><div style="display:flex;justify-content:space-between;align-items:baseline"><b>รวมทุกไลน์</b><b style="font-size:24px">' + num(lines.reduce((s, l) => s + l.kg, 0)) + ' kg</b></div>'
+      + lines.map((l) => '<div style="padding:6px 0;border-top:1px solid var(--soft)"><div style="display:flex;justify-content:space-between;gap:8px"><b>' + esc(l.ext) + '</b><b>' + num(l.kg) + ' kg</b></div><div style="font-size:14px;color:var(--mute)">เดิน ' + num(l.runH) + ' ชม. · ' + l.lots.length + ' lot · เฉลี่ย ' + num(Math.round(l.rate)) + ' kg/ชม.</div></div>').join('') + '</div>'
+    + '<div class="cgrid">' + lines.map((l) => '<div class="card"><div style="display:flex;align-items:center;gap:10px"><span class="line" style="background:' + (l.ext === 'EXT-2' ? 'var(--ink)' : 'var(--mute)') + '">' + esc(l.ext) + '</span><span style="flex:1;font-size:15px;color:var(--mute)">เฉลี่ย <b style="color:var(--ink)">' + num(Math.round(l.rate)) + '</b> kg/ชม.</span><b style="font-size:22px">' + num(l.kg) + ' kg</b></div>'
+      + coChart(l.hours, d.from, l.notes)
+      + '<div style="display:flex;gap:14px;font-size:13px;color:var(--mute)"><span><span class="dot" style="background:#1B5FA8;border-radius:2px"></span> kg ในชั่วโมงนั้น</span><span><span style="display:inline-block;width:14px;height:3px;background:#C9661A;vertical-align:middle"></span> Std Cap/hr</span></div>'
+      + (l.notes || []).map((m, k) => '<div style="display:flex;gap:8px;align-items:flex-start;font-size:14px;padding-top:6px"><span style="flex:none;width:20px;height:20px;border-radius:10px;background:#F2A33A;font-weight:700;font-size:12px;display:flex;align-items:center;justify-content:center">' + (k + 1) + '</span><span><b>' + hm(m.t) + '</b> ' + esc(m.lot) + ' · ' + esc(m.text) + '</span></div>').join('')
+      + l.lots.map((o) => '<div style="padding:8px 0 2px;border-top:1px solid var(--soft);margin-top:6px;font-size:15px"><div style="display:flex;justify-content:space-between;gap:8px"><b>' + esc(o.lot) + (o.end ? ' <span class="tag" style="background:var(--soft)">จบ lot</span>' : '') + '</b><b>' + num(o.kg) + ' kg</b></div>'
+        + '<div style="color:var(--mute);font-size:14px">' + esc(o.name) + '</div><div style="font-size:14px">' + hm(o.first) + '–' + hm(o.last) + ' · ' + (o.rate ? num(Math.round(o.rate)) + ' kg/ชม.' + pct(o.rate, o.std) : '—') + '</div>'
+        + '<div style="font-size:14px">ยอดรวมเบอร์นี้ (ทั้ง lot ถึง ' + hm(o.last) + ') <b>' + num(o.cum) + ' kg</b></div></div>').join('') + '</div>').join('') + '</div>' + mtdCard(d.mtd);
+  return topBar('Coater', esc(S.me.name)) + '<div class="pad"><label style="display:flex;align-items:center;gap:12px;font-weight:700">วันผลิต<input type="date" class="f" id="coDate" value="' + esc(C.cal) + '" style="flex:1"></label>'
+    + '<div style="display:flex;gap:6px">' + chips + '</div>' + body + '<button class="link" data-act="coReload">โหลดใหม่</button></div>' + nav('coater');
+};
+V.users = () => topBar('ผู้ใช้', 'Admin') + '<div class="pad"><button class="big" data-act="userForm" data-arg="">เพิ่มผู้ใช้</button>'
+  + S.users.map((u) => '<button class="bag" data-act="userForm" data-arg="' + esc(u.id) + '" style="' + (u.active ? '' : 'opacity:.55') + '"><span class="av" style="width:44px;height:44px;font-size:18px">' + esc(u.name.slice(0, 1)) + '</span><span style="flex:1"><b>' + esc(u.name) + '</b><br><span style="font-size:14px;color:var(--mute)">'
+    + ({ coat: 'พนักงาน Coating', sup: 'หัวหน้ากะ', admin: 'Admin' }[u.role] || u.role) + (u.active ? '' : ' (ปิดแล้ว)') + '</span></span></button>').join('') + '</div>' + nav('users');
+V.guide = () => topBar('ใช้แอป 4 ขั้น', '') + '<div class="pad">'
+  + [['แตะชื่อตัวเอง ใส่รหัส 4 ตัว', 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8M4 21c1-4 4.5-6 8-6s7 2 8 6'], ['แตะ Lot ของเครื่องที่ทำ', 'M4 6h16M4 12h16M4 18h10'],
+    ['แตะ BB ใหม่ หรือ BB เดิมที่ยังไม่เต็ม แล้วแตะว่ามาจาก Process ไหน', PROC.Dyer.ic], ['ใส่ kg ถ้าเป็น Dyer แตะสาเหตุ แล้วกด บันทึก', 'M5 12.5l4.5 4.5L19 7.5']]
+    .map(([t, d], i) => '<div class="card" style="display:flex;align-items:center;gap:14px;border:0"><span style="width:46px;height:46px;border-radius:23px;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:700;flex:none">' + (i + 1) + '</span>'
+      + '<span style="width:60px;height:60px;border-radius:14px;background:var(--soft);display:flex;align-items:center;justify-content:center;flex:none">' + svg(d, 'var(--ink)', 34) + '</span><b style="font-size:19px;line-height:27px">' + t + '</b></div>').join('')
+  + '<div class="card" style="background:#fff;border:2px solid #000;color:#000;font-size:19px;font-weight:700">ติดป้าย Reject ที่ BB เสร็จแล้ว</div>'
+  + '<div class="card" style="border:2px dashed #8794A3;background:none">ใส่ผิด? แตะ BB ในหน้า Lot แล้วแก้ได้จนจบกะ<br>ถ้าเลยกะแล้ว บอกหัวหน้ากะ</div></div>' + nav('guide');
+
+const LOTV = ['home', 'lot', 'bb', 'src', 'kg', 'mix', 'done'];
+const isWide = () => matchMedia('(min-width:900px)').matches;
+function render() {
+  const v = V[S.view] ? S.view : 'login';
+  const wide = !!(S.token && S.me && v !== 'login' && v !== 'newpin' && isWide());
+  document.body.classList.toggle('wide', wide);
+  if (!wide) { $('app').innerHTML = V[v](); return; }
+  // keep where each column was scrolled (a re-render must not jump the list back to the top)
+  const wl = document.querySelector('.wl'), wr = document.querySelector('.wr'), y1 = wl ? wl.scrollTop : 0, y2 = wr && render.v === v ? wr.scrollTop : 0;
+  if (LOTV.indexOf(v) >= 0) {
+    const right = v === 'home' ? '<div class="wempty">' + svg('M15 5l-7 7 7 7', 'var(--mute)', 40) + '<b style="color:var(--ink)">แตะ Lot ทางซ้าย</b><span>เพื่อดู BB และเพิ่ม NCP</span></div>' : V[v]();
+    $('app').innerHTML = '<div class="wcols"><aside class="wl">' + V.home() + '</aside><section class="wr">' + right + '</section></div>';
+  } else $('app').innerHTML = '<div class="wfull">' + V[v]() + '</div>';
+  const a = document.querySelector('.wl'), b = document.querySelector('.wr');
+  if (a) a.scrollTop = y1; if (b) b.scrollTop = y2;
+  render.v = v;
+}
+let wideNow = isWide();
+window.addEventListener('resize', () => { if (isWide() !== wideNow) { wideNow = isWide(); render(); } });
+
+/* ---------- bag edit sheet ---------- */
+function openSheet(html) { closeSheet(); const d = document.createElement('div'); d.className = 'sheet'; d.id = 'sheet'; d.innerHTML = '<div role="dialog" aria-modal="true">' + html + '</div>'; document.body.appendChild(d); }
+function closeSheet() { const s = $('sheet'); if (s) s.remove(); }
+function bagSheet(b) {
+  S.ed = { key: b.key, sure: '' };
+  const runOpts = (sel) => '<option value="">สาเหตุ: ไม่ระบุ</option>' + S.L.events.map((e) => '<option value="' + esc(e.id) + '"' + (e.id === sel ? ' selected' : '') + '>' + fmt(e.at) + ' ' + esc(e.process.replace(/^EX-/, '')) + (e.reason ? ' ' + esc(e.reason) : '') + '</option>').join('');
+  const split = b.canMerge && b.parts.length > 1;
+  const part = (p) => '<div class="card" style="display:flex;flex-direction:column;gap:8px;border:0"><div style="display:flex;align-items:center;gap:10px"><span class="pill" style="background:' + (PROC[p.process] || PROC.Packing).t + '">' + esc(p.process) + '</span>'
+    + '<span style="color:var(--mute);font-size:14px">' + fmt(p.at) + ' ' + (p.by ? esc(p.by) : p.app ? '' : 'AppSheet') + '</span>' + (p.canEdit ? '' : '<b style="margin-left:auto;font-size:20px">' + num(p.kg) + ' kg</b>') + '</div>'
+    + (p.canEdit ? '<label style="display:flex;align-items:center;gap:10px"><input class="f ekg" data-row="' + esc(p.rowId) + '" inputmode="decimal" value="' + p.kg + '" aria-label="' + esc(p.process) + ' kg" style="font-size:22px;font-weight:700"><span>kg</span></label>'
+      + (p.process === 'Dyer' ? '<select class="f erun" data-row="' + esc(p.rowId) + '" aria-label="สาเหตุ Dyer">' + runOpts(p.runtimeId) + '</select><textarea class="f ecmt" data-row="' + esc(p.rowId) + '" maxlength="300" aria-label="Comment" placeholder="Comment">' + esc(p.comment) + '</textarea>' : '')
+      : p.canCause ? '<select class="f erun" data-row="' + esc(p.rowId) + '" aria-label="สาเหตุ Dyer">' + runOpts(p.runtimeId) + '</select><textarea class="f ecmt" data-row="' + esc(p.rowId) + '" maxlength="300" aria-label="Comment" placeholder="Comment">' + esc(p.comment) + '</textarea>'
+        + '<button class="big alt" style="min-height:48px" data-act="saveCause" data-arg="' + esc(p.rowId) + '">บันทึกสาเหตุ</button>'
+      : (p.comment ? '<div style="font-size:15px">' + esc(p.comment) + '</div>' : ''))
+    + '<div style="display:flex;gap:16px;flex-wrap:wrap">' + (p.canEdit ? '<button class="link" style="color:var(--red);padding:4px 0" data-act="cancelRow" data-arg="' + esc(p.rowId) + '">ยกเลิกรายการนี้</button>' : '')
+    + (split ? '<button class="link" style="padding:4px 0" data-act="splitRow" data-arg="' + esc(p.rowId) + '">แยกออกเป็น BB ใหม่</button>' : '') + '</div></div>';
+  const others = b.canMerge ? S.L.bags.filter((x) => x.key !== b.key) : [];
+  openSheet('<div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:22px">BB ที่ ' + b.no + ' รวม ' + num(b.total) + ' kg</b><button class="link" data-act="closeSheet">ปิด</button></div>'
+    + b.parts.map(part).join('')
+    + (b.canEdit ? '<button class="big" data-act="saveEdit">บันทึกการแก้ไข</button>' : '<div style="color:var(--mute);font-size:15px">' + (b.parts.some((p) => p.app) ? 'แก้ได้เฉพาะของตัวเองในกะนี้ นอกนั้นให้หัวหน้ากะแก้' : 'บันทึกใน AppSheet ให้แก้ kg ใน AppSheet') + '</div>')
+    + (others.length ? '<div style="font-weight:700;margin-top:8px">รวมกับ BB อื่น <span style="font-weight:400;color:var(--mute);font-size:15px">(อยู่ใน BB ใบเดียวกันจริง)</span></div>' + others.map((o) => bbBtn(o, 'mergeBB')).join('') : '')
+    + '<button class="big alt" data-act="tagPdf" data-arg="' + esc(b.key) + '">ป้าย Reject เป็น PDF</button>');
+}
+function userSheet(u) {
+  u = u || { id: '', name: '', role: 'coat', active: true };
+  openSheet('<div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:22px">' + (u.id ? 'แก้ผู้ใช้' : 'เพิ่มผู้ใช้') + '</b><button class="link" data-act="closeSheet">ปิด</button></div>'
+    + '<input type="hidden" id="uid" value="' + esc(u.id) + '"><label>ชื่อ<input class="f" id="uname" value="' + esc(u.name) + '" maxlength="60"></label>'
+    + '<label>สิทธิ์<select class="f" id="urole">' + [['coat', 'พนักงาน Coating'], ['sup', 'หัวหน้ากะ'], ['admin', 'Admin']].map(([v, l]) => '<option value="' + v + '"' + (u.role === v ? ' selected' : '') + '>' + l + '</option>').join('') + '</select></label>'
+    + '<label>' + (u.id ? 'ตั้งรหัสใหม่ (เว้นว่าง = รหัสเดิม)' : 'รหัสเริ่มต้น 4 ตัว (ผู้ใช้จะต้องเปลี่ยนตอนเข้าครั้งแรก)') + '<input class="f" id="upin" inputmode="numeric" maxlength="4"></label>'
+    + (u.id ? '<label class="sw card">เปิดใช้งาน<input type="checkbox" id="uact"' + (u.active ? ' checked' : '') + '></label>' : '')
+    + '<button class="big" data-act="saveUser">บันทึก</button>');
+}
+
+/* ---------- files ---------- */
+function lib(src, name) {
+  if (window[name]) return Promise.resolve();
+  return new Promise((ok, no) => { const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = () => no(new Error('โหลดตัวสร้างไฟล์ไม่ได้ ตรวจสัญญาณแล้วลองใหม่')); document.head.appendChild(s); });
+}
+function saveLocal(blob, name) {
+  const url = URL.createObjectURL(blob), a = document.createElement('a');
+  a.href = url; a.download = name; a.target = '_blank'; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
+}
+// TH Sarabun PSK from Drive (Script Property FONT_FILE_ID) — else the forms use Sarabun.
+let fontReady = Promise.resolve();
+function loadFont() {
+  fontReady = call('fontData', S.token).then((b64) => {
+    if (!b64) return;
+    const f = new FontFace('TH Sarabun PSK', 'url(data:font/ttf;base64,' + b64 + ')');
+    return f.load().then((ff) => { document.fonts.add(ff); document.body.classList.add('psk'); });
+  }).catch(() => {});
+}
+/* ---------- actions ---------- */
+const ACT = {
+  go(v) { if (v === 'lot' && S.L) return ACT.openLot(S.L.pid); go(v); },
+  who(id) { S.who = id; S.pin = ''; render(); },
+  async pinKey(k) {
+    if (S.busy) return;
+    S.pin = k === '⌫' ? S.pin.slice(0, -1) : (S.pin + k).slice(0, 4);
+    render();
+    if (S.pin.length < 4) return;
+    const pin = S.pin; S.busy = true;
+    try {
+      if (S.view === 'newpin') {
+        if (!S.pin1) { S.pin1 = pin; S.pin = ''; return render(); }
+        if (S.pin1 !== pin) { S.pin1 = ''; S.pin = ''; render(); return toast('รหัส 2 ครั้งไม่ตรงกัน ตั้งใหม่อีกครั้ง', true); }
+        await api('changePin', pin); S.pin1 = ''; S.pin = ''; toast('ตั้งรหัสแล้ว'); return start();
+      }
+      const r = await call('login', S.who, pin);
+      S.token = r.token; S.me = r.me; S.pin = '';
+      try { localStorage.setItem('coat_token', r.token); } catch (e) {}
+      if (r.mustChange) return go('newpin');
+      await start();
+    } catch (e) { S.pin = ''; render(); if (S.view === 'login') toast(String(e.message || e).replace(/^Error:\s*/, ''), true); }
+    finally { S.busy = false; }
+  },
+  logout() { S.token = ''; S.me = null; S.who = null; try { localStorage.removeItem('coat_token'); } catch (e) {} toLogin(); },
+  nav(v) {
+    if (v === 'export' && !S.E) { const n = Date.now(); S.E = { cal: bkk(n - 8 * H).slice(0, 10), s: shiftStart(n) }; exLoad(); }
+    if (v === 'mill' && !S.M) { S.M = { unit: 'bb', rows: [''] }; millLoad(); }
+    if (v === 'coater' && !S.C) { const n = Date.now(); S.C = { cal: bkk(n - 8 * H).slice(0, 10), s: 'all' }; coLoad(); }
+    if (v === 'users') api('listUsers').then((u) => { S.users = u; if (S.view === 'users') render(); });
+    go(v);
+  },
+  async reload() { S.lots = await api('getLots'); render(); toast('โหลดแล้ว'); },
+  async openLot(pid) { S.L = S.L && S.L.pid === pid ? S.L : null; go('lot'); S.L = await api('lotDetail', pid); S.settings = S.L.settings; S.lots = S.lots.map((l) => l.pid === pid ? Object.assign(l, { bags: S.L.bags.length, kg: S.L.bags.reduce((x, b) => x + b.total, 0) }) : l); if (S.view === 'lot') render(); },
+  newBag() { S.d = { id: uuid(), bb: '', sel: [], kg: '', total: '', a: '', runtimeId: '', comment: '', more: false }; go(S.L.bags.length ? 'bb' : 'src'); },
+  chooseBB(k) { S.d.bb = k || ''; go('src'); },
+  pick(p) { const s = S.d.sel, i = s.indexOf(p); if (i >= 0) s.splice(i, 1); else { s.push(p); if (s.length > 2) s.shift(); } render(); },
+  toKg() { if (!S.d.sel.length) return; go(S.d.sel.length > 1 ? 'mix' : 'kg'); },
+  kgKey(k) { const v = S.d.kg; S.d.kg = k === 'ล้าง' ? '' : k === 'ลบ' ? v.slice(0, -1) : (v === '0' ? k : v + k).slice(0, 4); render(); },
+  tot(n) { S.d.total = String(Math.max(0, (Number(S.d.total) || 0) + Number(n))); render(); },
+  partA(n) { const t = Number(S.d.total) || 0; S.d.a = String(Math.min(t, Math.max(0, (Number(S.d.a) || 0) + Number(n)))); render(); },
+  cause(id) { keepCmt(); S.d.runtimeId = S.d.runtimeId === id ? '' : id; render(); },
+  moreEv() { keepCmt(); S.d.more = true; render(); },
+  async save() {
+    keepCmt();
+    const d = S.d, s = d.sel;
+    let parts;
+    if (s.length === 1) parts = [{ process: s[0], kg: Number(d.kg) }];
+    else { const t = Number(d.total) || 0, a = Number(d.a) || 0; if (a <= 0 || a >= t) return toast('แบ่ง kg ให้ทั้ง 2 ที่ (แต่ละที่ต้องมากกว่า 0)', true); parts = [{ process: s[0], kg: a }, { process: s[1], kg: t - a }]; }
+    if (parts.some((p) => !(p.kg > 0))) return toast('ใส่น้ำหนักก่อน', true);
+    if (s.indexOf('Dyer') >= 0 && S.L.events.length && !d.runtimeId) return toast('แตะสาเหตุของ Dyer ก่อน', true);
+    if (S.busy) return; S.busy = true;
+    const btn = document.querySelector('[data-act="save"]'); if (btn) { btn.disabled = true; btn.textContent = 'กำลังบันทึก…'; }
+    try {
+      const r = await api('saveBag', { id: d.id, pid: S.L.pid, bb: d.bb, parts, runtimeId: d.runtimeId, comment: d.comment });
+      api('recalc', S.L.pid).catch(() => {});
+      S.L = await api('lotDetail', S.L.pid); S.settings = S.L.settings;
+      S.done = S.L.bags.find((b) => b.key === r.no) || S.L.bags[0];
+      go('done');
+    } catch (e) { if (btn) { btn.disabled = false; btn.textContent = 'บันทึก'; } }
+    finally { S.busy = false; }
+  },
+  openBag(key) { const b = S.L.bags.find((x) => x.key === key); if (b) bagSheet(b); },
+  closeSheet() { closeSheet(); },
+  sieveForm() { const s = S.L.sieve || {}, inp = (k, l) => '<label style="flex:1;display:flex;flex-direction:column;gap:4px;font-size:15px;color:var(--mute)">' + l + '<input class="f" id="sv_' + k + '" inputmode="decimal" value="' + esc(s[k] || '') + '" style="text-align:center;font-size:26px;font-weight:700;height:58px"></label>';
+    openSheet('<div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:22px">ตะแกรงร่อน · ' + esc(S.L.lot) + '</b><button class="link" data-act="closeSheet">ปิด</button></div>'
+      + '<div style="font-weight:700">ร่อนใหญ่ (ตา/นิ้ว)</div><div style="display:flex;gap:10px">' + inp('bigOS', 'OS') + inp('bigUS', 'US') + '</div>'
+      + '<div style="font-weight:700">ร่อนเล็ก (ตา/นิ้ว)</div><div style="display:flex;gap:10px">' + inp('smallOS', 'OS') + inp('smallUS', 'US') + '</div>'
+      + '<button class="big" data-act="saveSieve">บันทึกตะแกรง</button><div style="font-size:14px;color:var(--mute)">ลงช่อง Sieve_Detail ของ Production_Lot (ช่องเดียวกับ AppSheet) · ช่องว่าง = ไม่ได้ใช้</div>'); },
+  async saveSieve() { const v = {}; ['bigOS', 'bigUS', 'smallOS', 'smallUS'].forEach((k) => { const el = $('sv_' + k); v[k] = el ? el.value.trim() : ''; });
+    const res = await api('saveSieve', S.L.pid, v); S.L.sieve = res; closeSheet(); render(); toast('บันทึกตะแกรงร่อนแล้ว'); },
+
+  async findLots() { const i = $('rq'); S.rq = i ? i.value.trim() : ''; S.found = await api('findLots', S.rq); render(); },
+  async saveCause(id) {
+    const pick = (cls) => { const el = document.querySelector('.' + cls + '[data-row="' + CSS.escape(id) + '"]'); return el ? el.value : ''; };
+    const r = await api('editCause', S.L.pid, id, pick('erun'), pick('ecmt'));
+    afterSheet(r && r.unchanged ? 'ไม่มีอะไรเปลี่ยน' : 'บันทึกสาเหตุแล้ว');
+  },
+  async saveEdit() {
+    const pick = (cls, id) => { const el = document.querySelector('.' + cls + '[data-row="' + CSS.escape(id) + '"]'); return el ? el.value : ''; };
+    const rows = Array.from(document.querySelectorAll('.ekg')).map((i) => ({ rowId: i.dataset.row, kg: Number(i.value), runtimeId: pick('erun', i.dataset.row), comment: pick('ecmt', i.dataset.row) }));
+    await api('editBag', { pid: S.L.pid, rows });
+    afterSheet('แก้แล้ว');
+  },
+  // two taps: the first one asks, the second one does it
+  async cancelRow(id) {
+    if (!sure('cancelRow', id, 'แตะอีกครั้งเพื่อยืนยันยกเลิก')) return;
+    await api('cancelRow', S.L.pid, id); afterSheet('ยกเลิกแล้ว');
+  },
+  async splitRow(id) {
+    if (!sure('splitRow', id, 'แตะอีกครั้งเพื่อแยก')) return;
+    await api('splitRow', S.L.pid, id); afterSheet('แยกเป็น BB ใหม่แล้ว');
+  },
+  async mergeBB(to) {
+    if (!sure('mergeBB', to, 'แตะอีกครั้งเพื่อรวมเป็น BB เดียวกัน')) return;
+    await api('mergeBags', S.L.pid, S.ed.key, to); afterSheet('รวม BB แล้ว');
+  },
+  tagPdf(key) {
+    const b = S.L.bags.find((x) => x.key === key) || S.done;
+    rejectPdf(b, S.L, b.by || S.me.name).catch((e) => toast(String(e.message || e).replace(/^Error:\s*/, ''), true));
+  },
+  exShift(s) { S.E.s = s; return exLoad(); },
+  coShift(s) { S.C.s = s; return coLoad(); },
+  coReload() { return coLoad(); },
+  reworkPdf() { reworkPdf(S.E).catch((e) => toast(String(e.message || e).replace(/^Error:\s*/, ''), true)); },
+  async writeAlong(on) { S.settings = await api('setWriteAlong', on); toast(on ? 'เปิดหน้าจอเขียนป้ายตามแล้ว' : 'ปิดหน้าจอเขียนป้ายตามแล้ว'); },
+  userForm(id) { userSheet(S.users.find((u) => u.id === id)); },
+  async saveUser() {
+    const act = $('uact');
+    S.users = await api('saveUser', { id: $('uid').value, name: $('uname').value, role: $('urole').value, pin: $('upin').value, active: act ? act.checked : true });
+    closeSheet(); toast('บันทึกแล้ว'); render();
+  }
+};
+function sure(act, arg, msg) {
+  if (S.ed.sure === act + arg) return true;
+  S.ed.sure = act + arg;
+  const el = document.querySelector('[data-act="' + act + '"][data-arg="' + CSS.escape(arg) + '"]');
+  if (el) { if (el.classList.contains('bag')) el.querySelector('b').textContent = msg; else el.textContent = msg; }
+  return false;
+}
+function afterSheet(msg) { const pid = S.L.pid; closeSheet(); toast(msg); api('recalc', pid).catch(() => {}); ACT.openLot(pid); }
+/* ---------- PDFs: both forms are the company's own files in Form; the phone writes the values onto them ----------
+   pdf-lib + fontkit (loaded the first time), TH Sarabun PSK, black text. Positions are pt from the top-left of the original page. */
+const b64bytes = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
+function bytes64(u8) { let s = ''; for (let i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000)); return btoa(s); }
+const ASSET = {};
+async function pdfKit(kind) {
+  await lib('https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js', 'PDFLib');
+  await lib('https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js', 'fontkit');
+  ASSET[kind] = ASSET[kind] || api('formPdf', kind); ASSET.font = ASSET.font || api('fontData');
+  try { const [form, font] = await Promise.all([ASSET[kind], ASSET.font]); return { form: b64bytes(form), font: b64bytes(font) }; }
+  catch (e) { ASSET[kind] = ASSET.font = null; throw e; }
+}
+async function finishPdf(doc, name, kind) {
+  const out = await doc.save();
+  saveLocal(new Blob([out], { type: 'application/pdf' }), name + '.pdf');
+  toast('ดาวน์โหลด ' + name + '.pdf แล้ว');
+}
+// writes s onto page pg (top-left pt), mid = centred on x
+function writer(pg, f) {
+  const H = pg.getHeight(), black = PDFLib.rgb(0, 0, 0);
+  return (s, x, y, mid, size) => { s = String(s == null ? '' : s); if (!s) return; size = size || 16; const w = f.widthOfTextAtSize(s, size); pg.drawText(s, { x: mid ? x - w / 2 : x, y: H - y, size, font: f, color: black }); };
+}
+
+// QR บนป้าย Reject ให้ Raw Material System สแกนเบิก BB (ตัดสต็อก NCP) — v26 13 พ.ย. 2026 · v27 ย้ายขึ้นเหนือ F-SP-QAS06-05 + ขยาย
+// ข้อความ: BFLNCP|<เลข BB (NCP_No)>|<Lot>|<รหัส NCP>|<kg รวม>  · ไม่มี "WH"+ตัวเลข จึงไม่ชนป้ายพาเลทของคลัง
+// วาด QR บนหน้า A4 ที่พิมพ์ (pt จากขอบบน) ในช่องว่างเหนือเลขฟอร์ม: กว้าง 88 pt ≈ 3.1 ซม. (ช่อง ~0.9 มม. มือถือทุกรุ่นอ่านได้)
+// ขอบบน 16 pt พ้นขอบที่เครื่องพิมพ์พิมพ์ไม่ได้ · ห่างเลขฟอร์ม ≥ 4 ช่อง (quiet zone) · เลข BB พิมพ์ด้านซ้ายของ QR
+const NCP_QR = { tag: 'BFLNCP', x: 480, top: 16, size: 88 };
+const rejectQrText = (b, L) => [NCP_QR.tag, b.key, L.lot, L.ncpId || '', Math.round((Number(b.total) || 0) * 10) / 10].join('|');
+async function rejectQr(page, b, L) {
+  await lib('https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js', 'qrcode');
+  const q = window.qrcode(0, 'M'); q.addData(rejectQrText(b, L)); q.make();
+  const n = q.getModuleCount(), m = NCP_QR.size / n, PH = page.getHeight(), black = PDFLib.rgb(0, 0, 0);
+  for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
+    if (q.isDark(r, c)) page.drawRectangle({ x: NCP_QR.x + c * m, y: PH - NCP_QR.top - (r + 1) * m, width: m + 0.04, height: m + 0.04, color: black });
+  }
+}
+// เลข BB ข้างซ้าย QR: เขียนลงหน้าฟอร์ม (ฟอนต์ TH SarabunPSK) ที่ตำแหน่งที่หลังย่อ (sc) และเลื่อนลง (gap) แล้วตรงกับข้างซ้ายของ QR บน A4
+function rejectQrLabel(pg, f, b, sc, gap) {
+  const t = String(b.key || ''), s = 12, w = f.widthOfTextAtSize(t, s), H = pg.getHeight();
+  const xr = (NCP_QR.x - 8) / sc, yb = (NCP_QR.top + NCP_QR.size / 2 + 4 - gap) / sc;
+  pg.drawText(t, { x: xr - w, y: H - yb, size: s, font: f, color: PDFLib.rgb(0, 0, 0) });
+}
+// ป้าย Reject F-SP-QAS06-05 R.03: values onto the top tag of the original Letter page, then that tag alone on the top (A5) half of an A4 page.
+async function rejectPdf(b, L, by) {
+  toast('กำลังสร้างไฟล์…');
+  const k = await pdfKit('reject'), src = await PDFLib.PDFDocument.load(k.form);
+  src.registerFontkit(window.fontkit);
+  const f = await src.embedFont(k.font), pg = src.getPage(0), H = pg.getHeight(), T = writer(pg, f), black = PDFLib.rgb(0, 0, 0);
+  const tick = (top) => { const p = [[77.2, top + 4.6], [79.8, top + 7.4], [84.3, top + 0.6]]; for (let i = 0; i < 2; i++) pg.drawLine({ start: { x: p[i][0], y: H - p[i][1] }, end: { x: p[i + 1][0], y: H - p[i + 1][1] }, thickness: 1.4, color: black }); };
+  const d = bkk(b.at), day = [d.slice(8, 10), d.slice(5, 7), d.slice(2, 4)], s = sums(b);
+  T((L.ncpId || '').replace(/000$/, '') + ' / ' + L.productId.replace(/^98-/, ''), 80, 113.6);
+  T(L.lot, 82, 133.9);
+  [124, 179, 237].forEach((x, i) => T(day[i], x, 154.2, true));
+  [['Extruder', 184.4, 187.5], ['Dyer', 211.5, 214.6], ['Sieve', 238.8, 241.8], ['Packing', 265, 268.9]].forEach(([p, top, base]) => { if (s[p]) { tick(top); T(num(s[p]), 285, base, true); } });
+  if (s.Packing) T('Packing', 167, 270.7, true, 14);
+  T(num(b.total), 505, 268.9, true);
+  T(by, 130, 332.3);
+  [455, 512, 570].forEach((x, i) => T(day[i], x, 332.3, true));
+  const A4 = [595.28, 841.89], A5 = [595.28, 420.94], cut = 345; // the tag = top 345 pt of the original
+  const sc = Math.min(A5[0] / pg.getWidth(), A5[1] / cut), gap = (A5[1] - cut * sc) / 2;
+  // v28 (user 13 Nov 2026 "ตัด COA-… ออก"): no BB number text beside the QR — the QR alone (rejectQrLabel kept, not called)
+  const filled = await PDFLib.PDFDocument.load(await src.save()), fp = filled.getPage(0), W = fp.getWidth(), FH = fp.getHeight();
+  // A4 portrait page (the paper in the printer); the tag fills the top half = exactly A5 landscape, cut line at the middle.
+  // PrintScaling None asks the viewer to print at 100 %, so no printer setting is needed.
+  const doc = await PDFLib.PDFDocument.create();
+  doc.catalog.getOrCreateViewerPreferences().setPrintScaling(PDFLib.PrintScaling.None);
+  const tag = await doc.embedPage(fp, { left: 0, right: W, top: FH, bottom: FH - cut }), page = doc.addPage(A4);
+  page.drawPage(tag, { x: (A5[0] - W * sc) / 2, y: A4[1] - A5[1] + gap, width: W * sc, height: cut * sc });
+  await rejectQr(page, b, L);
+  page.drawLine({ start: { x: 0, y: A4[1] - A5[1] }, end: { x: A4[0], y: A4[1] - A5[1] }, thickness: 0.5, dashArray: [4, 3], color: PDFLib.rgb(0, 0, 0) });
+  await finishPdf(doc, 'Reject_' + L.lot + '_BB' + b.no, 'reject');
+}
+
+// แบบบันทึกการรับเข้า Rework F-SP-PRD04-01 R.03 (A4). The header (down to the column titles) and the footer (total row +
+// signatures) are cut from the original page; the body is redrawn on the same column lines and row height, and a row whose
+// text does not fit grows by whole rows, so long names / causes are shown in full. Pages continue the numbering.
+const RW = { cols: [37.5, 62.8, 168.2, 228.7, 248.0, 363.4, 382.7, 397.6, 432.3, 544.7, 579.9], top: 130.4, bottom: 684.8, row: 17.9, size: 13, lh: 13.6 };
+function wrapText(f, s, width, size) {
+  s = String(s == null ? '' : s);
+  if (!s) return [''];
+  const seg = window.Intl && Intl.Segmenter ? Array.from(new Intl.Segmenter('th', { granularity: 'word' }).segment(s), (x) => x.segment) : s.split(/(\s+)/);
+  const wd = (t) => f.widthOfTextAtSize(t, size), lines = [];
+  let cur = '';
+  seg.forEach((t) => {
+    if (wd(cur + t) <= width) { cur += t; return; }
+    if (cur.trim()) { lines.push(cur.trim()); cur = ''; }
+    if (wd(t) <= width) { cur = t.replace(/^\s+/, ''); return; }
+    Array.from(new Intl.Segmenter('th', { granularity: 'grapheme' }).segment(t), (x) => x.segment).forEach((ch) => { if (wd(cur + ch) > width && cur) { lines.push(cur); cur = ''; } cur += ch; });
+  });
+  if (cur.trim() || !lines.length) lines.push(cur.trim());
+  return lines;
+}
+async function reworkPdf(E) {
+  toast('กำลังสร้างไฟล์…');
+  const k = await pdfKit('rework'), src = await PDFLib.PDFDocument.load(k.form), doc = await PDFLib.PDFDocument.create();
+  doc.registerFontkit(window.fontkit);
+  const f = await doc.embedFont(k.font), sp = src.getPage(0), W = sp.getWidth(), H = sp.getHeight(), black = PDFLib.rgb(0, 0, 0), C = RW.cols;
+  const head = await doc.embedPage(sp, { left: 0, right: W, top: H, bottom: H - RW.top - 0.3 });
+  const foot = await doc.embedPage(sp, { left: 0, right: W, top: H - RW.bottom + 0.7, bottom: 0 });
+  const align = ['c', 'l', 'l', 'c', 'c', 'c', 'c', 'c', 'l', 'c'];
+  const rows = E.rows.map((r, i) => {
+    const cells = [i + 1, r.code, r.name, r.color, r.lot, r.line, 1, num(r.kg), r.why, r.loc].map((v, c) => wrapText(f, v, C[c + 1] - C[c] - 4, RW.size));
+    const n = Math.max.apply(null, cells.map((x) => x.length));
+    return { cells, h: RW.row * Math.ceil((n * RW.lh + 3) / RW.row) };
+  });
+  const pages = [[]];
+  let used = 0;
+  rows.forEach((r) => { if (used + r.h > RW.bottom - RW.top + 0.5 && pages[pages.length - 1].length) { pages.push([]); used = 0; } pages[pages.length - 1].push(r); used += r.h; });
+  const d = E.cal, kgAll = E.rows.reduce((s, r) => s + r.kg, 0);
+  let no = E.rows.length;
+  pages.forEach((list, pi) => {
+    const pg = doc.addPage([W, H]), T = writer(pg, f), hl = (y) => pg.drawLine({ start: { x: 38.2, y: H - y }, end: { x: 580.2, y: H - y }, thickness: 0.6, color: black });
+    pg.drawPage(head, { x: 0, y: H - RW.top - 0.3 });
+    pg.drawPage(foot, { x: 0, y: 0 });
+    T(d.slice(8, 10) + '/' + d.slice(5, 7) + '/' + d.slice(0, 4), 483.8, 88.6, true, 14);
+    T(SHIFTS[E.s], 555, 88.6, true, 11.5);
+    let y = RW.top;
+    list.forEach((r) => {
+      r.cells.forEach((lines, c) => {
+        const y0 = y + (r.h - lines.length * RW.lh) / 2;
+        lines.forEach((t, i) => T(t, align[c] === 'c' ? (C[c] + C[c + 1]) / 2 : C[c] + 2, y0 + (i + 0.78) * RW.lh, align[c] === 'c', RW.size));
+      });
+      y += r.h;
+      if (y < RW.bottom - 0.5) hl(y);
+    });
+    while (y + RW.row <= RW.bottom + 0.5) { no++; T(no, (C[0] + C[1]) / 2, y + 0.78 * RW.lh + (RW.row - RW.lh) / 2, true, RW.size); y += RW.row; if (y < RW.bottom - 0.5) hl(y); }
+    C.forEach((x, i) => pg.drawLine({ start: { x, y: H - RW.top }, end: { x, y: H - RW.bottom }, thickness: i ? 0.6 : 1.4, color: black }));
+    if (pi === pages.length - 1) { T(E.rows.length, (C[6] + C[7]) / 2, 697.2, true, 14); T(num(kgAll), (C[7] + C[8]) / 2, 697.2, true, 14); }
+    T(E.by, 111, 761.8, true, 14);
+  });
+  await finishPdf(doc, 'Rework_' + E.cal + '_' + SHIFTS[E.s].slice(0, 5).replace(':', ''), 'rework');
+}
+function keepCmt() { const c = $('cmt'); if (c && S.d) S.d.comment = c.value; }
+/* ---------- NCP Milling (ผงที่ถ่ายจากถังรออัดก่อน Extruder) → Supabase → NCP System PD-RW · user 12 Nov 2026 ---------- */
+function millRead() {
+  const M = S.M; if (!M) return;
+  const g = (id) => { const e = document.getElementById(id); return e ? e.value : undefined; };
+  [['mQ', 'q'], ['mCode', 'code'], ['mLine', 'line'], ['mPlate', 'plate'], ['mNote', 'note'], ['mAt', 'at'], ['mN', 'n'], ['mKg', 'kgEach'], ['mWhy', 'why']].forEach(([id, k]) => { const v = g(id); if (v !== undefined) M[k] = v; });
+  document.querySelectorAll('.mkg').forEach((e) => { M.rows[+e.dataset.i] = e.value; });
+}
+async function millLoad() {
+  S.M.loading = true; if (S.view === 'mill') render();
+  try { S.M.list = await api('millList'); } catch (e) {}
+  S.M.loading = false; if (S.view === 'mill') render();
+}
+V.mill = () => {
+  const M = S.M || { unit: 'bb', rows: [''] }, I = M.info, truck = M.unit === 'truck';
+  const inp = (id, v, ph, extra) => '<input class="f" id="' + id + '" value="' + esc(v || '') + '" placeholder="' + esc(ph) + '"' + (extra || '') + '>';
+  const chip = (act, arg, on, label) => '<button class="chip' + (on ? ' on' : '') + '" style="flex:1;min-height:48px;font-weight:600" data-act="' + act + '" data-arg="' + arg + '" aria-pressed="' + on + '">' + label + '</button>';
+  let h = '<div class="card" style="display:flex;flex-direction:column;gap:10px"><b>1 · Lot ผลิตที่เกิด NCP</b>';
+  if (I) h += '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span style="display:flex;flex-direction:column"><b style="font-size:22px;letter-spacing:1px">' + esc(I.lot) + '</b><span style="color:var(--mute)">' + esc(I.name || I.productId) + '</span></span><button class="link" data-act="millClear">เปลี่ยน Lot</button></div>';
+  else h += '<div style="display:flex;gap:8px">' + inp('mQ', M.q, 'พิมพ์เลข Lot ผลิต (อย่างน้อย 3 ตัว)', ' inputmode="numeric" style="flex:1"') + chip('millFind', '', false, 'ค้นหา') + '</div>'
+    + (M.found ? (M.found.length ? M.found.map((l) => '<button class="chip" style="display:flex;justify-content:space-between;gap:10px;min-height:52px;padding:0 14px;text-align:left" data-act="millPick" data-arg="' + esc(l.pid) + '"><b>' + esc(l.lot) + '</b><span style="color:var(--mute)">' + esc(l.name || l.productId) + '</span></button>').join('') : '<span style="color:var(--mute)">ไม่พบ Lot</span>') : '');
+  h += '</div>';
+  if (I) {
+    const code = M.code || '';
+    h += '<div class="card" style="display:flex;flex-direction:column;gap:10px"><b>2 · รหัส NCP</b><select class="f" id="mCode"><option value="">— เลือกรหัส NCP —</option>' + I.codes.map((c) => '<option value="' + esc(c.id) + '"' + (c.id === code ? ' selected' : '') + '>' + esc(c.id + ' ' + c.name) + '</option>').join('') + '</select>'
+      + (I.code ? '<span style="font-size:14px;color:var(--mute)">' + (I.code === code ? 'ตามสูตรสินค้านี้' : 'สูตรสินค้านี้ใช้ ' + esc(I.code)) + '</span>' : '<span style="font-size:14px;color:var(--mute)">สินค้านี้ยังไม่ได้ตั้งรหัส NCP — เลือกเอง</span>') + '</div>';
+    const rows = truck ? '<label style="display:flex;flex-direction:column;gap:4px;font-weight:600">น้ำหนักทั้งคัน (กก.)<input class="f mkg" data-i="0" inputmode="decimal" value="' + esc(M.rows[0] || '') + '"></label>' + inp('mPlate', M.plate, 'ทะเบียนรถ / เลขตั๋วชั่ง')
+      : M.rows.map((w, i) => '<div style="display:flex;gap:8px;align-items:center"><b style="width:52px">BB ' + (i + 1) + '</b><input class="f mkg" data-i="' + i + '" inputmode="decimal" placeholder="กก." value="' + esc(w) + '" style="flex:1">' + (M.rows.length > 1 ? '<button class="link" data-act="millDel" data-arg="' + i + '">ลบ</button>' : '') + '</div>').join('')
+        + '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button class="link" data-act="millAdd">+ เพิ่ม BB</button><span style="color:var(--mute);font-size:14px">หรือ</span>' + inp('mN', M.n, 'จำนวน BB', ' inputmode="numeric" style="width:96px"') + '×' + inp('mKg', M.kgEach, 'กก./BB', ' inputmode="decimal" style="width:96px"') + '<button class="link" data-act="millMany">เพิ่ม</button></div>';
+    h += '<div class="card" style="display:flex;flex-direction:column;gap:10px"><b>3 · น้ำหนัก</b><div style="display:flex;gap:6px">' + chip('millUnit', 'bb', !truck, 'ทีละ Bigbag') + chip('millUnit', 'truck', truck, 'ทั้งคันรถ') + '</div>' + rows
+      + '<div style="display:flex;gap:8px"><select class="f" id="mLine" style="flex:1"><option value="">เครื่อง —</option>' + ['EXT-1', 'EXT-2'].map((x) => '<option' + (x === M.line ? ' selected' : '') + '>' + x + '</option>').join('') + '</select>'
+      + '<input class="f" type="datetime-local" id="mAt" value="' + esc(M.at || '') + '" title="เวลาที่ถ่าย (ว่าง = ตอนนี้)" style="flex:1"></div>' + inp('mNote', M.note, 'หมายเหตุ / สาเหตุ') + '</div>';
+    const good = M.rows.filter((x) => +x > 0), kg = good.reduce((s, x) => s + Number(x), 0);
+    h += '<button class="big" data-act="millSave"' + (M.busy ? ' disabled' : '') + '>' + (M.busy ? 'กำลังบันทึก…' : 'บันทึก NCP Milling · ' + (truck ? '1 คันรถ' : good.length + ' BB') + ' · ' + num(Math.round(kg * 10) / 10) + ' kg') + '</button>';
+  }
+  const by = {}; (M.list || []).forEach((r) => { (by[r.batch] = by[r.batch] || []).push(r); });
+  const bs = Object.keys(by).map((k) => by[k]).sort((a, b) => (a[0].at < b[0].at ? 1 : -1));
+  let list = M.loading && !M.list ? '<div class="spin">กำลังโหลด…</div>' : !bs.length ? '<div class="card">ยังไม่มีรายการ 2 วันล่าสุด</div>' : bs.map((g) => {
+    const r = g[0], kg = g.reduce((s, x) => s + Number(x.kg), 0), off = r.cancelled, t = new Date(r.at);
+    const hm = t.toLocaleString('th-TH', { timeZone: 'Asia/Bangkok', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+    return '<div class="card" style="display:flex;flex-direction:column;gap:6px;' + (off ? 'opacity:.55' : '') + '"><div style="display:flex;justify-content:space-between;gap:8px"><b>' + esc(r.lot_number) + '</b><b>' + num(Math.round(kg * 10) / 10) + ' kg</b></div>'
+      + '<div style="font-size:14px;color:var(--mute)">' + esc(hm) + ' · ' + esc(r.item_code) + ' · ' + (r.unit === 'truck' ? 'คันรถ' + (r.plate ? ' ' + esc(r.plate) : '') : g.length + ' BB') + (r.line ? ' · ' + esc(r.line) : '') + ' · ' + esc(r.by_name || r.by_user) + (r.note ? ' · ' + esc(r.note) : '') + '</div>'
+      + (off ? '<div style="font-size:14px">ยกเลิกแล้ว: ' + esc(r.cancel_reason || '') + '</div>'
+        : M.cx === r.batch ? '<div style="display:flex;gap:8px">' + inp('mWhy', M.why, 'เหตุผลที่ยกเลิก', ' style="flex:1"') + '<button class="link" data-act="millCancel">ยืนยันยกเลิก</button><button class="link" data-act="millNoCancel">ไม่</button></div>'
+        : '<div><button class="link" data-act="millAskCancel" data-arg="' + esc(r.batch) + '">ยกเลิก</button></div>') + '</div>';
+  }).join('');
+  return topBar('NCP Milling', 'ผงก่อน Extruder · ' + esc(S.me.name)) + '<div class="pad"><div style="font-size:14px;color:var(--mute)">ผงที่ถ่ายออกจากถังรออัด (ก่อน Extruder) แล้ววนกลับไปใช้ใหม่ · บันทึกแล้วเข้า NCP System คลัง PD-RW ทันที (ไม่ผ่าน WH)</div>'
+    + h + '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px"><b>รายการ 2 วันล่าสุด</b><button class="link" data-act="millReload">โหลดใหม่</button></div>' + list + '</div>' + nav('mill');
+};
+ACT.millFind = async () => { millRead(); const q = (S.M.q || '').replace(/\s+/g, ''); if (q.length < 3) return toast('พิมพ์เลข Lot อย่างน้อย 3 ตัว', true); try { S.M.found = await api('millFind', q); } catch (e) { return; } render(); };
+ACT.millPick = async (pid) => { millRead(); try { const I = await api('millInfo', pid); S.M.info = I; S.M.code = I.code; S.M.found = null; } catch (e) { return; } render(); };
+ACT.millClear = () => { millRead(); S.M.info = null; S.M.code = ''; render(); };
+ACT.millUnit = (u) => { millRead(); S.M.unit = u; if (u === 'truck') S.M.rows = [S.M.rows[0] || '']; render(); };
+ACT.millAdd = () => { millRead(); if (S.M.rows.length < 50) S.M.rows.push(''); render(); };
+ACT.millDel = (i) => { millRead(); S.M.rows.splice(+i, 1); if (!S.M.rows.length) S.M.rows = ['']; render(); };
+ACT.millMany = () => {
+  millRead(); const M = S.M, n = Math.min(50, Math.floor(+M.n || 0));
+  if (!(n > 0) || !(+M.kgEach > 0)) return toast('ใส่จำนวน BB และ กก./BB', true);
+  M.rows = M.rows.filter((x) => +x > 0); for (let i = 0; i < n && M.rows.length < 50; i++) M.rows.push(M.kgEach);
+  M.n = ''; M.kgEach = ''; render();
+};
+ACT.millSave = async () => {
+  millRead(); const M = S.M;
+  if (!M.info) return toast('เลือก Lot ผลิตก่อน', true);
+  if (!M.code) return toast('เลือกรหัส NCP', true);
+  const rows = M.rows.map(Number);
+  if (!rows.length || rows.some((x) => !(x > 0))) return toast('ใส่น้ำหนักให้ครบ' + (M.unit === 'truck' ? 'ทั้งคัน' : 'ทุก BB'), true);
+  if (M.busy) return; M.busy = true; render();
+  try {
+    const r = await api('millSave', { pid: M.info.pid, code: M.code, unit: M.unit, rows: rows, line: M.line, plate: M.plate, note: M.note, at: M.at });
+    toast('บันทึกแล้ว ' + (M.unit === 'truck' ? '1 คันรถ' : r.n + ' BB') + ' · ' + num(r.kg) + ' kg → NCP System (PD-RW)');
+    S.M = { unit: M.unit, rows: [''], line: M.line, list: M.list };
+    millLoad();
+  } catch (e) { M.busy = false; render(); }
+};
+ACT.millAskCancel = (b) => { millRead(); S.M.cx = b; S.M.why = ''; render(); };
+ACT.millNoCancel = () => { millRead(); S.M.cx = ''; render(); };
+ACT.millCancel = async () => {
+  millRead(); const M = S.M;
+  if ((M.why || '').trim().length < 3) return toast('ใส่เหตุผลอย่างน้อย 3 ตัวอักษร', true);
+  try { await api('millCancel', M.cx, M.why.trim()); toast('ยกเลิกแล้ว — NCP System จะลบรายการใน PD-RW ให้'); M.cx = ''; millLoad(); } catch (e) {}
+};
+ACT.millReload = () => { millRead(); millLoad(); };
+document.addEventListener('click', (e) => {
+  const el = e.target.closest('[data-act]');
+  if (!el || el.tagName === 'INPUT') return;
+  const f = ACT[el.dataset.act];
+  if (f) Promise.resolve(f(el.dataset.arg)).catch(() => {});
+});
+document.addEventListener('change', (e) => {
+  if (e.target.dataset && e.target.dataset.act === 'writeAlong') ACT.writeAlong(e.target.checked).catch(() => {});
+  if (e.target.id === 'exDate' && e.target.value) { S.E.cal = e.target.value; exLoad().catch(() => {}); }
+  if (e.target.id === 'coDate' && e.target.value) { S.C.cal = e.target.value; coLoad().catch(() => {}); }
+});
+async function exLoad() {
+  const E = S.E, key = shiftKey(E.cal, E.s);
+  E.key = key; E.loading = true; E.rows = []; if (S.view === 'export') render();
+  const r = await api('shiftRows', key);
+  if (E.key !== key) return; // a newer pick won
+  Object.assign(E, { rows: r.rows, by: r.by, loading: false }); if (S.view === 'export') render();
+}
+async function coLoad() {
+  const C = S.C, key = C.cal + '|' + C.s;
+  C.key = key; C.loading = true; if (S.view === 'coater') render();
+  try { const r = await api('coaterView', key); if (C.key === key) C.data = r; }
+  finally { if (C.key === key) { C.loading = false; if (S.view === 'coater') render(); } }
+}
+document.addEventListener('input', (e) => {
+  if (e.target.id === 'rq') S.rq = e.target.value;
+  if (!S.d) return;
+  if (e.target.id === 'tot' || e.target.id === 'pa') {
+    S.d[e.target.id === 'tot' ? 'total' : 'a'] = e.target.value.replace(/[^\d.]/g, '');
+    const t = Number(S.d.total) || 0, a = Math.min(Number(S.d.a) || 0, t), pb = $('pb'); if (pb) pb.textContent = num(Math.max(t - a, 0));
+  }
+});
+
+async function toLogin() {
+  S.pin = ''; go('login');
+  try { S.users = await call('listLogin'); render(); } catch (e) { toast(e && e.message === CSA.OFF ? CSA.OFF : 'โหลดรายชื่อไม่ได้ ลองใหม่', true); }
+}
+async function start() {
+  const r = await api('boot');
+  S.me = r.me; S.lots = r.lots; S.settings = r.settings;
+  loadFont();
+  go('home');
+}
+// BFL Hub (user 9 Nov 2026): ?hub=<one-time ticket> from the Hub → sign in as the account the Hub names. Opened directly → as before.
+const hubTicket = () => { let t = ''; try { t = new URLSearchParams(location.search).get('hub') || ''; if (t) history.replaceState(null, '', location.pathname); } catch (e) { /* keep */ } return Promise.resolve(t); };
+// Realtime (user 9 Nov 2026): ask every 5 s whether NCP / lots / Coater changed; reload the open screen only when it did.
+// Only on list screens (home, lot, coater, export) — never in the middle of adding a bag, or while typing.
+let liveV = '', liveBusy = false;
+const liveTyping = () => { const a = document.activeElement; return !!a && (a.tagName === 'TEXTAREA' || a.tagName === 'SELECT' || (a.tagName === 'INPUT' && a.type !== 'checkbox' && a.type !== 'radio')); };
+async function liveReload() {
+  if (S.view === 'home') { S.lots = await api('getLots'); if (S.view === 'home') render(); }
+  else if (S.view === 'lot' && S.L && S.L.pid) { const L = await api('lotDetail', S.L.pid); if (document.body.classList.contains('wide')) S.lots = await api('getLots'); if (S.view === 'lot' && S.L && S.L.pid === L.pid) { S.L = L; S.settings = L.settings; render(); } }
+  else if (S.view === 'coater' && S.C && S.C.key) await coLoad();
+  else if (S.view === 'export' && S.E && S.E.key) await exLoad();
+}
+setInterval(() => {
+  if (!S.token || S.busy || document.hidden || liveBusy || liveTyping() || ['home', 'lot', 'coater', 'export'].indexOf(S.view) < 0) return;
+  liveBusy = true;
+  call('liveStamp', S.token).then((st) => {
+    const changed = liveV && st !== liveV; liveV = st;
+    if (changed && !S.busy && !liveTyping()) return liveReload();
+  }).catch(() => {}).finally(() => { liveBusy = false; });
+}, 5000);
+(async function init() {
+  const hub = await hubTicket();
+  if (hub) {
+    try {
+      const r = await call('hubLogin', hub);
+      S.token = r.token; S.me = r.me; try { localStorage.setItem('coat_token', r.token); } catch (e) {}
+      if (r.mustChange) return go('newpin');
+      await start(); return;
+    } catch (e) { S.token = ''; try { localStorage.removeItem('coat_token'); } catch (x) {} toLogin(); // shared device: never fall back to the previous user
+      toast('เข้าจาก Hub ไม่สำเร็จ: ' + String(e && e.message || e).replace(/^Error:\s*/, ''), true); return; }
+  }
+  try { S.token = localStorage.getItem('coat_token') || ''; } catch (e) {}
+  if (S.token) { try { await start(); return; } catch (e) { S.token = ''; } }
+  toLogin();
+})();
+</script>
+<script>
+/* ---------- V14: แท็บ "สัดส่วน" — NCP Dyer : Sieve แยกเบอร์อาหาร > lot + สาเหตุ Dyer / Comment ในเดือน (เฉพาะ sup/admin) ---------- */
+const TH_MON = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+const raMonthTh = (ym) => TH_MON[Number(ym.slice(5, 7)) - 1] + ' ' + (Number(ym.slice(0, 4)) + 543);
+const raPct = (a, t) => (t ? Math.round(a / t * 1000) / 10 : 0);
+const raTot = (o) => o.dyer + o.sieve;
+// NCP (Dyer+Sieve) เทียบจำนวนสั่งผลิต (Qty_Plan เป็นตัน)
+// นับเฉพาะ lot ที่มี Qty_Plan (o.pk = kg NCP ของ lot ที่มีแผน)
+const raOfPlan = (o) => (o.plan ? ' · ' + raPct(o.pk != null ? o.pk : raTot(o), o.plan * 1000) + '% ของสั่งผลิต' : '');
+function raBar(d, s, h) {
+  const t = d + s, p = t ? d / t * 100 : 0, seg = 'display:flex;align-items:center;white-space:nowrap;overflow:hidden;';
+  return '<div class="bar" style="height:' + (h || 24) + 'px;border-radius:8px;font-size:13px;font-weight:700;color:#fff">'
+    + (d ? '<span style="' + seg + 'width:' + p + '%;background:var(--dyer);padding-left:6px">' + Math.round(p) + '%</span>' : '')
+    + (s ? '<span style="' + seg + 'width:' + (100 - p) + '%;background:var(--sieve);justify-content:flex-end;padding-right:6px">' + Math.round(100 - p) + '%</span>' : '')
+    + '</div>';
+}
+const raKg = (o) => '<div style="display:flex;justify-content:space-between;gap:6px;font-size:14px;padding-top:6px"><span>Dyer <b>' + num(o.dyer) + '</b></span><span>รวม <b>' + num(raTot(o)) + '</b> kg</span><span>Sieve <b>' + num(o.sieve) + '</b></span></div>';
+function raLotRow(o) {
+  const d1 = dmy(o.first - 8 * H), d2 = dmy(o.last - 8 * H);
+  return '<div style="padding:10px 0 4px;border-top:1px solid var(--soft);margin-top:8px">'
+    + '<div style="display:flex;justify-content:space-between;gap:8px;align-items:baseline"><b style="font-size:17px;letter-spacing:1px">' + esc(o.lot) + '</b><span style="font-size:14px;color:var(--mute)">' + esc(o.ext) + ' · ' + d1 + (d2 !== d1 ? '–' + d2 : '') + '</span></div>'
+    + '<div style="font-size:14px;color:var(--mute);padding-bottom:6px">สั่งผลิต <b style="color:var(--ink)">' + (o.plan ? num(o.plan) + ' ตัน' : '—') + '</b>' + raOfPlan(o) + '</div>'
+    + raBar(o.dyer, o.sieve, 20) + raKg(o) + raWhy(o) + '</div>';
+}
+// สาเหตุ Dyer (เหตุการณ์ Extruder_Runtime ที่ผูกไว้) + Comment ของแถว NCP
+function raWhy(o) {
+  const line = (dot, html) => '<div style="display:flex;gap:8px;align-items:flex-start;font-size:14px;padding-top:6px"><span style="flex:none;width:10px;height:10px;border-radius:5px;margin-top:6px;background:' + dot + '"></span><span style="flex:1;min-width:0">' + html + '</span></div>';
+  return (o.causes || []).map((c) => line('var(--dyer)', '<b>' + (c.at ? hm(c.at) + ' ' : '') + esc(c.process) + '</b>' + (c.reason ? ' — ' + esc(c.reason) : '') + ' <span style="color:var(--mute)">· Dyer ' + num(c.kg) + ' kg</span>')).join('')
+    + (o.noCause ? line('var(--line2)', '<span style="color:var(--mute)">Dyer ไม่ระบุสาเหตุ ' + num(o.noCause) + ' kg</span>') : '')
+    + (o.notes || []).map((n) => line(n.process === 'Dyer' ? 'var(--dyer-t)' : 'var(--sieve)', '<span style="color:var(--mute)">Comment ' + esc(n.process) + ':</span> ' + esc(n.text))).join('')
+    + (o.sieve && !(o.notes || []).some((n) => n.process === 'Sieve') ? line('var(--line2)', '<span style="color:var(--mute)">Sieve ไม่มี Comment</span>') : '');
+}
+function raCauses(d) {
+  const list = d.causes || [];
+  if (!list.length) return '';
+  const top = list[0].kg || 1;
+  return '<div class="card" style="border:0"><div style="display:flex;justify-content:space-between;align-items:baseline"><b>สาเหตุ NCP Dyer</b><span style="font-size:14px;color:var(--mute)">เรียงตาม kg</span></div>'
+    + list.map((c) => '<div style="padding-top:8px"><div style="display:flex;justify-content:space-between;gap:8px;font-size:14px"><span style="min-width:0">' + esc(c.process) + '</span><span style="flex:none"><b>' + num(c.kg) + '</b> kg · ' + raPct(c.kg, d.dyer) + '% · ' + c.lots + ' lot</span></div>'
+      + '<div class="bar" style="height:8px;margin-top:3px"><span style="width:' + (c.kg / top * 100) + '%;background:' + (c.process === 'ไม่ระบุสาเหตุ' ? 'var(--line2)' : 'var(--dyer)') + '"></span></div></div>').join('')
+    + '</div>';
+}
+V.ratio = () => {
+  const R = S.R || {}, d = R.data && R.data.ym === R.ym ? R.data : null, open = R.open || {};
+  const head = '<div style="display:flex;align-items:center;gap:10px">'
+    + '<button class="st" data-act="raStep" data-arg="-1" aria-label="เดือนก่อน">‹</button>'
+    + '<div style="flex:1;text-align:center;font-size:22px;font-weight:700">' + raMonthTh(R.ym || '2026-01') + '</div>'
+    + '<button class="st" data-act="raStep" data-arg="1" aria-label="เดือนถัดไป">›</button></div>'
+    + '<div style="font-size:14px;color:var(--mute);text-align:center">นับตามวันที่บันทึก NCP (วันผลิต 08:00–07:59) · Dyer ÷ (Dyer + Sieve)</div>';
+  let body;
+  if (R.loading) body = '<div class="spin">กำลังโหลด…</div>';
+  else if (!d) body = '<div class="card">โหลดข้อมูลไม่ได้ กด "โหลดใหม่"</div>';
+  else if (!d.lots.length) body = '<div class="card">เดือนนี้ไม่มี NCP Dyer / Sieve</div>';
+  else {
+    const t = d.dyer + d.sieve, by = {};
+    d.lots.forEach((o) => {
+      const g = by[o.productId] = by[o.productId] || { productId: o.productId, name: o.name, lots: [], dyer: 0, sieve: 0, plan: 0, pk: 0, first: o.first };
+      g.lots.push(o); g.dyer += o.dyer; g.sieve += o.sieve; g.plan += o.plan || 0; if (o.plan) g.pk += raTot(o); g.first = Math.min(g.first, o.first);
+    });
+    const cmp = R.sort === 'pct' ? (a, b) => raPct(b.dyer, raTot(b)) - raPct(a.dyer, raTot(a)) || raTot(b) - raTot(a)
+      : R.sort === 'kg' ? (a, b) => raTot(b) - raTot(a) : (a, b) => a.first - b.first;
+    const groups = Object.keys(by).map((k) => by[k]).sort(cmp);
+    const planAll = groups.reduce((s, g) => s + g.plan, 0), pkAll = groups.reduce((s, g) => s + g.pk, 0);
+    body = '<div class="card" style="border:0"><div style="display:flex;justify-content:space-between;align-items:baseline"><b>รวมทั้งเดือน</b><b style="font-size:24px">' + num(t) + ' kg</b></div>'
+      + '<div style="font-size:14px;color:var(--mute);padding-bottom:8px">' + groups.length + ' เบอร์ · ' + d.lots.length + ' lot · สั่งผลิตรวม ' + num(planAll) + ' ตัน' + raOfPlan({ plan: planAll, pk: pkAll }) + '</div>'
+      + raBar(d.dyer, d.sieve, 30)
+      + '<div style="display:flex;justify-content:space-between;gap:8px;padding-top:8px;font-size:15px">'
+      + '<span><span class="tag" style="background:var(--dyer-t)">Dyer</span> <b>' + num(d.dyer) + '</b> kg · <b>' + raPct(d.dyer, t) + '%</b></span>'
+      + '<span><b>' + raPct(d.sieve, t) + '%</b> · <b>' + num(d.sieve) + '</b> kg <span class="tag" style="background:var(--sieve-t)">Sieve</span></span></div>'
+      + d.lines.map((l) => '<div style="padding-top:10px;border-top:1px solid var(--soft);margin-top:10px"><div style="display:flex;justify-content:space-between;font-size:15px;padding-bottom:4px"><b>' + esc(l.ext) + '</b><span>' + num(l.dyer + l.sieve) + ' kg</span></div>' + raBar(l.dyer, l.sieve, 20) + '</div>').join('')
+      + '</div>'
+      + raCauses(d)
+      + '<div style="display:flex;gap:6px">' + [['date', 'ตามวัน'], ['pct', 'Dyer % สูงสุด'], ['kg', 'kg มากสุด']].map(([s, l]) => '<button class="chip' + ((R.sort || 'date') === s ? ' on' : '') + '" style="flex:1;min-height:44px;font-weight:600;padding:0 4px;font-size:15px" data-act="raSort" data-arg="' + s + '" aria-pressed="' + ((R.sort || 'date') === s) + '">' + l + '</button>').join('') + '</div>'
+      + '<div style="font-size:14px;color:var(--mute)">แตะเบอร์อาหารเพื่อดูแต่ละ lot</div>'
+      + groups.map((g) => {
+        const on = !!open[g.productId];
+        return '<div class="card" style="' + (on ? 'border-color:var(--ink)' : '') + '">'
+          + '<div role="button" tabindex="0" aria-expanded="' + on + '" data-act="raOpen" data-arg="' + esc(g.productId) + '" style="cursor:pointer">'
+          + '<div style="display:flex;justify-content:space-between;gap:8px;align-items:baseline"><b style="font-size:17px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(g.name) + '</b><span style="flex:none;font-size:14px;color:var(--mute)">' + g.lots.length + ' lot ' + (on ? '▲' : '▼') + '</span></div>'
+          + '<div style="font-size:14px;color:var(--mute);padding-bottom:6px">' + esc(g.productId) + ' · สั่งผลิต <b style="color:var(--ink)">' + (g.plan ? num(g.plan) + ' ตัน' : '—') + '</b>' + raOfPlan(g) + '</div>'
+          + raBar(g.dyer, g.sieve) + raKg(g) + '</div>'
+          + (on ? g.lots.slice().sort((a, b) => a.first - b.first).map(raLotRow).join('') : '')
+          + '</div>';
+      }).join('');
+  }
+  return topBar('สัดส่วน Dyer : Sieve', esc(S.me.name)) + '<div class="pad">' + head + body
+    + '<button class="link" data-act="raReload">โหลดใหม่</button></div>' + nav('ratio');
+};
+async function raLoad() {
+  const R = S.R, ym = R.ym;
+  R.loading = true; if (S.view === 'ratio') render();
+  try { const r = await api('dyerSieve', ym); if (R.ym === ym) R.data = r; }
+  finally { if (R.ym === ym) { R.loading = false; if (S.view === 'ratio') render(); } }
+}
+ACT.raStep = (n) => {
+  const p = S.R.ym.split('-').map(Number), dt = new Date(Date.UTC(p[0], p[1] - 1 + Number(n), 1));
+  S.R.ym = dt.toISOString().slice(0, 7); S.R.data = null; S.R.open = {};
+  return raLoad();
+};
+ACT.raSort = (s) => { S.R.sort = s; render(); };
+ACT.raOpen = (pid) => { const o = S.R.open = S.R.open || {}; o[pid] = !o[pid]; render(); };
+ACT.raReload = () => raLoad();
+const raNavOld = ACT.nav;
+ACT.nav = function (v) {
+  if (v === 'ratio' && !S.R) { S.R = { ym: bkk(Date.now() - 8 * H).slice(0, 7), sort: 'date', open: {} }; raLoad().catch(() => {}); }
+  return raNavOld(v);
+};
+</script>
+</body>
+</html>
