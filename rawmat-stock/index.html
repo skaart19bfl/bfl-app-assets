@@ -3480,13 +3480,13 @@ const pyFormula = (code) => '98-' + String(code || '').replace(/^97-/, '').repla
 S.py = {
   data: null, loading: false, err: '', master: null, mLoading: false, init: false,
   q: '', mode: 'issue', doc: '', last: null, hist: [], cx: { id: '', reason: '' },
-  rv: { item: '', iq: '', lot: '', sets: '', kg: '', note: '', bag: true, formula: '', product: '', done: null },
+  rv: { item: '', iq: '', lot: '', sets: '', kg: '', note: '', bag: true, formula: '', product: '', done: null, locs: [{ loc: '', qty: '' }] },
   bg: { formula: '', product: '', type: 'MIXER', lot: '', qty: '', lines: [], open: false },
   od: { q: '', lots: null, lotsLoading: false, sel: null, batches: '', lines: [], iq: '', note: '' },
   oa: { doc: '', kind: '', reason: '', batches: '' }, ov: { doc: '', data: null, cx: '', reason: '' },
-  rr: { q: '', last: null, scrap: '', reason: '', log: null, cx: '', cxr: '' },
+  rr: { q: '', last: null, scrap: '', reason: '', log: null, cx: '', cxr: '', loc: '', ul: {} },
   ms: { q: '', only: '', f: null },
-  lp: { lot: '', seqs: '' }, le: { lot: '', kg: '', reason: '' }, lc: { lot: '', reason: '' }, bv: { bag: '', reason: '' },
+  lp: { lot: '', seqs: '' }, mv: { lot: '', bag: '', seqs: '', to: '' }, le: { lot: '', kg: '', reason: '' }, lc: { lot: '', reason: '' }, bv: { bag: '', reason: '' },
   fm: { from: '', to: '', doc: '', doc2: '' }
 };
 
@@ -3497,7 +3497,7 @@ async function loadPY(silent) {
 }
 async function loadPYMaster(force) {
   if ((S.py.master && !force) || S.py.mLoading) return; S.py.mLoading = true;
-  try { S.py.master = await rpc('rm_py_master', { p_token: S.tok }); S.py.mIdx = null; } catch (e) { S.toast = e.message; S.toastErr = true; }
+  try { S.py.master = await rpc('rm_py_master', { p_token: S.tok }); S.py.mIdx = null; pyDL(); } catch (e) { S.toast = e.message; S.toastErr = true; }
   S.py.mLoading = false; render();
 }
 async function loadPYOrders() { // Lot การผลิต 30 วันล่าสุด (production_lot อ่านอย่างเดียว)
@@ -3530,6 +3530,32 @@ const pyName = (code) => (pyItem(code) || {}).n || '';
 const pyLoading = () => (S.py.err ? `<div class="msg bad">${esc(S.py.err)}</div>` : '<p class="muted">กำลังโหลด…</p>');
 const pyHead = (t, lead) => `<div><h1>${t}</h1>${lead ? `<p class="lead">${lead}</p>` : ''}</div>`;
 
+// รายการรหัสสำหรับช่องเดียว (datalist อยู่นอก #app · สร้างครั้งเดียวต่อการโหลด Master)
+function pyDL() {
+  let dl = document.getElementById('pydl'); if (!dl) { dl = document.createElement('datalist'); dl.id = 'pydl'; document.body.appendChild(dl); }
+  dl.innerHTML = pyItems().filter((i) => i.a).map((i) => `<option value="${esc(i.c)} · ${esc(i.n)}"></option>`).join('');
+}
+function pyResolve(text) { const t = String(text || '').trim().toUpperCase(); if (!t) return null; const c = t.split(' · ')[0].trim(); return pyItems().find((i) => i.a && (i.c === c || i.c === '97-' + c)) || null; }
+// ช่องรหัสชุด: พิมพ์หรือเลือกในช่องเดียว (ผู้ใช้ 20 พ.ย.)
+function pyPick1(bind, sel, label, ph) {
+  const it = sel ? pyItem(sel) : null; const v = String(getPath(bind) || '');
+  return `<div class="fld"><span>${label}</span><input data-bind="${bind}" list="pydl" value="${esc(v)}" placeholder="${ph}" autocomplete="off" style="max-width:680px">
+    <span class="smt" style="margin-top:3px">${it ? `<span style="color:var(--ok, #1a7f4b)">✓ ${esc(it.c)} · ${esc(it.n)}</span>` : v.trim() ? '<span style="color:var(--bad)">ยังไม่ตรงกับรหัสใน Master — พิมพ์ต่อแล้วเลือกจากรายการที่ขึ้นมา</span>' : `<span class="muted">${S.py.mLoading ? 'กำลังโหลด Master…' : 'พิมพ์รหัสหรือชื่อบางส่วน แล้วเลือกจากรายการ'}</span>`}</span></div>`;
+}
+// ที่จัดเก็บ PY: Zone A = A1–F4 · Zone B = C1–G4 (ผู้ใช้ 20 พ.ย.) · รหัส A-C1 / B-C1
+const pyLocs = () => ((S.py.data || {}).locations || []);
+const pyLocName = (c) => c ? String(c).replace('-', ' · ') : 'ยังไม่ระบุ';
+function pyLocOpts(sel, blank) {
+  const zs = {}; pyLocs().forEach((l) => (zs[l.zone] = zs[l.zone] || []).push(l));
+  return `<option value="">${blank || '— เลือกที่จัดเก็บ —'}</option>` + Object.keys(zs).map((z) => `<optgroup label="Zone ${esc(z)}">${zs[z].map((l) => `<option value="${esc(l.code)}" ${l.code === sel ? 'selected' : ''}>${esc(pyLocName(l.code))}${l.n ? ` (มี ${l.n} ชุด)` : ''}</option>`).join('')}</optgroup>`).join('');
+}
+const pyLocsTxt = (locs) => (locs || []).map((x) => x.loc ? `<span class="tag">${esc(pyLocName(x.loc))} ×${x.n}</span>` : `<span class="tag bad">ยังไม่ระบุที่เก็บ ×${x.n}</span>`).join(' ');
+function pyLocGrid() { // ผังที่จัดเก็บ: แถว = ตัวอักษร · คอลัมน์ = 1–4
+  const zs = {}; pyLocs().forEach((l) => (zs[l.zone] = zs[l.zone] || []).push(l));
+  return `<div class="grid2">${Object.keys(zs).map((z) => { const rows = [...new Set(zs[z].map((l) => l.slot[0]))];
+    return `<div><b>Zone ${esc(z)}</b><div class="tw"><table style="table-layout:fixed;text-align:center"><thead><tr><th style="width:36px"></th>${[1, 2, 3, 4].map((c) => `<th style="text-align:center">${c}</th>`).join('')}</tr></thead><tbody>${rows.map((r) => `<tr><th style="text-align:center">${r}</th>${[1, 2, 3, 4].map((c) => { const l = zs[z].find((x) => x.slot === r + c);
+      return `<td style="text-align:center;${l && l.n ? 'background:var(--blue-weak)' : ''}" title="${esc(l ? (l.items || []).join(', ') : '')}">${l && l.n ? `<b>${l.n}</b><span class="muted smt" style="display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc((l.items || []).map(pyShort).join(', '))}</span>` : '<span class="muted">·</span>'}</td>`; }).join('')}</tr>`).join('')}</tbody></table></div></div>`; }).join('')}</div>`;
+}
 // ช่องเลือกรหัสชุด: ช่องค้นหา + dropdown (master 998 รหัส · แสดงไม่เกิน 300)
 function pyPicker(bindQ, val, attr, label) {
   const qs = String(getPath(bindQ) || '').toUpperCase().split(/\s+/).filter(Boolean);
@@ -3558,24 +3584,27 @@ function viewPyHome() {
     const act = `<span class="chips">
       <button type="button" class="ghost sm" data-py="lpopen" data-lot="${esc(l.lot)}">พิมพ์ป้าย -04</button>
       ${(l.bags || []).map((b) => `<button type="button" class="ghost sm" data-py="pbag" data-bag="${esc(b)}">ป้ายถุง ${esc(b)}</button>`).join('')}
-      ${pm ? `<button type="button" class="ghost sm" data-py="leopen" data-lot="${esc(l.lot)}">แก้ กก./ชุด</button>${l.is || l.po || l.rt ? '' : `<button type="button" class="ghost sm" data-py="lcopen" data-lot="${esc(l.lot)}">ยกเลิก Lot</button>`}` : ''}</span>`;
-    const form = lp.lot === l.lot ? `<tr><td colspan="8"><div class="chips">ชุดที่ <input data-bind="py.lp.seqs" value="${esc(lp.seqs)}" placeholder="ว่าง = ทุกชุด · เช่น 1-10 หรือ 3,5" style="width:220px">
+      ${pm && l.py ? `<button type="button" class="ghost sm" data-py="mvopen" data-lot="${esc(l.lot)}">ย้ายที่เก็บ</button>` : ''}${pm ? `<button type="button" class="ghost sm" data-py="leopen" data-lot="${esc(l.lot)}">แก้ กก./ชุด</button>${l.is || l.po || l.rt ? '' : `<button type="button" class="ghost sm" data-py="lcopen" data-lot="${esc(l.lot)}">ยกเลิก Lot</button>`}` : ''}</span>`;
+    const mv = P.mv; const form = mv.lot === l.lot && !mv.bag ? `<tr><td colspan="8"><div class="chips">ย้ายชุดที่ <input data-bind="py.mv.seqs" value="${esc(mv.seqs)}" placeholder="ว่าง = ทุกชุดที่อยู่ PY · เช่น 1-10" style="width:210px"> ไปที่ <select data-bind="py.mv.to" style="width:200px">${pyLocOpts(mv.to)}</select>
+        <button type="button" class="sm" data-py="mvdo" ${mv.to && !S.busy ? '' : 'disabled'}>ย้าย</button><button type="button" class="ghost sm" data-py="mvopen" data-lot="">ปิด</button></div></td></tr>`
+      : lp.lot === l.lot ? `<tr><td colspan="8"><div class="chips">ชุดที่ <input data-bind="py.lp.seqs" value="${esc(lp.seqs)}" placeholder="ว่าง = ทุกชุด · เช่น 1-10 หรือ 3,5" style="width:220px">
         <button type="button" class="sm" data-py="plab" data-lot="${esc(l.lot)}">พิมพ์ป้าย F-WI01-PSS01-04</button><button type="button" class="ghost sm" data-py="lpopen" data-lot="">ปิด</button></div></td></tr>`
       : le.lot === l.lot ? `<tr><td colspan="8"><div class="chips">กก./ชุด <input data-bind="py.le.kg" value="${esc(le.kg)}" inputmode="decimal" style="width:90px"> เหตุผล <input data-bind="py.le.reason" value="${esc(le.reason)}" style="width:200px" maxlength="200">
         <button type="button" class="sm" data-py="ledo" ${num(le.kg) > 0 && le.reason.trim().length >= 3 && !S.busy ? '' : 'disabled'}>บันทึก</button><button type="button" class="ghost sm" data-py="leopen" data-lot="">ปิด</button></div></td></tr>`
       : lc.lot === l.lot ? `<tr><td colspan="8"><div class="chips">ยกเลิกทั้ง Lot · เหตุผล <input data-bind="py.lc.reason" value="${esc(lc.reason)}" style="width:220px" maxlength="200">
         <button type="button" class="sm" data-py="lcdo" ${lc.reason.trim().length >= 3 && !S.busy ? '' : 'disabled'}>ยืนยันยกเลิก</button><button type="button" class="ghost sm" data-py="lcopen" data-lot="">ปิด</button></div></td></tr>` : '';
-    return `<tr><td class="mono" style="color:var(--ink)">${esc(l.lot)}</td><td><b class="mono" style="color:var(--ink)">${esc(pyShort(l.item))}</b><span class="muted smt" style="display:block">${esc(l.name)}</span></td><td>${dmy(l.mfg)}</td><td class="num">${fmt(l.kg)}</td>
+    return `<tr><td class="mono" style="color:var(--ink)">${esc(l.lot)}</td><td><b class="mono" style="color:var(--ink)">${esc(pyShort(l.item))}</b><span class="muted smt" style="display:block">${esc(l.name)}</span>${l.locs && l.locs.length ? `<span style="display:block;margin-top:2px">${pyLocsTxt(l.locs)}</span>` : ''}</td><td>${dmy(l.mfg)}</td><td class="num">${fmt(l.kg)}</td>
       <td class="num"><b>${l.py}</b> / ${l.sets}</td><td class="num">${l.is || ''}</td><td class="num">${l.rt || ''}</td><td>${act}</td></tr>${form}`; }).join('');
   const bv = P.bv;
   const bags = (D0.bags || []).map((b) => `<div class="lrow" style="flex-wrap:wrap;gap:8px"><span style="flex:1 1 260px"><b class="mono">${esc(b.bag)}</b> · ${esc(b.formula || '')} · ${esc(b.product || '')} · ${esc(b.type)}
-      <span class="muted smt" style="display:block">${(b.lines || []).map((x) => esc(pyShort(x.item)) + ' · ' + esc(x.lot) + ' · ' + x.qty + ' ชุด').join(' | ')} · เหลือในถุง <b>${b.py}</b> ชุด</span></span>
-      <span class="chips"><button type="button" class="ghost sm" data-py="pbag" data-bag="${esc(b.bag)}">พิมพ์ป้าย -05</button>${pm ? (bv.bag === b.bag ? `<input data-bind="py.bv.reason" value="${esc(bv.reason)}" placeholder="เหตุผล" style="width:160px"><button type="button" class="sm" data-py="bvdo" ${bv.reason.trim().length >= 3 && !S.busy ? '' : 'disabled'}>ยืนยันยกเลิกถุง</button><button type="button" class="ghost sm" data-py="bvopen" data-bag="">ปิด</button>` : `<button type="button" class="ghost sm" data-py="bvopen" data-bag="${esc(b.bag)}">ยกเลิกถุง</button>`) : ''}</span></div>`).join('');
+      <span class="muted smt" style="display:block">${(b.lines || []).map((x) => esc(pyShort(x.item)) + ' · ' + esc(x.lot) + ' · ' + x.qty + ' ชุด').join(' | ')} · เหลือในถุง <b>${b.py}</b> ชุด · ที่เก็บ ${(b.locs || []).length ? b.locs.map((c) => esc(pyLocName(c))).join(', ') : '<span style="color:var(--bad)">ยังไม่ระบุ</span>'}</span></span>
+      <span class="chips"><button type="button" class="ghost sm" data-py="pbag" data-bag="${esc(b.bag)}">พิมพ์ป้าย -05</button>${pm && b.py ? (P.mv.bag === b.bag ? `<select data-bind="py.mv.to" style="width:190px">${pyLocOpts(P.mv.to, '— ย้ายทั้งถุงไปที่ —')}</select><button type="button" class="sm" data-py="mvdo" ${P.mv.to && !S.busy ? '' : 'disabled'}>ย้ายถุง</button><button type="button" class="ghost sm" data-py="mvopen" data-bag="">ปิด</button>` : `<button type="button" class="ghost sm" data-py="mvopen" data-bag="${esc(b.bag)}">ย้ายทั้งถุง</button>`) : ''}${pm ? (bv.bag === b.bag ? `<input data-bind="py.bv.reason" value="${esc(bv.reason)}" placeholder="เหตุผล" style="width:160px"><button type="button" class="sm" data-py="bvdo" ${bv.reason.trim().length >= 3 && !S.busy ? '' : 'disabled'}>ยืนยันยกเลิกถุง</button><button type="button" class="ghost sm" data-py="bvopen" data-bag="">ปิด</button>` : `<button type="button" class="ghost sm" data-py="bvopen" data-bag="${esc(b.bag)}">ยกเลิกถุง</button>`) : ''}</span></div>`).join('');
   const ords = pyOrders();
   return pyHead('PY ชุดสารเสริม', 'ยอดชุดสารเสริมในคลัง PY · 1 ชุด = 1 batch · ป้าย 1 ใบต่อชุด')
     + `<div class="grid4">${kpi('ชุดใน PY', fmt(tot('py')), lots.length + ' Lot', 'var(--blue)')}${kpi('เบิกแล้วยังไม่เท', fmt(tot('is')), 'ค้างที่ฝ่ายผลิต', '#c77700')}${kpi('รอพรีมิกซ์รับคืน', fmt((D0.returning || []).length), 'ชุด', '#b3261e')}${kpi('ใบสั่งเบิกเปิด', fmt(ords.filter((o) => o.status === 'OPEN').length), 'ใบ', '#1a7f4b')}</div>
     <div class="card"><div class="fc"><h2 style="margin:0">Lot ชุดสารเสริม</h2>${pm ? '<button type="button" class="sm" data-go="pyrecv" data-mod="py">+ รับเข้า PY</button>' : ''}</div>
       <div class="tw"><table><thead><tr><th>Lot No.</th><th>รหัสชุด</th><th>ผลิต</th><th class="num">กก./ชุด</th><th class="num">PY / ทั้งหมด</th><th class="num">เบิกค้าง</th><th class="num">รอคืน</th><th></th></tr></thead><tbody>${lotRows || '<tr><td colspan="8" class="muted">ยังไม่มี Lot</td></tr>'}</tbody></table></div></div>
+    <details class="card" ${P.gridOpen ? 'open' : ''} data-pygrid="1"><summary><b>ผังที่จัดเก็บ PY</b> <span class="muted smt">Zone A = A1–F4 · Zone B = C1–G4 · ตัวเลข = จำนวนชุดที่อยู่ PY</span></summary><div style="margin-top:10px">${pyLocGrid()}</div></details>
     <div class="card"><h2 style="margin-top:0">ถุงรวม (F-WI01-PSS01-05)</h2>${bags || '<p class="muted smt">ไม่มีถุงรวมที่ยังมีชุดเหลือ</p>'}</div>
     <div class="card"><h2 style="margin-top:0">ใบสั่งเบิก</h2>${ords.length ? ords.map((o) => `<details class="lrow" style="display:block"><summary><b class="mono">${esc(o.doc)}</b> <span class="tag">${PY_OST[o.status]}</span> Lot ${esc(o.lot)} · ${esc(o.prod || '')} · ${o.batches} batch · ${esc(o.by)} ${dtm(o.at)}</summary>${pyLinesTbl(o)}</details>`).join('') : '<p class="muted smt">ไม่มีใบสั่งเบิกที่เปิดอยู่</p>'}</div>`;
 }
@@ -3588,14 +3617,16 @@ function viewPyRecv() {
   const lotMsg = !lot ? '<span class="muted">รูปแบบ PRE-TTTYYMMDD-NN-MI · TTT = ประเภทอาหาร 3 ตัว · YYMMDD = วันที่ · NN = ลำดับ 2 หลัก</span>'
     : lotOk ? `<span style="color:var(--ok, #1a7f4b)">✓ ถูกรูปแบบ · ประเภท ${esc(lotT)} · วันที่ ${esc(lot.slice(11, 13))}/${esc(lot.slice(9, 11))}/${esc(lot.slice(7, 9))}</span>${it && it.t && it.t !== lotT ? ` <span class="tag warn">รหัสนี้ปกติใช้ ${esc(it.t)}</span>` : ''}`
     : '<span style="color:var(--bad)">✗ ต้องเป็น PRE-TTTYYMMDD-NN-MI เช่น PRE-FIS261118-03-MI</span>';
-  const miss = [!it && 'เลือกรหัสชุด', !lotOk && 'Lot No.', !(int(v.sets) > 0) && 'จำนวนชุด', !(num(v.kg) > 0) && 'น้ำหนักต่อชุด', v.bag && !v.product.trim() && 'Product Name'].filter(Boolean);
+  const nSets = int(v.sets); const one = v.locs.length === 1; const lsum = one ? nSets : v.locs.reduce((a, x) => a + int(x.qty), 0);
+  const locOk = v.locs.every((x) => x.loc) && (one || (v.locs.every((x) => int(x.qty) > 0) && lsum === nSets)) && new Set(v.locs.map((x) => x.loc)).size === v.locs.length;
+  const miss = [!it && 'เลือกรหัสชุด', !lotOk && 'Lot No.', !(nSets > 0) && 'จำนวนชุด', !(num(v.kg) > 0) && 'น้ำหนักต่อชุด', !locOk && 'ที่จัดเก็บ', v.bag && !v.product.trim() && 'Product Name'].filter(Boolean);
   const ok = !miss.length && !S.busy;
   const done = v.done ? `<div class="card" style="border-color:var(--ok, #1a7f4b)"><h2 style="margin-top:0">✓ รับเข้า ${esc(v.done.lot)} แล้ว · ${v.done.sets} ชุด</h2>
-      <div class="chips"><button type="button" data-py="plab" data-lot="${esc(v.done.lot)}">🖨 พิมพ์ป้าย F-WI01-PSS01-04 (${v.done.sets} ใบ)</button>${v.done.bag ? `<button type="button" data-py="pbag" data-bag="${esc(v.done.bag)}">🖨 พิมพ์ป้ายถุง F-WI01-PSS01-05 · ${esc(v.done.bag)}</button>` : ''}<button type="button" class="ghost" data-py="rvclose">ปิด</button></div></div>` : '';
+      <div class="chips"><button type="button" data-py="plab" data-lot="${esc(v.done.lot)}">🖨 พิมพ์ป้าย F-WI01-PSS01-04 (${v.done.sets} ใบ)</button>${(v.done.bags || []).map((b) => `<button type="button" data-py="pbag" data-bag="${esc(b)}">🖨 พิมพ์ป้ายถุง F-WI01-PSS01-05 · ${esc(b)}</button>`).join('')}<button type="button" class="ghost" data-py="rvclose">ปิด</button></div></div>` : '';
   const bg = S.py.bg; const free = ((S.py.data || {}).lots || []).filter((l) => l.py > 0);
   return pyHead('รับเข้า PY', 'หน่วยงานจัดเตรียมพรีมิกซ์ · Lot No. รูปแบบ PRE-TTTYYMMDD-NN-MI · ทุกชุดได้ป้าย QR 1 ใบ') + done
     + `<div class="card" style="display:flex;flex-direction:column;gap:12px">
-      ${pyPicker('py.rv.iq', v.item, 'data-bind="py.rv.item"')}
+      ${pyPick1('py.rv.iq', v.item, 'รหัสชุดสารเสริม', 'พิมพ์หรือเลือก เช่น FH26MR882ML')}
       ${it ? `<div class="smt muted">กลุ่ม ${esc(it.g || '–')} · TTT ${esc(it.t || '–')} · กก./ชุดล่าสุด ${it.kg ? fmt(it.kg) : '–'} · ใน PY ${it.py || 0} ชุด</div>` : `<div class="smt muted">ไม่พบรหัส? เพิ่มได้ที่ <button type="button" class="ghost sm" data-go="pymaster" data-mod="py">Master ชุดสารเสริม</button></div>`}
       <div class="fld"><span>Lot No. ผลิตชุดสารเสริม</span><input data-bind="py.rv.lot" value="${esc(v.lot)}" maxlength="30" placeholder="เช่น PRE-FIS261118-03-MI" autocomplete="off" style="text-transform:uppercase;font-family:'IBM Plex Mono',monospace;font-size:17px;max-width:460px">
         <span class="smt" style="margin-top:3px">${lotMsg}</span></div>
@@ -3605,6 +3636,9 @@ function viewPyRecv() {
         <div class="fld"><span>รวม (กก.)</span><b style="font-size:16px">${int(v.sets) > 0 && num(v.kg) > 0 ? fmt(int(v.sets) * num(v.kg)) : '–'}</b></div>
         <div class="fld"><span>หมายเหตุ</span><input data-bind="py.rv.note" value="${esc(v.note)}" maxlength="200"></div>
       </div>
+      <div class="fld"><span>ที่จัดเก็บ (1 Lot เก็บได้หลายที่)</span>
+        ${v.locs.map((x, i) => `<div class="chips" style="margin-bottom:4px"><select data-bind="py.rv.locs.${i}.loc" style="width:220px">${pyLocOpts(x.loc)}</select>${one ? `<span>ทั้ง Lot ${nSets > 0 ? nSets + ' ชุด' : ''}</span>` : `จำนวน <input data-bind="py.rv.locs.${i}.qty" value="${esc(x.qty)}" inputmode="numeric" style="width:70px"> ชุด <button type="button" class="ghost sm" data-py="rvlocdel" data-i="${i}">ลบ</button>`}</div>`).join('')}
+        <div class="chips"><button type="button" class="ghost sm" data-py="rvlocadd" ${v.locs.length < 10 ? '' : 'disabled'}>+ เก็บอีกที่</button>${!one ? `<span style="color:${lsum === nSets ? 'var(--ok, #1a7f4b)' : 'var(--bad)'}">รวม ${lsum} / ${nSets || 0} ชุด</span>` : ''}${!one && v.bag ? '<span>· ถุงรวมแยกตามที่จัดเก็บ (ที่ละ 1 ถุง)</span>' : ''}</div></div>
       <div class="chips"><button type="button" class="tg" aria-pressed="${!!v.bag}" data-py="rvbag">${v.bag ? '✓ ' : ''}ใส่ถุงรวมทั้ง Lot (ป้าย -05)</button></div>
       ${v.bag ? `<div class="grid3"><div class="fld"><span>Formula Code</span><input data-bind="py.rv.formula" value="${esc(v.formula)}" maxlength="40"></div><div class="fld"><span>Product Name</span><input data-bind="py.rv.product" value="${esc(v.product)}" maxlength="120"></div><div class="fld"><span>ประเภทชุดสารเสริม</span><b>MIXER</b></div></div>` : ''}
       <div class="chips"><button type="button" data-py="recv" ${ok ? '' : 'disabled'}>รับเข้า PY</button>${miss.length ? `<span>ยังขาด: ${miss.join(' · ')}</span>` : ''}</div></div>
@@ -3622,12 +3656,13 @@ function viewPyRet() {
   const R = S.py.rr; const D0 = S.py.data; if (!D0) return pyHead('รับคืนชุดสารเสริม') + pyLoading();
   const rt = D0.returning || [];
   const last = R.last ? `<div class="msg ${R.last.ok ? '' : 'bad'}" style="font-size:18px">${R.last.ok ? '✓' : '✗'} ${esc(R.last.msg)}</div>` : '';
-  const rows = rt.map((u) => `<div class="lrow" style="flex-wrap:wrap;gap:8px"><span style="flex:1 1 240px"><b class="mono">${esc(u.lot)}</b> ชุดที่ <b>${u.seq}</b> · ${esc(pyShort(u.item))} · ${fmt(u.kg)} กก.<span class="muted smt" style="display:block">ใบ ${esc(u.doc)} · ส่งคืน ${dtm(u.at)}</span></span>
+  const rows = rt.map((u) => `<div class="lrow" style="flex-wrap:wrap;gap:8px"><span style="flex:1 1 240px"><b class="mono">${esc(u.lot)}</b> ชุดที่ <b>${u.seq}</b> · ${esc(pyShort(u.item))} · ${fmt(u.kg)} กก.<span class="muted smt" style="display:block">ใบ ${esc(u.doc)} · ส่งคืน ${dtm(u.at)} · ที่เดิม ${esc(pyLocName(u.loc))}</span></span>
       <span class="chips">${R.scrap === u.unit ? `<input data-bind="py.rr.reason" value="${esc(R.reason)}" placeholder="เหตุผลที่ไม่รับ" style="width:170px" maxlength="200"><button type="button" class="sm" data-py="rrscrap" data-unit="${u.unit}" ${R.reason.trim().length >= 3 && !S.busy ? '' : 'disabled'}>ยืนยันไม่รับคืน</button><button type="button" class="ghost sm" data-py="rrscrapopen" data-unit="">ปิด</button>`
-        : `<button type="button" class="sm" data-py="rrok" data-unit="${u.unit}" ${S.busy ? 'disabled' : ''}>รับคืนเข้า PY</button><button type="button" class="ghost sm" data-py="rrscrapopen" data-unit="${u.unit}">ไม่รับ</button>`}</span></div>`).join('');
+        : `<select data-bind="py.rr.ul.${u.unit}" style="width:170px">${pyLocOpts(R.ul[u.unit] || '', 'ที่เดิม')}</select><button type="button" class="sm" data-py="rrok" data-unit="${u.unit}" ${S.busy ? 'disabled' : ''}>รับคืนเข้า PY</button><button type="button" class="ghost sm" data-py="rrscrapopen" data-unit="${u.unit}">ไม่รับ</button>`}</span></div>`).join('');
   const log = (R.log || []).filter((x) => x.type !== 'VOID');
   return pyHead('รับคืนชุดสารเสริม', 'ฝ่ายผลิตสแกนคืนแล้ว → ตรวจยอดและรับคืนเข้า Lot เดิม (ชุดที่รับคืนออกจากถุงรวม)')
     + `<div class="card" style="display:flex;flex-direction:column;gap:10px;border-color:var(--blue)">
+      <div class="chips">วางคืนที่ <select data-bind="py.rr.loc" style="width:220px">${pyLocOpts(R.loc, 'ที่เดิมของชุด')}</select></div>
       <div class="chips"><input data-bind="py.rr.q" id="pyrq" value="${esc(R.q)}" placeholder="สแกนป้ายชุด (-04) เพื่อรับคืน" autocomplete="off" style="flex:1 1 240px;font-size:18px;padding:10px"><button type="button" data-cam="py">📷 สแกน</button></div>${last}</div>
     <div class="card"><h2 style="margin-top:0">รอรับคืน ${rt.length} ชุด</h2>${rows || '<p class="muted smt">ไม่มีชุดรอรับคืน</p>'}</div>
     <div class="card"><h2 style="margin-top:0">รับคืนวันนี้</h2>${log.length ? log.map((x) => `<div class="lrow" style="flex-wrap:wrap;gap:8px;${x.voided ? 'text-decoration:line-through;opacity:.6' : ''}"><span style="flex:1 1 240px">${hm(x.at)} <span class="tag">${PY_MT[x.type]}</span> <span class="mono">${esc(x.lot)}</span> ชุดที่ ${x.seq} · ${esc(pyShort(x.item))}${x.reason ? ' · ' + esc(x.reason) : ''} · ${esc(x.byn || x.by)}</span>
@@ -3649,7 +3684,7 @@ function viewPyOrder() {
       ${(sel.sug || []).filter((c) => !o.lines.some((x) => x.item === c)).length ? `<div class="chips">แนะนำ: ${(sel.sug || []).filter((c) => !o.lines.some((x) => x.item === c)).map((c) => `<button type="button" class="tg" data-py="odadd" data-item="${esc(c)}">+ ${esc(pyShort(c))}</button>`).join('')}</div>` : ''}
       ${o.lines.length ? `<div class="tw"><table><thead><tr><th>#</th><th>รหัสชุดที่ต้องเททุก batch</th><th class="num">ชุด/batch</th><th class="num">ใน PY</th><th></th></tr></thead><tbody>${o.lines.map((x, i) => { const it = pyItem(x.item) || {};
         return `<tr><td>${i + 1}</td><td><b class="mono" style="color:var(--ink)">${esc(x.item)}</b><span class="muted smt" style="display:block">${esc(it.n || '')}</span></td><td class="num"><input data-bind="py.od.lines.${i}.qpb" value="${esc(x.qpb)}" inputmode="numeric" style="width:56px;text-align:right"></td><td class="num">${it.py || 0}${int(o.batches) > 0 && (it.py || 0) < int(o.batches) * int(x.qpb || 1) ? ' <span class="tag bad">ไม่พอ</span>' : ''}</td><td><button type="button" class="ghost sm" data-py="oddel" data-i="${i}">ลบ</button></td></tr>`; }).join('')}</tbody></table></div>` : '<span class="muted smt">ยังไม่มีรหัส — เลือกจากที่แนะนำ หรือค้นหาด้านล่าง</span>'}
-      ${pyPicker('py.od.iq', '', 'data-pyadd="1"', 'เพิ่มรหัสชุด / พรีมิกซ์ (ไม่เกิน 20)')}
+      ${pyPick1('py.od.iq', '', 'เพิ่มรหัสชุด / พรีมิกซ์ (ไม่เกิน 20)', 'พิมพ์หรือเลือกรหัสเพื่อเพิ่ม')}
       <div><button type="button" data-py="odcreate" ${ok ? '' : 'disabled'}>ออกใบสั่งเบิก</button> <button type="button" class="ghost" data-py="odclear">ล้าง</button></div></div>` : '<span class="muted smt">แตะเลข Lot การผลิตเพื่อเริ่มออกใบ</span>'}</div>`;
   const oa = S.py.oa;
   const ords = pyOrders().map((x) => {
@@ -3692,7 +3727,7 @@ function viewPyScan() {
           <div class="smt">ใบสั่งเบิก <span class="mono">${esc(o.doc)}</span> · ออกโดย ${esc(o.by)} ${hm(o.at)}${o.note ? ' · ' + esc(o.note) : ''}</div>
           <div style="font-size:22px;font-weight:700">Lot ${esc(o.lot)} · ${esc(o.prod || '')}</div>
           <div style="font-size:18px">${o.batches} batch · ${m === 'pour' ? 'เทแล้ว' : 'เบิกแล้ว'} <b style="font-size:24px">${Math.min(...(o.lines || []).map((l) => Math.floor((m === 'pour' ? l.poured : l.issued) / l.qpb)))}</b> / ${o.batches} batch</div>
-          ${pyLinesTbl(o, m)}</div>`
+          ${pyLinesTbl(o, m)}${m === 'issue' ? pyPickHint(o) : ''}</div>`
         : `<div style="text-align:center;padding:20px 8px;border:2px dashed var(--line);border-radius:12px"><b style="font-size:22px">${m === 'return' ? 'ไม่มีใบที่ต้องคืน' : 'รอใบสั่งเบิก'}</b><div class="muted smt">${m === 'return' ? 'Control ปิดใบ (สั่งคืน) แล้วชุดที่ค้างจะขึ้นที่นี่' : 'Control ออกใบสั่งเบิกแล้วจะขึ้นที่นี่เอง'}</div></div>`}
       <div class="chips"><input data-bind="py.q" id="pyq" value="${esc(P.q)}" placeholder="${ph}" autocomplete="off" style="flex:1 1 220px;font-size:20px;padding:12px"><button type="button" data-cam="py" style="font-size:18px;padding:12px 16px">📷 สแกน</button></div>
       ${last}</div>${hist}`;
@@ -3734,6 +3769,12 @@ function viewPyMaster() {
       <div class="tw"><table><thead><tr><th>รหัส</th><th>ชื่อ</th><th>กลุ่ม</th><th>TTT</th><th class="num">กก./ชุดล่าสุด</th><th class="num">PY</th><th class="num">เบิกค้าง</th><th></th></tr></thead><tbody>${rows.slice(0, 300).map((i) => `<tr class="${i.a ? '' : 'void'}"><td class="mono" style="color:var(--ink)">${esc(i.c)}${i.k === 'PX' ? ' <span class="tag">PX</span>' : ''}</td><td>${esc(i.n)}</td><td>${esc(i.g || '')}</td><td>${esc(i.t || '')}</td><td class="num">${i.kg ? fmt(i.kg) : ''}</td><td class="num">${i.py || ''}</td><td class="num">${i.is || ''}</td><td>${pm ? `<button type="button" class="ghost sm" data-py="medit" data-code="${esc(i.c)}">แก้</button>` : ''}</td></tr>`).join('') || `<tr><td colspan="8" class="muted">${S.py.mLoading ? 'กำลังโหลด…' : 'ไม่พบ'}</td></tr>`}</tbody></table></div>${rows.length > 300 ? '<span class="muted smt">แสดง 300 รายการแรก — พิมพ์ค้นหาเพื่อกรอง</span>' : ''}</div>`;
 }
 
+function pyPickHint(o) { // หยิบจากไหน: Lot เก่าก่อน (วันผลิต) · ที่จัดเก็บของชุดที่อยู่ PY
+  const lots = ((S.py.data || {}).lots || []).filter((l) => l.py > 0).sort((a, b) => (a.mfg < b.mfg ? -1 : a.mfg > b.mfg ? 1 : a.lot < b.lot ? -1 : 1));
+  const rows = (o.lines || []).filter((l) => l.issued < l.need).map((l) => { const ls = lots.filter((x) => x.item === l.item);
+    return `<div class="lrow" style="flex-wrap:wrap;gap:6px;padding:6px 2px"><b class="mono" style="color:var(--ink)">${esc(pyShort(l.item))}</b> <span class="muted smt">ต้องเบิกอีก ${l.need - l.issued} ชุด</span> ${ls.length ? ls.slice(0, 3).map((x) => `<span class="smt">${esc(x.lot)}: ${pyLocsTxt(x.locs)}</span>`).join(' ') : '<span class="tag bad">ไม่มีใน PY</span>'}</div>`; }).join('');
+  return rows ? `<div><div class="smt muted" style="margin-top:6px">หยิบจากที่จัดเก็บ (Lot เก่าก่อน)</div>${rows}</div>` : '';
+}
 const PY_VIEWS = { pyhome: viewPyHome, pyrecv: viewPyRecv, pyret: viewPyRet, pyorder: viewPyOrder, pyscan: viewPyScan, pyforms: viewPyForms, pymaster: viewPyMaster };
 
 // ---------- สแกน ----------
@@ -3758,7 +3799,8 @@ async function pyScanGo() {
 }
 async function pyRetGo(code, unit) {
   const R = S.py.rr; if (S.busy) return; S.busy = true; render();
-  try { const r = await rpc('rm_py_return_recv', { p_token: S.tok, p: unit ? { unit } : { code } }); R.last = { ok: true, msg: `รับคืน ${pyShort(r.item)} · ${r.lot} ชุดที่ ${r.seq} เข้า PY แล้ว` }; await loadPY(true); await loadPYRetLog(); }
+  const loc = (unit ? R.ul[unit] : R.loc) || undefined;
+  try { const r = await rpc('rm_py_return_recv', { p_token: S.tok, p: unit ? { unit, loc } : { code, loc } }); R.last = { ok: true, msg: `รับคืน ${pyShort(r.item)} · ${r.lot} ชุดที่ ${r.seq} เข้า PY แล้ว · ที่เก็บ ${pyLocName(r.loc)}` }; if (unit) delete R.ul[unit]; await loadPY(true); await loadPYRetLog(); }
   catch (e) { R.last = { ok: false, msg: e.message }; }
   R.q = ''; S.busy = false; render(); pyFocus();
 }
@@ -3912,14 +3954,20 @@ document.addEventListener('click', async (e) => {
   if (a === 'pbag') { pyPrintBag(ds.bag); return; }
   if (a === 'ledo') { pyAct('rm_py_lot_edit', { p_lot: P.le.lot, p: { kg: num(P.le.kg), reason: P.le.reason.trim() } }, 'แก้น้ำหนักต่อชุดแล้ว — พิมพ์ป้ายใหม่ถ้าน้ำหนักบนป้ายเปลี่ยน', () => { P.le = { lot: '' }; }); return; }
   if (a === 'lcdo') { pyAct('rm_py_lot_cancel', { p_lot: P.lc.lot, p_reason: P.lc.reason.trim() }, 'ยกเลิก Lot ' + P.lc.lot + ' แล้ว', () => { P.lc = { lot: '' }; }); return; }
+  if (a === 'mvopen') { P.mv = { lot: ds.lot || '', bag: ds.bag || '', seqs: '', to: '' }; render(); return; }
+  if (a === 'mvdo') { const mv = P.mv; const p = { to: mv.to }; if (mv.bag) p.bag = mv.bag; else { p.lot = mv.lot; const l = ((P.data || {}).lots || []).find((x) => x.lot === mv.lot); const sq = pySeqs(mv.seqs, l ? l.sets : 999); if (sq) p.seqs = sq; }
+    pyAct('rm_py_loc_move', { p }, (r) => 'ย้าย ' + r.moved + ' ชุดไป ' + pyLocName(r.to) + ' แล้ว', () => { P.mv = { lot: '', bag: '', seqs: '', to: '' }; }); return; }
   if (a === 'bvopen') { P.bv = { bag: ds.bag, reason: '' }; render(); return; }
   if (a === 'bvdo') { pyAct('rm_py_bag_void', { p_bag: P.bv.bag, p_reason: P.bv.reason.trim() }, 'ยกเลิกถุง ' + P.bv.bag + ' แล้ว (ชุดยังอยู่ PY)', () => { P.bv = { bag: '' }; }); return; }
   // รับเข้า
   if (a === 'rvbag') { P.rv.bag = !P.rv.bag; render(); return; }
   if (a === 'rvclose') { P.rv.done = null; render(); return; }
-  if (a === 'recv') { const v = P.rv; const p = { item: v.item, lot: pyLotNo(), sets: int(v.sets), kg: num(v.kg), note: v.note.trim() || undefined, bag: v.bag ? { formula: v.formula.trim(), product: v.product.trim(), type: 'MIXER' } : undefined };
-    pyAct('rm_py_receive', { p }, (r) => 'รับเข้า ' + r.lot + ' แล้ว · ' + r.sets + ' ชุด' + (r.bag ? ' · ถุง ' + r.bag : '') + ' — พิมพ์ป้ายได้เลย',
-      (r) => { v.done = { lot: r.lot, sets: r.sets, bag: r.bag }; v.lot = ''; v.sets = ''; v.note = ''; S.py.master = null; loadPYMaster(); }); return; }
+  if (a === 'rvlocadd') { P.rv.locs.push({ loc: '', qty: '' }); if (P.rv.locs.length === 2 && !P.rv.locs[0].qty) P.rv.locs[0].qty = P.rv.sets; render(); return; }
+  if (a === 'rvlocdel') { P.rv.locs.splice(int(ds.i), 1); if (!P.rv.locs.length) P.rv.locs.push({ loc: '', qty: '' }); render(); return; }
+  if (a === 'recv') { const v = P.rv; const one = v.locs.length === 1; const p = { item: v.item, lot: pyLotNo(), sets: int(v.sets), kg: num(v.kg), note: v.note.trim() || undefined, bag: v.bag ? { formula: v.formula.trim(), product: v.product.trim(), type: 'MIXER' } : undefined,
+      locs: v.locs.map((x) => ({ loc: x.loc, qty: one ? int(v.sets) : int(x.qty) })) };
+    pyAct('rm_py_receive', { p }, (r) => 'รับเข้า ' + r.lot + ' แล้ว · ' + r.sets + ' ชุด' + ((r.bags || []).length ? ' · ถุง ' + r.bags.join(', ') : '') + ' — พิมพ์ป้ายได้เลย',
+      (r) => { v.done = { lot: r.lot, sets: r.sets, bags: r.bags || (r.bag ? [r.bag] : []) }; v.locs = [{ loc: '', qty: '' }]; v.lot = ''; v.sets = ''; v.note = ''; S.py.master = null; loadPYMaster(); }); return; }
   if (a === 'bgadd') { const bg = P.bg; const l = ((P.data || {}).lots || []).find((x) => x.lot === bg.lot); if (!l) return; bg.lines.push({ lot: l.lot, item: l.item, qty: int(bg.qty) }); bg.lot = ''; bg.qty = ''; bg.open = true; if (!bg.formula) bg.formula = pyFormula(l.item); if (!bg.product) bg.product = pyProd(l.name); render(); return; }
   if (a === 'bgdel') { P.bg.lines.splice(int(ds.i), 1); render(); return; }
   if (a === 'bgdo') { const bg = P.bg; pyAct('rm_py_bag_create', { p: { formula: bg.formula.trim(), product: bg.product.trim(), type: bg.type.trim() || 'MIXER', lines: bg.lines.map((x) => ({ lot: x.lot, qty: x.qty })) } },
@@ -3963,13 +4011,14 @@ document.addEventListener('change', (e) => {
   if (ds.bind === 'py.ms.f.code' && S.py.ms.f && S.py.ms.f.kind === 'PX') { const x = ((S.py.master || {}).px || []).find((y) => y.c === el.value); if (x) { S.py.ms.f.name = x.n; render(); } }
   if (ds.bind === 'py.fm.from' && S.py.fm.to < S.py.fm.from) { S.py.fm.to = S.py.fm.from; render(); }
 });
-function pyRvItem() { const v = S.py.rv; const it = pyItem(v.item); if (!it) return; v.kg = it.kg ? String(it.kg) : v.kg; v.formula = pyFormula(it.c); v.product = pyProd(it.n); render(); }
+function pyRvItem() { const v = S.py.rv; const it = pyItem(v.item); if (!it) return; v.kg = it.kg ? String(it.kg) : v.kg; v.formula = pyFormula(it.c); v.product = pyProd(it.n); }
 document.addEventListener('input', (e) => {
-  const el = e.target; if (!el.dataset || el.dataset.bind !== 'py.rv.iq') return;
-  const t = el.value.trim().toUpperCase(); if (!t) return; const it = pyItems().find((i) => i.a && (i.c === t || i.c === '97-' + t));
-  if (it && S.py.rv.item !== it.c) { S.py.rv.item = it.c; pyRvItem(); renderKeep(el); }
+  const el = e.target; const b = el.dataset && el.dataset.bind; if (b !== 'py.rv.iq' && b !== 'py.od.iq') return;
+  const it = pyResolve(el.value);
+  if (b === 'py.rv.iq') { const v = S.py.rv; if (it && v.item !== it.c) { v.item = it.c; pyRvItem(); renderKeep(el); } else if (!it && v.item) { v.item = ''; renderKeep(el); } return; }
+  if (it) { const o = S.py.od; if (!o.lines.some((x) => x.item === it.c) && o.lines.length < 20) o.lines.push({ item: it.c, qpb: '1' }); o.iq = ''; renderKeep(el); }
 });
-document.addEventListener('toggle', (e) => { const t = e.target; if (t && t.dataset && t.dataset.pybgopen) S.py.bg.open = t.open; }, true);
+document.addEventListener('toggle', (e) => { const t = e.target; if (t && t.dataset && t.dataset.pybgopen) S.py.bg.open = t.open; if (t && t.dataset && t.dataset.pygrid) S.py.gridOpen = t.open; }, true);
 document.addEventListener('keydown', (e) => {
   const el = e.target; if (e.key !== 'Enter') return;
   if (el.id === 'pyq') { e.preventDefault(); S.py.q = el.value; pyScanGo(); return; }
