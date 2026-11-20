@@ -180,7 +180,7 @@ html[data-theme=dark] .prev{background:#0b111c}
   <video id="camv" playsinline muted style="max-width:100%;max-height:70vh;border-radius:12px;background:#000"></video>
   <span id="cammsg" style="color:#fff"></span><button type="button" id="camx" style="min-width:140px">ปิดกล้อง</button></div>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
-<script src="i18n-en.js?v=20261120c"></script>
+<script src="i18n-en.js?v=20261120d"></script>
 <script>
 'use strict';
 const SB_URL = 'https://kdytxuufvigwjccebrki.supabase.co';
@@ -1735,8 +1735,9 @@ function viewStockRep(d) {
 }
 // ===== ใบบันทึกการเทวัตถุดิบ (ผู้ใช้ 20 พ.ย. 2026) · ทุกรายการเทเข้าถังจาก rm_bin_move ผ่าน rm_dump_log =====
 // รวม BB NCP (เดิมรายงานประจำวันไม่มียอด NCP) · แสดงรายการที่ยกเลิก (ไม่นับยอด) · พิมพ์ A4 + Excel · ใช้ทั้งเมนูนี้และแท็บ "เทเข้าถัง (PD)" ของรายงานประจำวัน
-const DL_SRC_P = { scan: 'สแกน', pick: 'เลือก stock', direct: 'เบิกตรง', ncp: 'BB NCP' }; // ย่อสำหรับพิมพ์
-const DL_SRC = { scan: 'สแกนพาเลท', pick: 'เลือกจาก stock', direct: 'เบิกเข้าถัง (ไม่ผ่านใบสั่ง)', ncp: 'สแกน BB NCP' };
+const DL_SRC_P = { scan: 'สแกน', pick: 'เลือก stock', direct: 'เบิกตรง', ncp: 'BB NCP', ncpman: 'Manual NCP' }; // ย่อสำหรับพิมพ์
+const DL_SRC = { scan: 'สแกนพาเลท', pick: 'เลือกจาก stock', direct: 'เบิกเข้าถัง (ไม่ผ่านใบสั่ง)', ncp: 'สแกน BB NCP', ncpman: 'Rework เบิก manual (ระบบ NCP)' }; // ncpman = Control เบิกในระบบ NCP เอง ไม่สแกนเข้าถัง (rm_dump_log v4)
+const dlIsNcp = (r) => r.src === 'ncp' || r.src === 'ncpman';
 const DL_GRP = [['B1', 'ถัง B1 (B001–B024)'], ['B2', 'ถัง B2'], ['HAND', 'เทมือ BIA'], ['PILE', 'กอง IN1'], ['LOADOUT', 'Load out']];
 const dlRange = () => { const L = S.dl; const t = L.to || L.from || S.snap.biz_day; const f = L.from || t; return f <= t ? [f, t] : [t, f]; };
 async function loadDL() {
@@ -1746,27 +1747,27 @@ async function loadDL() {
 }
 function dlRows(d) {
   const L = S.dl; const q = L.q.trim().toLowerCase();
-  return ((L.data || {}).rows || []).filter((r) => dlInShift(r, L.shift) && (!L.grp || r.grp === L.grp) && (!L.bin || r.bin === L.bin) && (!L.src || (L.src === 'rm' ? r.src !== 'ncp' : r.src === L.src)) && (L.showVoid || !r.void)
+  return ((L.data || {}).rows || []).filter((r) => dlInShift(r, L.shift) && (!L.grp || r.grp === L.grp) && (!L.bin || r.bin === L.bin) && (!L.src || (L.src === 'rm' ? !dlIsNcp(r) : L.src === 'ncp' ? dlIsNcp(r) : L.src === 'man' ? dlManual(r) : r.src === L.src)) && (L.showVoid || !r.void)
     && (!q || [r.item, inm(d, r.item), r.lot, r.bb, r.doc, r.iss, r.bin].some((x) => String(x || '').toLowerCase().includes(q))));
 }
-const dlWhat = (r) => r.src === 'ncp' ? 'BB ' + (r.bb || '') + (r.lot ? ' · Lot ' + r.lot : '') : (r.lot || '') + (r.p ? ' ' + pl(r.p) : '');
+const dlWhat = (r) => dlIsNcp(r) ? 'BB ' + (r.bb || '') + (r.lot ? ' · Lot ' + r.lot : '') : (r.lot || '') + (r.p ? ' ' + pl(r.p) : '');
 const dlNote = (r) => [dlComment(r), r.void ? 'ยกเลิก' + (r.vreason ? ': ' + r.vreason : '') + (r.vby ? ' (' + r.vby + ')' : '') : '', r.src === 'ncp' && r.kgTag && Number(r.kgTag) !== Number(r.kg) ? 'น้ำหนักป้าย ' + fmt(r.kgTag) + ' กก.' : '', r.src === 'ncp' && !r.doc ? 'ไม่ผูกใบสั่ง' : ''].filter(Boolean).join(' · ');
 function dlSum(rows) { // สรุปต่อ ถัง + วัตถุดิบ (ไม่นับที่ยกเลิก)
-  const g = {}; rows.filter((r) => !r.void).forEach((r) => { const k = r.bin + '|' + r.item; const x = (g[k] = g[k] || { bin: r.bin, item: r.item, n: 0, bags: 0, kg: 0, ncp: r.src === 'ncp' }); x.n++; x.bags += Number(r.bags) || 0; x.kg += Number(r.kg) || 0; });
+  const g = {}; rows.filter((r) => !r.void).forEach((r) => { const k = (r.bin || '–') + '|' + r.item; const x = (g[k] = g[k] || { bin: r.bin || '–', item: r.item, n: 0, bags: 0, kg: 0, ncp: dlIsNcp(r) }); x.n++; x.bags += Number(r.bags) || 0; x.kg += Number(r.kg) || 0; });
   return Object.values(g).sort((a, b) => a.bin.localeCompare(b.bin) || b.kg - a.kg);
 }
 function viewDumpLog(d, embed) {
   const L = S.dl; const [f, t] = dlRange(); const one = f === t; const all = (L.data || {}).rows || [];
   if (!L.loading && !L.err && L.span !== f + '|' + t) setTimeout(loadDL, 0);
-  const bins = [...new Set(all.map((r) => r.bin))].sort();
+  const bins = [...new Set(all.map((r) => r.bin).filter(Boolean))].sort();
   const tg = (attr, v, cur, l) => `<button type="button" class="tg" aria-pressed="${cur === v}" data-${attr}="${v}">${l}</button>`;
-  const head = `${embed ? '' : `<div><h1>ใบบันทึกการเทวัตถุดิบ</h1><p class="lead">ทุกรายการเทเข้าถัง (สแกนพาเลท · เลือกจาก stock · เบิกเข้าถัง · BB NCP) ตามรอบวัน 08:00–07:59 · รายการที่ยกเลิกแสดงขีดฆ่าและไม่นับยอด</p></div>`}
+  const head = `${embed ? '' : `<div><h1>ใบบันทึกการเทวัตถุดิบ</h1><p class="lead">ทุกรายการเทเข้าถัง (สแกนพาเลท · เลือกจาก stock · เบิกเข้าถัง · BB NCP) + Rework ที่ Control เบิก manual ในระบบ NCP (ไม่ระบุถัง) ตามรอบวัน 08:00–07:59 · รายการที่ยกเลิกแสดงขีดฆ่าและไม่นับยอด</p></div>`}
     <div class="card" style="display:flex;flex-direction:column;gap:10px">
       ${embed ? `<p class="muted smt" style="margin:0">แท็บนี้ใช้ข้อมูลเดียวกับเมนู "ใบบันทึกการเทวัตถุดิบ" (รวม BB NCP แล้ว)</p>` : ''}
       <div class="chips"><label class="fld" style="flex-direction:row;align-items:center;gap:6px;margin:0">รอบวัน<input type="date" data-bind="dl.from" value="${esc(L.from || f)}"></label>
         <label class="fld" style="flex-direction:row;align-items:center;gap:6px;margin:0">ถึง<input type="date" data-bind="dl.to" value="${esc(L.to && L.to !== L.from ? L.to : '')}" aria-label="ถึงรอบวัน (ว่าง = วันเดียว)"></label>
         <button type="button" class="ghost sm" data-dlq="today">วันนี้</button><button type="button" class="ghost sm" data-dlq="prev">เมื่อวาน</button><button type="button" class="ghost sm" data-dlq="7">7 วัน</button><button type="button" class="ghost sm" data-dlq="month">เดือนนี้</button></div>
-      <div class="chips" role="group" aria-label="ประเภท">${tg('dlsrc', '', L.src, 'ทั้งหมด')}${tg('dlsrc', 'rm', L.src, 'วัตถุดิบ (ไม่รวม NCP)')}${tg('dlsrc', 'ncp', L.src, 'BB NCP')}
+      <div class="chips" role="group" aria-label="ประเภท">${tg('dlsrc', '', L.src, 'ทั้งหมด')}${tg('dlsrc', 'rm', L.src, 'วัตถุดิบ (ไม่รวม NCP)')}${tg('dlsrc', 'ncp', L.src, 'BB NCP')}${tg('dlsrc', 'man', L.src, 'Manual ทั้งหมด')}
         <span class="muted smt">|</span><button type="button" class="tg" aria-pressed="${L.showVoid}" data-dlvoid="1">แสดงรายการที่ยกเลิก</button></div>
       <div class="chips" role="group" aria-label="กะ">กะ ${tg('dlsh', '', L.shift, 'ทั้งรอบวัน')}${Object.entries(DL_SHIFT).map(([k, x]) => tg('dlsh', k, L.shift, x[0] + ' ' + x[1])).join('')}</div>
       <div class="grid3"><label class="fld">กลุ่มถัง<select data-bind="dl.grp"><option value="">ทั้งหมด</option>${DL_GRP.map(([v, l]) => `<option value="${v}" ${L.grp === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
@@ -1775,15 +1776,15 @@ function viewDumpLog(d, embed) {
   if (L.err) return head + `<p class="err">${esc(L.err)}</p>`;
   if (!L.data || L.span !== f + '|' + t) return head + '<p class="muted">กำลังโหลด…</p>';
   const rows = dlRows(d); const live = rows.filter((r) => !r.void); const kg = live.reduce((a, r) => a + Number(r.kg || 0), 0);
-  const kgN = live.filter((r) => r.src === 'ncp').reduce((a, r) => a + Number(r.kg || 0), 0); const nv = rows.length - live.length;
-  const body = rows.map((r) => `<tr class="${r.void ? 'void' : ''}"><td class="smt">${one ? '' : dmy(r.day) + ' '}${hm(r.at)}</td><td class="mono"><b>${esc(r.bin)}</b></td><td class="mono smt">${esc(r.item)}</td><td class="smt">${esc(inm(d, r.item))}${r.src === 'ncp' ? ' <span class="tag" style="font-size:10px">NCP</span>' : ''}</td>
+  const kgN = live.filter(dlIsNcp).reduce((a, r) => a + Number(r.kg || 0), 0); const kgM = live.filter((r) => r.src === 'ncpman').reduce((a, r) => a + Number(r.kg || 0), 0); const nv = rows.length - live.length;
+  const body = rows.map((r) => `<tr class="${r.void ? 'void' : ''}"><td class="smt">${one ? '' : dmy(r.day) + ' '}${hm(r.at)}</td><td class="mono"><b>${r.bin ? esc(r.bin) : '<span class="muted">–</span>'}</b></td><td class="mono smt">${esc(r.item)}</td><td class="smt">${esc(inm(d, r.item))}${dlIsNcp(r) ? ' <span class="tag" style="font-size:10px">NCP</span>' : ''}</td>
     <td class="mono smt">${esc(dlWhat(r))}</td><td class="num">${r.bags ? fmt(r.bags) : ''}</td><td class="num"><b>${fmt(r.kg)}</b></td><td class="mono smt">${esc(r.doc || r.iss || '–')}</td>
     <td class="smt">${dlManual(r) ? '<span class="tag warn" style="font-size:10px">Manual</span> ' : ''}${esc(DL_SRC[r.src] || r.src)}${r.point ? ' · ' + esc(IKNAME[r.point] || r.point) : ''}</td><td class="smt">${esc(r.by || '')}</td><td class="smt ${r.void ? 'err' : 'muted'}">${esc(dlNote(r))}</td></tr>`).join('');
   const sum = dlSum(rows); const sumB = sum.map((x) => `<tr><td class="mono"><b>${esc(x.bin)}</b></td><td class="mono smt">${esc(x.item)}</td><td class="smt">${esc(inm(d, x.item))}${x.ncp ? ' <span class="tag" style="font-size:10px">NCP</span>' : ''}</td><td class="num">${x.n}</td><td class="num">${x.bags ? fmt(x.bags) : ''}</td><td class="num"><b>${fmt(Math.round(x.kg * 100) / 100)}</b></td></tr>`).join('');
   return `${head}
     <div class="card" style="display:flex;flex-direction:column;gap:10px">
       <div class="fc" style="flex-wrap:wrap;gap:8px"><div><b style="font-size:16px">${one ? 'รอบวัน ' + dmy(f) : dmy(f) + ' – ' + dmy(t)} · เทรวม ${fmt(Math.round(kg * 100) / 100)} กก.</b>
-        <span class="muted smt"> · ${live.length} รายการ${kgN ? ` · ในนี้ BB NCP ${fmt(kgN)} กก.` : ''}${nv ? ` · ยกเลิก ${nv} รายการ (ไม่นับ)` : ''}</span></div>
+        <span class="muted smt"> · ${live.length} รายการ${kgN ? ` · ในนี้ BB NCP ${fmt(kgN)} กก.` : ''}${kgM ? ` (Rework เบิก manual ระบบ NCP ${fmt(kgM)} กก. · ไม่ระบุถัง)` : ''}${nv ? ` · ยกเลิก ${nv} รายการ (ไม่นับ)` : ''}</span></div>
         <span class="chips"><button type="button" class="sm" data-dlform="02" ${live.length ? '' : 'disabled'} title="ฟอร์ม Intake">พิมพ์ F-WI02-PRD04-02 บันทึกการอินเทค</button><button type="button" class="sm" data-dlform="01" ${live.length ? '' : 'disabled'} title="ฟอร์ม Control">พิมพ์ F-WI02-PRD04-01 บันทึกการเบิก</button><button type="button" class="sm" data-dlxlsx="1" ${live.length && !S.busy ? '' : 'disabled'} title="ฟอร์ม 01 + 02 แยกชีตตามวัน">Excel ฟอร์ม 01 + 02</button><button type="button" class="ghost sm" data-dlprint="1" ${rows.length ? '' : 'disabled'}>รายการ + สรุปต่อถัง</button><button type="button" class="ghost sm" data-dlcsv="1" ${rows.length ? '' : 'disabled'}>Excel รายการ (CSV)</button></span></div>
       <span class="muted smt">ฟอร์ม PD: 1 แถว = 1 รายการเท · ไม่รวมที่ยกเลิก · ช่อง "เริ่มเทค" = เวลาสแกน/บันทึกในระบบ · "เทคเสร็จ" และลายเซ็นเขียนที่ใบ · เลือกกะก่อนพิมพ์เพื่อแยกใบตามกะ</span>
       <div class="tw"><table><thead><tr><th>เวลา</th><th>ถัง</th><th>รหัส</th><th>วัตถุดิบ</th><th>Lot · พาเลท / BB</th><th class="num">ถุง</th><th class="num">กก.</th><th>ใบสั่ง</th><th>วิธี · จุด</th><th>ผู้เท</th><th>หมายเหตุ</th></tr></thead>
@@ -1801,9 +1802,9 @@ const dlUser = (u) => u || '';
 // หมายเหตุที่ผู้ใช้พิมพ์ตอนออกใบสั่งเท / เบิกเข้าถัง (rm_dump_order.note) · ตัดข้อความระบบ "เบิกตรง (ไม่ผ่านใบสั่ง)" ออก
 const dlComment = (r) => String(r.onote || '').replace(/^เบิกตรง \(ไม่ผ่านใบสั่ง\)\s*(·\s*)?/, '').trim();
 // ผู้ใช้ 20 พ.ย.: (1) ผู้จ่าย = Intake (บัญชีที่สแกน · ถ้า Control เบิกเองไม่สแกน ใช้ชื่อจุด Intake) (2) Manual เบิก (เลือกจาก stock ไม่สแกน) ให้แสดงในหมายเหตุ
-const dlManual = (r) => r.src === 'pick' || r.src === 'direct';
+const dlManual = (r) => r.src === 'pick' || r.src === 'direct' || r.src === 'ncpman';
 const dlPayer = (r) => r.src === 'scan' || r.src === 'ncp' ? (r.by || '') : (IKNAME[r.point] || r.point || '');
-const dlFormNote = (r) => [dlManual(r) ? 'Manual เบิก (ไม่สแกน)' : '', dlComment(r)].filter(Boolean).join(' · '); // ใช้ชื่อบัญชี (สั้น พอดีช่อง)
+const dlFormNote = (r) => [r.src === 'ncpman' ? 'Manual เบิก (ระบบ NCP · ไม่ระบุถัง)' : dlManual(r) ? 'Manual เบิก (ไม่สแกน)' : '', dlComment(r)].filter(Boolean).join(' · '); // ใช้ชื่อบัญชี (สั้น พอดีช่อง)
 function dlFormRow(d, r, kind) {
   const isBag = r.kind === 'PALLET' && Number(r.bags) > 0; const isBB = r.kind === 'BIGBAG' || r.src === 'ncp'; const isTr = r.kind === 'TRUCK';
   const cnt = isBag ? Number(r.bags) : isBB || isTr ? 1 : 0; const kg = Number(r.kg) || 0;
@@ -1910,7 +1911,7 @@ function dlPrint(d) {
   const [f, t] = dlRange(); const one = f === t; const rows = dlRows(d); const live = rows.filter((r) => !r.void); const kg = live.reduce((a, r) => a + Number(r.kg || 0), 0);
   const L = S.dl; const flt = [L.src === 'rm' ? 'วัตถุดิบ (ไม่รวม NCP)' : L.src === 'ncp' ? 'BB NCP' : '', L.grp ? (DL_GRP.find((x) => x[0] === L.grp) || [])[1] : '', L.bin ? 'ถัง ' + L.bin : '', L.q.trim() ? 'ค้นหา "' + L.q.trim() + '"' : ''].filter(Boolean).join(' · ');
   const s = (r, v) => r.void ? `<s>${v}</s>` : v;
-  const prow = rows.map((r) => [s(r, (one ? '' : dmy(r.day).slice(0, 5) + ' ') + hm(r.at)), s(r, esc(r.bin)), s(r, esc(r.item)), s(r, esc(inm(d, r.item))), s(r, esc(r.src === 'ncp' ? r.bb || r.lot || '' : dlWhat(r))), s(r, r.bags ? fmt(r.bags) : ''), s(r, fkg(r.kg) || '0'), esc(r.doc || r.iss || ''), esc(DL_SRC_P[r.src] || ''), esc(r.by || ''), esc(dlNote(r).replace('น้ำหนักป้าย ', 'ป้าย '))]);
+  const prow = rows.map((r) => [s(r, (one ? '' : dmy(r.day).slice(0, 5) + ' ') + hm(r.at)), s(r, esc(r.bin)), s(r, esc(r.item)), s(r, esc(inm(d, r.item))), s(r, esc(dlIsNcp(r) ? r.bb || r.lot || '' : dlWhat(r))), s(r, r.bags ? fmt(r.bags) : ''), s(r, fkg(r.kg) || '0'), esc(r.doc || r.iss || ''), esc(DL_SRC_P[r.src] || ''), esc(r.by || ''), esc(dlNote(r).replace('น้ำหนักป้าย ', 'ป้าย '))]);
   const span = one ? dfull(f) : dfull(f) + ' – ' + dfull(t);
   const top = `<div class="meta"><span>รอบวันที่ <span class="fill">${esc(span)}</span></span><span>เทรวม <span class="fill">${fkg(Math.round(kg * 100) / 100) || '0'}</span> กก. (${live.length} รายการ${rows.length > live.length ? ' · ยกเลิก ' + (rows.length - live.length) : ''})</span>${flt ? `<span>ตัวกรอง <span class="fill">${esc(flt)}</span></span>` : ''}</div>`;
   const pages = fPages({ orient: 'landscape', title: 'ใบบันทึกการเทวัตถุดิบ', code: esc(span), n: 18, h: 6.6, numbered: true,

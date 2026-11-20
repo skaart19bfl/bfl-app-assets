@@ -1709,7 +1709,7 @@ window.RM_I18N_EN = {
 "ธ.ค.": "Dec",
 "ใบบันทึกการเทวัตถุดิบ": "Material Dump Record",
 "ใบบันทึกการเท": "Dump record",
-"ทุกรายการเทเข้าถัง (สแกนพาเลท · เลือกจาก stock · เบิกเข้าถัง · BB NCP) ตามรอบวัน 08:00–07:59 · รายการที่ยกเลิกแสดงขีดฆ่าและไม่นับยอด": "Every dump into a bin (pallet scan · pick from stock · direct issue to bin · NCP BB) by business day 08:00–07:59 · cancelled entries are struck through and not counted",
+"ทุกรายการเทเข้าถัง (สแกนพาเลท · เลือกจาก stock · เบิกเข้าถัง · BB NCP) + Rework ที่ Control เบิก manual ในระบบ NCP (ไม่ระบุถัง) ตามรอบวัน 08:00–07:59 · รายการที่ยกเลิกแสดงขีดฆ่าและไม่นับยอด": "Every dump into a bin (pallet scan · pick from stock · direct issue to bin · NCP BB) + rework issued manually by Control in the NCP system (no bin) by business day 08:00–07:59 · cancelled entries are struck through and not counted",
 "แท็บนี้ใช้ข้อมูลเดียวกับเมนู \"ใบบันทึกการเทวัตถุดิบ\" (รวม BB NCP แล้ว)": "This tab uses the same data as the \"Material Dump Record\" menu (NCP BB included)",
 "เมื่อวาน": "Yesterday",
 "เดือนนี้": "This month",
@@ -1750,4 +1750,8 @@ window.RM_I18N_EN = {
 "Excel รายการ (CSV)": "Excel list (CSV)",
 "ดาวน์โหลด Excel แล้ว": "Excel downloaded",
 "โหลดตัวสร้างไฟล์ Excel ไม่ได้ — ลองใหม่": "Could not load the Excel builder — try again",
+"Manual ทั้งหมด": "All manual",
+"Rework เบิก manual (ระบบ NCP)": "Rework issued manually (NCP system)",
+"Rework เบิก manual ระบบ NCP": "rework issued manually in NCP system",
+"ไม่ระบุถัง": "no bin",
 };
