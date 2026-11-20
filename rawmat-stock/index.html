@@ -3480,7 +3480,7 @@ const pyFormula = (code) => '98-' + String(code || '').replace(/^97-/, '').repla
 S.py = {
   data: null, loading: false, err: '', master: null, mLoading: false, init: false,
   q: '', mode: 'issue', doc: '', last: null, hist: [], cx: { id: '', reason: '' },
-  rv: { item: '', iq: '', ttt: '', day: '', nn: '', sets: '', kg: '', note: '', bag: true, formula: '', product: '', done: null },
+  rv: { item: '', iq: '', lot: '', sets: '', kg: '', note: '', bag: true, formula: '', product: '', done: null },
   bg: { formula: '', product: '', type: 'MIXER', lot: '', qty: '', lines: [], open: false },
   od: { q: '', lots: null, lotsLoading: false, sel: null, batches: '', lines: [], iq: '', note: '' },
   oa: { doc: '', kind: '', reason: '', batches: '' }, ov: { doc: '', data: null, cx: '', reason: '' },
@@ -3581,11 +3581,15 @@ function viewPyHome() {
 }
 
 // ===== หน้า: รับเข้า PY (จัดเตรียมพรีมิกซ์) =====
-function pyLotNo() { const v = S.py.rv; const nn = String(v.nn || '').replace(/\D/g, ''); return 'PRE-' + String(v.ttt || '').toUpperCase() + (v.day || pyYmd6(todayYmd())) + '-' + (nn ? nn.padStart(2, '0') : '') + '-MI'; }
+function pyLotNo() { return String(S.py.rv.lot || '').toUpperCase().replace(/\s+/g, ''); } // Lot ผลิตชุดสารเสริม = ช่องเดียว พิมพ์ทั้งเลข (ผู้ใช้ 20 พ.ย.)
 function viewPyRecv() {
-  const v = S.py.rv; const it = pyItem(v.item); if (!v.day) v.day = pyYmd6(todayYmd());
-  const lot = pyLotNo(); const lotOk = PY_LOT_RE.test(lot);
-  const ok = it && lotOk && int(v.sets) > 0 && num(v.kg) > 0 && (!v.bag || v.product.trim()) && !S.busy;
+  const v = S.py.rv; const it = pyItem(v.item);
+  const lot = pyLotNo(); const lotOk = PY_LOT_RE.test(lot); const lotT = lotOk ? lot.slice(4, 7) : '';
+  const lotMsg = !lot ? '<span class="muted">รูปแบบ PRE-TTTYYMMDD-NN-MI · TTT = ประเภทอาหาร 3 ตัว · YYMMDD = วันที่ · NN = ลำดับ 2 หลัก</span>'
+    : lotOk ? `<span style="color:var(--ok, #1a7f4b)">✓ ถูกรูปแบบ · ประเภท ${esc(lotT)} · วันที่ ${esc(lot.slice(11, 13))}/${esc(lot.slice(9, 11))}/${esc(lot.slice(7, 9))}</span>${it && it.t && it.t !== lotT ? ` <span class="tag warn">รหัสนี้ปกติใช้ ${esc(it.t)}</span>` : ''}`
+    : '<span style="color:var(--bad)">✗ ต้องเป็น PRE-TTTYYMMDD-NN-MI เช่น PRE-FIS261118-03-MI</span>';
+  const miss = [!it && 'เลือกรหัสชุด', !lotOk && 'Lot No.', !(int(v.sets) > 0) && 'จำนวนชุด', !(num(v.kg) > 0) && 'น้ำหนักต่อชุด', v.bag && !v.product.trim() && 'Product Name'].filter(Boolean);
+  const ok = !miss.length && !S.busy;
   const done = v.done ? `<div class="card" style="border-color:var(--ok, #1a7f4b)"><h2 style="margin-top:0">✓ รับเข้า ${esc(v.done.lot)} แล้ว · ${v.done.sets} ชุด</h2>
       <div class="chips"><button type="button" data-py="plab" data-lot="${esc(v.done.lot)}">🖨 พิมพ์ป้าย F-WI01-PSS01-04 (${v.done.sets} ใบ)</button>${v.done.bag ? `<button type="button" data-py="pbag" data-bag="${esc(v.done.bag)}">🖨 พิมพ์ป้ายถุง F-WI01-PSS01-05 · ${esc(v.done.bag)}</button>` : ''}<button type="button" class="ghost" data-py="rvclose">ปิด</button></div></div>` : '';
   const bg = S.py.bg; const free = ((S.py.data || {}).lots || []).filter((l) => l.py > 0);
@@ -3593,22 +3597,17 @@ function viewPyRecv() {
     + `<div class="card" style="display:flex;flex-direction:column;gap:12px">
       ${pyPicker('py.rv.iq', v.item, 'data-bind="py.rv.item"')}
       ${it ? `<div class="smt muted">กลุ่ม ${esc(it.g || '–')} · TTT ${esc(it.t || '–')} · กก./ชุดล่าสุด ${it.kg ? fmt(it.kg) : '–'} · ใน PY ${it.py || 0} ชุด</div>` : `<div class="smt muted">ไม่พบรหัส? เพิ่มได้ที่ <button type="button" class="ghost sm" data-go="pymaster" data-mod="py">Master ชุดสารเสริม</button></div>`}
+      <div class="fld"><span>Lot No. ผลิตชุดสารเสริม</span><input data-bind="py.rv.lot" value="${esc(v.lot)}" maxlength="30" placeholder="เช่น PRE-FIS261118-03-MI" autocomplete="off" style="text-transform:uppercase;font-family:'IBM Plex Mono',monospace;font-size:17px;max-width:460px">
+        <span class="smt" style="margin-top:3px">${lotMsg}</span></div>
       <div class="grid4">
-        <div class="fld"><span>TTT ประเภทอาหาร</span><input data-bind="py.rv.ttt" value="${esc(v.ttt)}" maxlength="3" placeholder="FIS" style="text-transform:uppercase"></div>
-        <div class="fld"><span>YYMMDD</span><input data-bind="py.rv.day" value="${esc(v.day)}" maxlength="6" inputmode="numeric"></div>
-        <div class="fld"><span>NN ลำดับ</span><input data-bind="py.rv.nn" value="${esc(v.nn)}" maxlength="2" inputmode="numeric" placeholder="01"></div>
-        <div class="fld"><span>Lot No.</span><b class="mono" style="font-size:16px;color:${lotOk ? 'var(--ink)' : 'var(--bad)'}">${esc(lot)}</b></div>
-      </div>
-      <div class="grid4">
-        <div class="fld"><span>จำนวนชุด</span><input data-bind="py.rv.sets" value="${esc(v.sets)}" inputmode="numeric" placeholder="20"></div>
-        <div class="fld"><span>น้ำหนักต่อชุด (กก.)</span><input data-bind="py.rv.kg" value="${esc(v.kg)}" inputmode="decimal" placeholder="13.50"></div>
+        <div class="fld"><span>จำนวนชุด</span><input data-bind="py.rv.sets" value="${esc(v.sets)}" inputmode="numeric" placeholder="เช่น 20"></div>
+        <div class="fld"><span>น้ำหนักต่อชุด (กก.)</span><input data-bind="py.rv.kg" value="${esc(v.kg)}" inputmode="decimal" placeholder="${it && it.kg ? 'ล่าสุด ' + fmt(it.kg) : 'เช่น 13.50'}"></div>
         <div class="fld"><span>รวม (กก.)</span><b style="font-size:16px">${int(v.sets) > 0 && num(v.kg) > 0 ? fmt(int(v.sets) * num(v.kg)) : '–'}</b></div>
         <div class="fld"><span>หมายเหตุ</span><input data-bind="py.rv.note" value="${esc(v.note)}" maxlength="200"></div>
       </div>
       <div class="chips"><button type="button" class="tg" aria-pressed="${!!v.bag}" data-py="rvbag">${v.bag ? '✓ ' : ''}ใส่ถุงรวมทั้ง Lot (ป้าย -05)</button></div>
       ${v.bag ? `<div class="grid3"><div class="fld"><span>Formula Code</span><input data-bind="py.rv.formula" value="${esc(v.formula)}" maxlength="40"></div><div class="fld"><span>Product Name</span><input data-bind="py.rv.product" value="${esc(v.product)}" maxlength="120"></div><div class="fld"><span>ประเภทชุดสารเสริม</span><b>MIXER</b></div></div>` : ''}
-      ${!lotOk && v.nn ? '<div class="smt err" style="color:var(--bad)">Lot No. ต้องเป็น PRE-TTTYYMMDD-NN-MI (TTT ตัวอักษร 3 ตัว · วันที่ 6 หลัก · ลำดับ 2 หลัก)</div>' : ''}
-      <div><button type="button" data-py="recv" ${ok ? '' : 'disabled'}>รับเข้า PY</button></div></div>
+      <div class="chips"><button type="button" data-py="recv" ${ok ? '' : 'disabled'}>รับเข้า PY</button>${miss.length ? `<span>ยังขาด: ${miss.join(' · ')}</span>` : ''}</div></div>
     <details class="card" ${bg.open ? 'open' : ''} data-pybgopen="1"><summary><b>จัดถุงรวมหลายรายการ (ป้าย -05)</b> <span class="muted smt">ใช้กรณีถุงเดียวมีหลายรหัส เช่น ชุดหลัก + พรีมิกซ์</span></summary>
       <div style="display:flex;flex-direction:column;gap:10px;margin-top:10px">
       <div class="grid3"><div class="fld"><span>Formula Code</span><input data-bind="py.bg.formula" value="${esc(bg.formula)}" maxlength="40" placeholder="98-…"></div><div class="fld"><span>Product Name</span><input data-bind="py.bg.product" value="${esc(bg.product)}" maxlength="120"></div><div class="fld"><span>ประเภท</span><input data-bind="py.bg.type" value="${esc(bg.type)}" maxlength="20"></div></div>
@@ -3920,7 +3919,7 @@ document.addEventListener('click', async (e) => {
   if (a === 'rvclose') { P.rv.done = null; render(); return; }
   if (a === 'recv') { const v = P.rv; const p = { item: v.item, lot: pyLotNo(), sets: int(v.sets), kg: num(v.kg), note: v.note.trim() || undefined, bag: v.bag ? { formula: v.formula.trim(), product: v.product.trim(), type: 'MIXER' } : undefined };
     pyAct('rm_py_receive', { p }, (r) => 'รับเข้า ' + r.lot + ' แล้ว · ' + r.sets + ' ชุด' + (r.bag ? ' · ถุง ' + r.bag : '') + ' — พิมพ์ป้ายได้เลย',
-      (r) => { v.done = { lot: r.lot, sets: r.sets, bag: r.bag }; v.nn = ''; v.sets = ''; v.note = ''; S.py.master = null; loadPYMaster(); }); return; }
+      (r) => { v.done = { lot: r.lot, sets: r.sets, bag: r.bag }; v.lot = ''; v.sets = ''; v.note = ''; S.py.master = null; loadPYMaster(); }); return; }
   if (a === 'bgadd') { const bg = P.bg; const l = ((P.data || {}).lots || []).find((x) => x.lot === bg.lot); if (!l) return; bg.lines.push({ lot: l.lot, item: l.item, qty: int(bg.qty) }); bg.lot = ''; bg.qty = ''; bg.open = true; if (!bg.formula) bg.formula = pyFormula(l.item); if (!bg.product) bg.product = pyProd(l.name); render(); return; }
   if (a === 'bgdel') { P.bg.lines.splice(int(ds.i), 1); render(); return; }
   if (a === 'bgdo') { const bg = P.bg; pyAct('rm_py_bag_create', { p: { formula: bg.formula.trim(), product: bg.product.trim(), type: bg.type.trim() || 'MIXER', lines: bg.lines.map((x) => ({ lot: x.lot, qty: x.qty })) } },
@@ -3964,7 +3963,7 @@ document.addEventListener('change', (e) => {
   if (ds.bind === 'py.ms.f.code' && S.py.ms.f && S.py.ms.f.kind === 'PX') { const x = ((S.py.master || {}).px || []).find((y) => y.c === el.value); if (x) { S.py.ms.f.name = x.n; render(); } }
   if (ds.bind === 'py.fm.from' && S.py.fm.to < S.py.fm.from) { S.py.fm.to = S.py.fm.from; render(); }
 });
-function pyRvItem() { const v = S.py.rv; const it = pyItem(v.item); if (!it) return; v.kg = it.kg ? String(it.kg) : v.kg; v.ttt = it.t || v.ttt; v.formula = pyFormula(it.c); v.product = pyProd(it.n); render(); }
+function pyRvItem() { const v = S.py.rv; const it = pyItem(v.item); if (!it) return; v.kg = it.kg ? String(it.kg) : v.kg; v.formula = pyFormula(it.c); v.product = pyProd(it.n); render(); }
 document.addEventListener('input', (e) => {
   const el = e.target; if (!el.dataset || el.dataset.bind !== 'py.rv.iq') return;
   const t = el.value.trim().toUpperCase(); if (!t) return; const it = pyItems().find((i) => i.a && (i.c === t || i.c === '97-' + t));
