@@ -180,7 +180,7 @@ html[data-theme=dark] .prev{background:#0b111c}
   <video id="camv" playsinline muted style="max-width:100%;max-height:70vh;border-radius:12px;background:#000"></video>
   <span id="cammsg" style="color:#fff"></span><button type="button" id="camx" style="min-width:140px">ปิดกล้อง</button></div>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
-<script src="i18n-en.js?v=20261120b"></script>
+<script src="i18n-en.js?v=20261120c"></script>
 <script>
 'use strict';
 const SB_URL = 'https://kdytxuufvigwjccebrki.supabase.co';
@@ -1784,7 +1784,7 @@ function viewDumpLog(d, embed) {
     <div class="card" style="display:flex;flex-direction:column;gap:10px">
       <div class="fc" style="flex-wrap:wrap;gap:8px"><div><b style="font-size:16px">${one ? 'รอบวัน ' + dmy(f) : dmy(f) + ' – ' + dmy(t)} · เทรวม ${fmt(Math.round(kg * 100) / 100)} กก.</b>
         <span class="muted smt"> · ${live.length} รายการ${kgN ? ` · ในนี้ BB NCP ${fmt(kgN)} กก.` : ''}${nv ? ` · ยกเลิก ${nv} รายการ (ไม่นับ)` : ''}</span></div>
-        <span class="chips"><button type="button" class="sm" data-dlform="02" ${live.length ? '' : 'disabled'} title="ฟอร์ม Intake">พิมพ์ F-WI02-PRD04-02 บันทึกการอินเทค</button><button type="button" class="sm" data-dlform="01" ${live.length ? '' : 'disabled'} title="ฟอร์ม Control">พิมพ์ F-WI02-PRD04-01 บันทึกการเบิก</button><button type="button" class="ghost sm" data-dlprint="1" ${rows.length ? '' : 'disabled'}>รายการ + สรุปต่อถัง</button><button type="button" class="ghost sm" data-dlcsv="1" ${rows.length ? '' : 'disabled'}>Excel</button></span></div>
+        <span class="chips"><button type="button" class="sm" data-dlform="02" ${live.length ? '' : 'disabled'} title="ฟอร์ม Intake">พิมพ์ F-WI02-PRD04-02 บันทึกการอินเทค</button><button type="button" class="sm" data-dlform="01" ${live.length ? '' : 'disabled'} title="ฟอร์ม Control">พิมพ์ F-WI02-PRD04-01 บันทึกการเบิก</button><button type="button" class="sm" data-dlxlsx="1" ${live.length && !S.busy ? '' : 'disabled'} title="ฟอร์ม 01 + 02 แยกชีตตามวัน">Excel ฟอร์ม 01 + 02</button><button type="button" class="ghost sm" data-dlprint="1" ${rows.length ? '' : 'disabled'}>รายการ + สรุปต่อถัง</button><button type="button" class="ghost sm" data-dlcsv="1" ${rows.length ? '' : 'disabled'}>Excel รายการ (CSV)</button></span></div>
       <span class="muted smt">ฟอร์ม PD: 1 แถว = 1 รายการเท · ไม่รวมที่ยกเลิก · ช่อง "เริ่มเทค" = เวลาสแกน/บันทึกในระบบ · "เทคเสร็จ" และลายเซ็นเขียนที่ใบ · เลือกกะก่อนพิมพ์เพื่อแยกใบตามกะ</span>
       <div class="tw"><table><thead><tr><th>เวลา</th><th>ถัง</th><th>รหัส</th><th>วัตถุดิบ</th><th>Lot · พาเลท / BB</th><th class="num">ถุง</th><th class="num">กก.</th><th>ใบสั่ง</th><th>วิธี · จุด</th><th>ผู้เท</th><th>หมายเหตุ</th></tr></thead>
         <tbody>${body || '<tr><td colspan="11" class="muted">ไม่มีรายการเทในช่วงนี้</td></tr>'}</tbody></table></div></div>
@@ -1829,6 +1829,76 @@ function dlForms(d, kind) {
       sigs: kind === '01' ? ['เจ้าหน้าที่หน่วยงานควบคุมการผลิต', 'ผู้ตรวจสอบ'] : ['เจ้าหน้าที่หน่วยงานอินเทค', 'เจ้าหน้าที่หน่วยงานควบคุมการผลิต', 'ผู้ตรวจสอบ'] });
   });
   openForm((kind === '01' ? 'F-WI02-PRD04-01 บันทึกการเบิกวัตถุดิบ ' : 'F-WI02-PRD04-02 บันทึกการอินเทควัตถุดิบ ') + days.map(dfull).join(', ') + (sh ? ' กะ' + sh[0] : ''), 'landscape', pages);
+}
+// ===== Excel ฟอร์ม PD (ผู้ใช้ 20 พ.ย. 2026 "ทำ excel ด้วย") · ExcelJS: เส้นตาราง/merge/ตั้งหน้า A4 แนวนอนตามฟอร์ม =====
+async function excelLib() {
+  for (const u of ['https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js', 'https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js']) {
+    if (window.ExcelJS) break;
+    await new Promise((ok) => { const sc = document.createElement('script'); sc.src = u; sc.onload = ok; sc.onerror = ok; document.head.appendChild(sc); });
+  }
+  if (!window.ExcelJS) throw new Error('โหลดตัวสร้างไฟล์ Excel ไม่ได้ — ลองใหม่');
+  return window.ExcelJS;
+}
+function dlFormData(d, r) { // ค่าดิบสำหรับ Excel (ตัวเลขเป็นตัวเลข)
+  const isBag = r.kind === 'PALLET' && Number(r.bags) > 0; const isBB = r.kind === 'BIGBAG' || r.src === 'ncp'; const isTr = r.kind === 'TRUCK';
+  const cnt = isBag ? Number(r.bags) : isBB || isTr ? 1 : 0; const kg = Number(r.kg) || 0;
+  const note = [r.src === 'ncp' ? 'BB ' + (r.bb || '') : '', r.doc ? r.doc : (r.iss || ''), r.src === 'direct' ? 'เบิกตรง' : '', r.src === 'ncp' && !r.doc ? 'ไม่ผูกใบสั่ง' : '', !cnt && r.kind ? (KIND[r.kind] || r.kind) : ''].filter(Boolean).join(' · ');
+  return { item: r.item, name: inm(d, r.item), lot: r.lot || '', bag: isBag ? Number(r.bags) : null, bb: isBB ? 1 : null, tr: isTr ? 1 : null, per: cnt ? Math.round(kg / cnt * 100) / 100 : null, kg, t: hm(r.at), bin: r.bin, oby: r.oby || '', by: r.src === 'scan' || r.src === 'ncp' ? r.by || '' : '', note };
+}
+async function dlExcel(d) {
+  const L = S.dl; const rows = dlRows(d).filter((r) => !r.void);
+  if (!rows.length) { S.toast = 'ไม่มีรายการเทตามตัวกรองนี้'; S.toastErr = true; render(); return; }
+  S.busy = true; render();
+  try {
+    const EX = await excelLib(); const wb = new EX.Workbook(); wb.creator = 'BFL Raw Material System';
+    const sh = DL_SHIFT[L.shift]; const days = [...new Set(rows.map((r) => r.day))].sort();
+    const thin = { style: 'thin', color: { argb: 'FF000000' } }; const box = { top: thin, left: thin, bottom: thin, right: thin };
+    const FONT = 'TH SarabunPSK'; const logo = wb.addImage({ base64: LOGO.split(',')[1], extension: 'png' });
+    const forms = [
+      { k: '02', code: 'F-WI02-PRD04-02 Rev.08', title: 'บันทึกการอินเทควัตถุดิบ', tab: 'อินเทค', grp: 'จำนวนที่ทำการอินเทค', perH: 'น้ำหนักต่อ\nกระสอบ/หน่วย', timeH: 'เวลา', binH: 'หมายเลขถัง', p1: 'ผู้สั่งเบิก', p2: 'ผู้จ่าย',
+        w: [6, 17, 26, 16, 8, 8, 6, 10, 12, 8, 8, 9, 12, 11, 24], sigs: ['เจ้าหน้าที่หน่วยงานอินเทค', 'เจ้าหน้าที่หน่วยงานควบคุมการผลิต', 'ผู้ตรวจสอบ'] },
+      { k: '01', code: 'F-WI02-PRD04-01 Rev.05', title: 'บันทึกการเบิกวัตถุดิบ', tab: 'เบิก', grp: 'จำนวนที่เบิก', perH: 'น้ำหนักต่อ\nหน่วย', timeH: 'เวลาในการเทควัตถุดิบ', binH: 'ถังจัดเก็บ', p1: 'ผู้สั่งเบิก', p2: 'ผู้รับใบเบิก',
+        w: [6, 17, 28, 17, 8, 8, 6, 10, 12, 8, 8, 9, 12, 12, 19], sigs: ['เจ้าหน้าที่หน่วยงานควบคุมการผลิต', 'ผู้ตรวจสอบ'] }];
+    for (const F of forms) for (const day of days) {
+      const ws = wb.addWorksheet(`${F.k} ${F.tab} ${day.slice(8, 10)}-${day.slice(5, 7)}${sh ? ' ' + sh[0] : ''}`, {
+        pageSetup: { paperSize: 9, orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0, horizontalCentered: true, margins: { left: 0.3, right: 0.3, top: 0.35, bottom: 0.35, header: 0.2, footer: 0.2 } },
+        views: [{ state: 'frozen', ySplit: 6 }] });
+      ws.columns = F.w.map((w) => ({ width: w }));
+      ws.properties.defaultRowHeight = 18;
+      const st = (c, o) => { const x = ws.getCell(c); Object.assign(x, o); x.font = Object.assign({ name: FONT, size: 14 }, o.font || {}); return x; };
+      ws.mergeCells('A1:O1'); st('A1', { value: 'บริษัท บลูฟาโล่ จำกัด', font: { bold: true, size: 16 }, alignment: { horizontal: 'center' } });
+      ws.mergeCells('A2:O2'); st('A2', { value: F.title, font: { bold: true, size: 16 }, alignment: { horizontal: 'center' } });
+      ws.mergeCells('L3:O3'); st('L3', { value: F.code, alignment: { horizontal: 'right' } });
+      ws.addImage(logo, { tl: { col: 0.2, row: 0.1 }, ext: { width: 52, height: 45 } });
+      ws.mergeCells('H4:O4'); st('H4', { value: F.k === '02' ? `วันที่ ${dfull(day)}    เวลา ${sh ? sh[1] : '08.00–08.00 (ทั้งรอบวัน)'}    กะ ${sh ? sh[0] : '-'}` : `วันที่ ${dfull(day)}`, alignment: { horizontal: 'right' } });
+      // หัวตาราง 2 ชั้น (แถว 5–6)
+      const H = [['A', 'ลำดับที่'], ['B', 'รหัสวัตถุดิบ'], ['C', 'ชื่อวัตถุดิบ'], ['D', F.k === '02' ? 'Lot. No. วัตถุดิบ' : 'Lot.No.'], ['H', F.perH], ['I', 'รวมน้ำหนัก\n(กิโลกรัม)'], ['L', F.binH], ['M', F.p1], ['N', F.p2], ['O', 'หมายเหตุ']];
+      H.forEach(([c, v]) => { ws.mergeCells(`${c}5:${c}6`); st(c + '5', { value: v }); });
+      ws.mergeCells('E5:G5'); st('E5', { value: F.grp }); ws.mergeCells('J5:K5'); st('J5', { value: F.timeH });
+      [['E6', 'กระสอบ'], ['F6', 'Bigbag'], ['G6', 'คัน'], ['J6', 'เริ่มเทค'], ['K6', 'เทคเสร็จ']].forEach(([c, v]) => st(c, { value: v }));
+      for (const r of [5, 6]) { ws.getRow(r).height = r === 5 ? 34 : 30; for (let c = 1; c <= 15; c++) { const x = ws.getCell(r, c); x.border = box; x.font = { name: FONT, size: 13, bold: true }; x.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true }; } }
+      const data = rows.filter((r) => r.day === day).map((r) => dlFormData(d, r)); const n = Math.max(25, data.length);
+      for (let i = 0; i < n; i++) {
+        const x = data[i]; const R = ws.getRow(7 + i); R.height = 18;
+        const v = x ? [i + 1, x.item, x.name, x.lot, x.bag, x.bb, x.tr, x.per, x.kg, x.t, '', x.bin, x.oby, F.k === '01' ? x.by : '', x.note] : [i + 1];
+        v.forEach((val, ci) => { R.getCell(ci + 1).value = val === '' ? null : val; });
+        for (let c = 1; c <= 15; c++) { const cl = R.getCell(c); cl.border = box; cl.font = { name: FONT, size: 13 }; cl.alignment = { vertical: 'middle', horizontal: [1, 10, 11, 12].includes(c) ? 'center' : [5, 6, 7, 8, 9].includes(c) ? 'right' : 'left', shrinkToFit: [2, 3, 4, 13, 14, 15].includes(c) }; }
+        R.getCell(8).numFmt = '#,##0.00'; R.getCell(9).numFmt = '#,##0.00'; R.getCell(5).numFmt = '#,##0';
+      }
+      // รวม (นอกฟอร์ม · ช่วยตรวจ) + ลายเซ็น
+      const tr = 7 + n; ws.mergeCells(`A${tr}:G${tr}`); st('A' + tr, { value: 'รวม', font: { bold: true, size: 13 }, alignment: { horizontal: 'right' } });
+      const sum = ws.getCell('I' + tr); sum.value = { formula: `SUM(I7:I${tr - 1})`, result: data.reduce((a, x) => a + x.kg, 0) }; sum.numFmt = '#,##0.00'; sum.font = { name: FONT, size: 13, bold: true }; sum.border = box;
+      const sr = tr + 3; const spots = F.sigs.length === 3 ? [['A', 'D'], ['F', 'J'], ['L', 'O']] : [['A', 'D'], ['L', 'O']];
+      F.sigs.forEach((s, i) => { const [a, b] = spots[i];
+        [['........................................................', 0], ['(........................................................)', 1], [s, 2]].forEach(([txt, k]) => { ws.mergeCells(`${a}${sr + k}:${b}${sr + k}`); st(a + (sr + k), { value: txt, alignment: { horizontal: 'center' } }); }); });
+      ws.pageSetup.printArea = `A1:O${sr + 2}`; ws.pageSetup.printTitlesRow = '5:6';
+    }
+    const buf = await wb.xlsx.writeBuffer(); const [f, t] = dlRange();
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
+    a.download = `ฟอร์มสั่งเท-อินเทค_F-WI02-PRD04_${f}${f === t ? '' : '_' + t}${sh ? '_กะ' + sh[0] : ''}.xlsx`; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 800);
+    S.toast = 'ดาวน์โหลด Excel แล้ว'; S.toastErr = false;
+  } catch (e) { S.toast = e.message; S.toastErr = true; }
+  S.busy = false; render();
 }
 function dlPrint(d) {
   const [f, t] = dlRange(); const one = f === t; const rows = dlRows(d); const live = rows.filter((r) => !r.void); const kg = live.reduce((a, r) => a + Number(r.kg || 0), 0);
@@ -3025,6 +3095,7 @@ document.addEventListener('click', async (e) => {
   if (ds.dlvoid) { S.dl.showVoid = !S.dl.showVoid; render(); return; }
   if (ds.dlprint) { dlPrint(D()); return; }
   if (ds.dlform) { dlForms(D(), ds.dlform); return; }
+  if (ds.dlxlsx) { dlExcel(D()); return; }
   if (ds.dlsh !== undefined) { S.dl.shift = ds.dlsh; render(); return; }
   if (ds.dlcsv) { dlCsv(D()); return; }
   if (ds.ntr) { Object.assign(S.nt, { range: ds.ntr, from: '', to: '' }); loadNT(); return; }

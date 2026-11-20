@@ -1746,4 +1746,8 @@ window.RM_I18N_EN = {
 "รายการ + สรุปต่อถัง": "List + summary by bin",
 "ฟอร์ม PD: 1 แถว = 1 รายการเท · ไม่รวมที่ยกเลิก · ช่อง \"เริ่มเทค\" = เวลาสแกน/บันทึกในระบบ · \"เทคเสร็จ\" และลายเซ็นเขียนที่ใบ · เลือกกะก่อนพิมพ์เพื่อแยกใบตามกะ": "PD forms: 1 row = 1 dump · cancelled excluded · \"Start\" = scan/record time in the system · write \"Finish\" and signatures on the sheet · pick a shift before printing to split sheets by shift",
 "ไม่มีรายการเทตามตัวกรองนี้": "No dumps for this filter",
+"Excel ฟอร์ม 01 + 02": "Excel forms 01 + 02",
+"Excel รายการ (CSV)": "Excel list (CSV)",
+"ดาวน์โหลด Excel แล้ว": "Excel downloaded",
+"โหลดตัวสร้างไฟล์ Excel ไม่ได้ — ลองใหม่": "Could not load the Excel builder — try again",
 };
