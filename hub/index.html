@@ -183,6 +183,37 @@ function editHtml() {
     + errBox() + '<button class="primary" data-act="saveUser">บันทึก</button><button class="ghost" data-act="cancelEdit">← กลับ</button></div>';
 }
 
+/* ---------- poll guard (20 Nov 2026): apps kept alive in hidden frames (or with the screen off) don't poll for changes ----------
+ * Same origin → the Hub wraps each app frame's fetch. Only "anything new?" checks are held: Supabase RPCs named *stamp and Apps Script
+ * liveStamp / getStamp. They wait (one per kind per frame) until the frame is shown again, then run, so the app refreshes at once.
+ * Reads, saves and logins always go straight through. */
+const HUB_WAIT = [];
+function hubHidden(f) { return document.hidden || !f.isConnected || f.style.display === 'none'; }
+function hubRelease() {
+  for (let i = HUB_WAIT.length - 1; i >= 0; i--) { const w = HUB_WAIT[i]; if (!w.f.isConnected || !hubHidden(w.f)) { HUB_WAIT.splice(i, 1); w.go(); } }
+}
+function hubGuard(f) {
+  try {
+    const w = f.contentWindow; if (!w || !w.fetch || w.__hubGuard) return;
+    const real = w.fetch.bind(w), park = new Map();
+    const pollKey = (u, o) => {
+      const url = String((u && u.url) || u || ''), body = o && typeof o.body === 'string' ? o.body : '';
+      if (/\/rest\/v1\/rpc\/[a-z0-9_]*stamp(\?|$)/i.test(url)) return url;
+      if (/script\.google(usercontent)?\.com/.test(url) && /"fn":"(liveStamp|getStamp)"/.test(body)) return url + '|' + body.slice(0, 300);
+      return null;
+    };
+    w.fetch = function (u, o) {
+      const k = pollKey(u, o);
+      if (!k || !hubHidden(f)) return real(u, o);
+      let p = park.get(k);
+      if (!p) { p = new Promise((go) => HUB_WAIT.push({ f, go })).then(() => { park.delete(k); return real(u, o); }); park.set(k, p); }
+      return p.then((r) => r.clone());
+    };
+    w.__hubGuard = 1;
+  } catch (e) { /* not same origin or not ready: the app polls as before */ }
+}
+document.addEventListener('visibilitychange', hubRelease);
+
 /* ---------- render: the shell keeps app iframes alive, so switching tabs never reloads an app ---------- */
 function render() {
   const root = document.getElementById('root');
@@ -193,6 +224,7 @@ function render() {
   const st = document.getElementById('stage');
   let pg = st.querySelector('.page'); if (pg) pg.remove();
   st.querySelectorAll('iframe, .loading').forEach((f) => { f.style.display = f.dataset.app === S.tab ? '' : 'none'; });
+  hubRelease();
   const tabApp = S.apps.find((x) => x.key === S.tab && x.frame === false);
   if (tabApp) st.insertAdjacentHTML('beforeend', '<div class="page"><div class="wrap col" style="max-width:460px;text-align:center;padding-top:48px">'
     + '<h2>' + esc(tabApp.name) + '</h2><span class="muted small">แอปนี้ต้อง login บัญชี Google จึงเปิดในหน้า Hub ไม่ได้ — เปิดเป็นแท็บใหม่' + (tabApp.sso ? ' และเข้าให้อัตโนมัติ' : '') + '</span>'
@@ -216,7 +248,7 @@ async function openApp(key, force) {
   const ld = st.querySelector('.loading[data-app="' + key + '"]'); if (ld) ld.remove();
   st.insertAdjacentHTML('beforeend', '<div class="loading" data-app="' + key + '">กำลังเปิด ' + esc(a.name) + '…</div>');
   f = document.createElement('iframe'); f.dataset.app = key; f.src = url; f.allow = 'camera; microphone; clipboard-read; clipboard-write; fullscreen';
-  f.addEventListener('load', () => { const l = st.querySelector('.loading[data-app="' + key + '"]'); if (l) l.remove(); });
+  f.addEventListener('load', () => { hubGuard(f); const l = st.querySelector('.loading[data-app="' + key + '"]'); if (l) l.remove(); });
   st.appendChild(f); render();
 }
 function expired() { toast('หมดเวลาเข้าใช้งาน — login ใหม่', true); clearSession(); start(); }
