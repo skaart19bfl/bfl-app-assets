@@ -1101,7 +1101,9 @@ const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const fmt = (n) => Number(n || 0).toLocaleString('en-US');
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-const rid = () => Array.from(crypto.getRandomValues(new Uint8Array(4)), (b) => b.toString(16).padStart(2, '0')).join('');
+// 20 Nov 2026: always start with a letter (a,b,c,d,f) like the server's id8_ — an all-hex id such as 9542e213 / 02229488
+// was turned into a number by the sheet (9.542E+216) and the copy then appended a new row on every change (pallet 5 printed 10 times)
+const rid = () => { const b = crypto.getRandomValues(new Uint8Array(4)); return 'abcdf'.charAt(b[0] % 5) + Array.from(b, (x) => x.toString(16).padStart(2, '0')).join('').slice(1); };
 const now = () => Date.now() + ((S.session && S.session.offset) || 0); // server-corrected clock
 const hm = (t) => new Date(t).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok' });
 // v92 (14 Nov 2026, user "เริ่มย้ายทั้งหมดไปใช้ supabase โดยไม่ผ่าน app script"): this page talks to Supabase only.
