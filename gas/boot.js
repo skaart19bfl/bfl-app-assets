@@ -69,10 +69,29 @@
     }, 3000);
   }
 
+  function stampGuard() { /* 22 พ.ย. 2026 (ผู้ใช้ "ทำ 1 และ 2"): Supabase แผนฟรี (disk IO) — คำถาม "มีอะไรใหม่" (*_stamp) ไปถึง Supabase ไม่เกินทุก 30 วิ · ไม่มีคนแตะ/กดปุ่ม 10 นาที = ทุก 5 นาที · แตะหรือกลับมาที่แท็บ = ถามใหม่ทันที */
+  var W = window, g = W.__stampGuard;
+  if (!g) {
+    g = W.__stampGuard = { every: 30e3, idle: 10 * 60e3, slow: 5 * 60e3, touch: Date.now(), last: {}, memo: {}, f0: W.fetch };
+    W.fetch = function (u, o) {
+      var url = typeof u === 'string' ? u : (u && u.url) || '', m = /\/rest\/v1\/rpc\/([a-z0-9_]+_stamp)(\?|$)/.exec(url), b = o && typeof o.body === 'string' ? o.body : null;
+      if (!m || b === null || String((o && o.method) || 'GET').toUpperCase() !== 'POST') return g.f0.apply(W, arguments);
+      var k = m[1] + '|' + b, n = Date.now(), c = g.memo[k], gap = n - g.touch > g.idle ? g.slow : g.every;
+      if (c !== undefined && n - (g.last[k] || 0) < gap) return Promise.resolve(new Response(c, { status: 200, headers: { 'Content-Type': 'application/json' } }));
+      g.last[k] = n;
+      return g.f0.apply(W, arguments).then(function (r) { if (r.ok) r.clone().text().then(function (t) { g.memo[k] = t; }, function () {}); return r; });
+    };
+  }
+  var wake = function () { var was = Date.now() - g.touch > g.idle; g.touch = Date.now(); if (was) g.last = {}; };
+  ['pointerdown', 'keydown', 'touchstart', 'wheel'].forEach(function (e) { document.addEventListener(e, wake, { capture: true, passive: true }); });
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) g.last = {}; });
+}
+
   function boot(page, check) {
     var C = { exec: EXEC, key: cfg.key, title: TITLE, lsk: LSK, hash: page.hash, check: check };
     var head = '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">'
-      + '<script>(' + shim.toString() + ')(' + JSON.stringify(C).replace(/</g, '\\u003c') + ');<\/script>';
+      + '<script>(' + shim.toString() + ')(' + JSON.stringify(C).replace(/</g, '\\u003c') + ');<\/script>'
+      + '<script>(' + stampGuard.toString() + ')();<\/script>';
     // libraries from a CDN (e.g. xlsx for Excel export) load without blocking: Chrome may refuse a blocking cross-site script
     // written by document.write on a slow connection, and these are only used when someone presses a button
     var h = page.html.replace(/<script(\s+src=["']https?:\/\/[^"']+["'])\s*>/gi, '<script$1 async>'), m;
