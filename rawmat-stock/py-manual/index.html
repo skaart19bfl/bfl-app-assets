@@ -89,7 +89,7 @@
     <div class="pm-kick">BFL Raw Material System · โมดูล PY</div>
     <h1>คู่มือการใช้งาน PY ชุดสารเสริม</h1>
     <p>ตั้งแต่รับชุดสารเสริมเข้าคลัง PY → ออกใบสั่งเบิก → เบิก / เท / คืน → รับคืน → พิมพ์ฟอร์ม<br>ทุกขั้นตอนมีภาพหน้าจอจริงและข้อมูลตัวอย่าง (ตัวเลขในวงกลมแดงบนภาพ = ลำดับขั้นตอน · แตะภาพเพื่อดูขนาดเต็ม)</p>
-    <div class="pm-meta">ฉบับ 21 พ.ย. 2026 (ปรับปรุง: คลัง PY-PC · เอกสาร BFL-PC · รหัส Odoo) · Phase 1 · ใช้กับ F-WI01-PSS01-04/-05 Rev.01 · F-WI07-PRD04-01 Rev.03 · F-WI04-PSS01-01 Rev.00</div>
+    <div class="pm-meta">ฉบับ 21 พ.ย. 2026 (ปรับปรุง: คลัง PY-PC · เอกสาร BFL-PC · รหัส Odoo · ชุดแยกหลายถุง) · Phase 1 · ใช้กับ F-WI01-PSS01-04/-05 Rev.01 · F-WI07-PRD04-01 Rev.03 · F-WI04-PSS01-01 Rev.00</div>
   </div>
 </header>
 
@@ -122,6 +122,7 @@
     <div><b>ป้าย QR 1 ใบต่อชุด</b><span>ป้าย -04 ติดทุกชุด · ป้าย -05 ติดถุงรวม</span></div>
     <div><b>คืนเป็นชุดเต็ม</b><span>ไม่คืนเศษ · คืนได้เฉพาะชุดที่เบิกแล้วยังไม่เท</span></div>
     <div><b>เทเข้า Mixer โดยตรง</b><span>ไม่ผ่านถัง batching · ถุงมีกี่รหัสต้องเทครบ</span></div>
+    <div><b>1 ชุดแยกหลายถุงได้</b><span>บางสูตรผสมรอไม่ได้ → แยก 2 ถุง (รหัส -41 เดียว Lot เดียว) · ป้ายถุงละใบ · เบิก/เทต้องสแกนครบทุกถุง</span></div>
   </div>
   <h3>คลัง 2 คลัง และเอกสาร 2 แบบ</h3>
   <div class="pm-grid2">
@@ -204,12 +205,13 @@
       <li>กด <b>+ เพิ่มรหัส</b></li>
       <li>① เลือกประเภท <b>ชุดสารเสริม (-41)</b> หรือ <b>พรีมิกซ์ (รหัส PX)</b> สำหรับกรณีถุงที่ 2 เป็นพรีมิกซ์</li>
       <li>② ใส่รหัส ③ ชื่อ · กลุ่ม · ④ TTT (ประเภทอาหาร 3 ตัว)</li>
+      <li><b>ถุงต่อชุด</b> — 1 ถุง (ปกติ) หรือ 2–4 ถุง สำหรับสูตรที่ต้องแยกถุงเท (ค่าเริ่มต้นตอนรับเข้า)</li>
       <li>⑤ <b>รหัส Odoo</b> ⑥ <b>ชื่อ Odoo</b> (ไม่บังคับ · แก้เพิ่มภายหลังได้ด้วยปุ่ม แก้)</li>
       <li>⑦ กด <b>บันทึก</b> → รหัสใช้ได้ทันทีในหน้ารับเข้าและใบสั่งเบิก</li>
     </ol>
     <div class="pm-ex"><b>ข้อมูลตัวอย่าง</b><dl><dt>ประเภท</dt><dd>ชุดสารเสริม (-41)</dd><dt>รหัส</dt><dd class="pm-mono">97-CT30TNMK-41</dd><dt>ชื่อ</dt><dd>Cat30% Tuna Milk -PRM</dd><dt>กลุ่ม / TTT</dt><dd>CAT / CAT</dd><dt>รหัส Odoo</dt><dd class="pm-mono">PM-CT30TNMK</dd><dt>ชื่อ Odoo</dt><dd>ชุดสารเสริม Cat30% Tuna Milk</dd></dl></div>
   </div>
-  <figure class="pm-fig"><a href="img/s11_master_new.webp" target="_blank" rel="noopener"><img src="img/s11_master_new.webp" width="1400" height="443" style="max-width:min(100%,933px)" loading="lazy" alt="ฟอร์มเพิ่มรหัส"></a><figcaption>ฟอร์มเพิ่มรหัส</figcaption></figure>
+  <figure class="pm-fig"><a href="img/s11_master_new.webp" target="_blank" rel="noopener"><img src="img/s11_master_new.webp" width="1400" height="500" style="max-width:min(100%,933px)" loading="lazy" alt="ฟอร์มเพิ่มรหัส"></a><figcaption>ฟอร์มเพิ่มรหัส</figcaption></figure>
   <div class="pm-tip">รหัส Odoo แสดงในหน้า ยอด PY, รายการเลือกรหัส (พิมพ์รหัส Odoo ค้นหาได้), ไฟล์ Excel / PDF ยอดคงคลัง และใบจ่ายออก PY-PC</div>
   <div class="pm-note">ไม่ลบรหัส — ถ้าเลิกใช้ให้กด แก้ → เอาเครื่องหมาย ✓ ใช้งาน ออก (รหัสจะไม่ขึ้นในรายการเลือก)</div>
 </section>
@@ -232,7 +234,7 @@
   </div>
 
   <h3>ขั้นที่ 2 · กรอกข้อมูลแล้วกดรับเข้า</h3>
-  <figure class="pm-fig"><a href="img/s21_recv_form.webp" target="_blank" rel="noopener"><img src="img/s21_recv_form.webp" width="1400" height="923" style="max-width:min(100%,933px)" loading="lazy" alt="กรอกครบแล้ว — ปุ่มรับเข้าจะกดได้เมื่อข้อมูลครบและถูกต้อง (ตัวเลขตรงกับรายการด้านล่าง)"></a><figcaption>กรอกครบแล้ว — ปุ่มรับเข้าจะกดได้เมื่อข้อมูลครบและถูกต้อง (ตัวเลขตรงกับรายการด้านล่าง)</figcaption></figure>
+  <figure class="pm-fig"><a href="img/s21_recv_form.webp" target="_blank" rel="noopener"><img src="img/s21_recv_form.webp" width="1400" height="1008" style="max-width:min(100%,933px)" loading="lazy" alt="กรอกครบแล้ว — ปุ่มรับเข้าจะกดได้เมื่อข้อมูลครบและถูกต้อง (ตัวเลขตรงกับรายการด้านล่าง)"></a><figcaption>กรอกครบแล้ว — ปุ่มรับเข้าจะกดได้เมื่อข้อมูลครบและถูกต้อง (ตัวเลขตรงกับรายการด้านล่าง)</figcaption></figure>
   <ol class="pm-ol pm-ol-num">
     <li><b>คลังที่รับเข้า</b> — <b>PY</b> (ใช้ผลิต BFL) หรือ <b>PY-PC</b> (เตรียมส่ง BFL-PC)</li>
     <li><b>เอกสารระบบ</b> — <b>BFL</b> หรือ <b>BFL-PC</b> = ชื่อบริษัทบนหัวป้าย (เลือกคลัง PY-PC แล้วระบบเปลี่ยนเป็น BFL-PC ให้เอง เปลี่ยนกลับได้)</li>
@@ -247,6 +249,19 @@
   </ol>
   <div class="pm-grid2"><figure class="pm-fig"><a href="img/s37_recv_pc.webp" target="_blank" rel="noopener"><img src="img/s37_recv_pc.webp" width="1400" height="293" style="max-width:min(100%,933px)" loading="lazy" alt="เลือกคลัง PY-PC → เอกสารเปลี่ยนเป็น BFL-PC ให้อัตโนมัติ"></a><figcaption>เลือกคลัง PY-PC → เอกสารเปลี่ยนเป็น BFL-PC ให้อัตโนมัติ</figcaption></figure><figure class="pm-fig"><a href="img/s48_label_pc.webp" target="_blank" rel="noopener"><img src="img/s48_label_pc.webp" width="534" height="341" style="max-width:min(100%,356px)" loading="lazy" alt="ป้าย -04 เอกสาร BFL-PC: หัวป้าย &quot;บริษัท บลูฟาโล่ เพ็ทแคร์ จำกัด&quot;"></a><figcaption>ป้าย -04 เอกสาร BFL-PC: หัวป้าย "บริษัท บลูฟาโล่ เพ็ทแคร์ จำกัด"</figcaption></figure></div>
   <figure class="pm-fig"><a href="img/s23_recv_badlot.webp" target="_blank" rel="noopener"><img src="img/s23_recv_badlot.webp" width="810" height="186" style="max-width:min(100%,540px)" loading="lazy" alt="ตัวอย่าง Lot ผิดรูปแบบ — ระบบแจ้งทันทีและไม่ให้บันทึก"></a><figcaption>ตัวอย่าง Lot ผิดรูปแบบ — ระบบแจ้งทันทีและไม่ให้บันทึก</figcaption></figure>
+
+  <h3>กรณี 1 ชุดแยก 2 ถุง (บางตัวผสมรอไม่ได้)</h3>
+  <div class="pm-step2">
+    <div><ol class="pm-ol pm-ol-num">
+      <li><b>จำนวนถุงต่อชุด</b> — เลือก <b>2 ถุง</b> (ระบบเลือกให้ตาม Master)</li>
+      <li><b>น้ำหนักถุง 1</b> เช่น 10.00 กก.</li>
+      <li><b>น้ำหนักถุง 2</b> เช่น 3.50 กก. → น้ำหนักต่อชุด = 13.50 กก. อัตโนมัติ</li>
+    </ol>
+    <div class="pm-ex"><b>ตัวอย่าง</b><dl><dt>รหัส</dt><dd class="pm-mono">97-FH26PL8801-41 (รหัสเดียว)</dd><dt>Lot</dt><dd class="pm-mono">PRE-FIS261121-03-MI (เลขเดียว ไม่แก้เลข)</dd><dt>จำนวน</dt><dd>8 ชุด × 2 ถุง = ป้าย 16 ใบ</dd></dl></div></div>
+    <figure class="pm-fig"><a href="img/s38_recv_2bags.webp" target="_blank" rel="noopener"><img src="img/s38_recv_2bags.webp" width="1400" height="239" style="max-width:min(100%,933px)" loading="lazy" alt="เลือก 2 ถุง แล้วใส่น้ำหนักแต่ละถุง"></a><figcaption>เลือก 2 ถุง แล้วใส่น้ำหนักแต่ละถุง</figcaption></figure>
+  </div>
+  <figure class="pm-fig"><a href="img/s39_label_2bags.webp" target="_blank" rel="noopener"><img src="img/s39_label_2bags.webp" width="1050" height="341" style="max-width:min(100%,700px)" loading="lazy" alt="ป้าย -04 ของชุดที่ 1: ถุง 1/2 (10.00 kg) และ ถุง 2/2 (3.50 kg) — SETCODE และ Lot No. เดียวกัน · QR ไม่ซ้ำกัน"></a><figcaption>ป้าย -04 ของชุดที่ 1: ถุง 1/2 (10.00 kg) และ ถุง 2/2 (3.50 kg) — SETCODE และ Lot No. เดียวกัน · QR ไม่ซ้ำกัน</figcaption></figure>
+  <div class="pm-note">ป้ายยังเป็นฟอร์ม F-WI01-PSS01-04 เดิม · ใต้ QR บอก <b>ชุดที่ · ถุง 1/2</b> · ติดป้ายให้ตรงถุง (ถุง 1 / ถุง 2 ตามน้ำหนัก) · ถ้าใส่ถุงรวม -05 ระบบนับเป็นชุด (ในถุงรวมต้องมีครบทุกถุงของแต่ละชุด)</div>
 
   <h3>ขั้นที่ 3 · พิมพ์ป้าย</h3>
   <figure class="pm-fig"><a href="img/s22_recv_done.webp" target="_blank" rel="noopener"><img src="img/s22_recv_done.webp" width="1400" height="164" style="max-width:min(100%,933px)" loading="lazy" alt="รับเข้าสำเร็จ: ① พิมพ์ป้ายชุด -04 (20 ใบ) ② พิมพ์ป้ายถุง -05 แต่ละถุง"></a><figcaption>รับเข้าสำเร็จ: ① พิมพ์ป้ายชุด -04 (20 ใบ) ② พิมพ์ป้ายถุง -05 แต่ละถุง</figcaption></figure>
@@ -369,6 +384,9 @@
     <li>กด <b>ออกใบสั่งเบิก</b> → ใบขึ้นที่หน้าจอเทยาทันที</li>
   </ol>
 
+  <div class="pm-tip"><b>Control รู้ได้อย่างไรว่าต้องเท 2 ถุง</b> — รหัสที่แยกถุงจะมีป้ายสีเหลือง <span class="pm-tag" style="background:#fff3cd;color:#8a5a00">ชุดละ 2 ถุง</span> ตอนเพิ่มรหัสในใบ และในตารางความคืบหน้า · ใบจะนับว่า "เท" ชุดนั้นเมื่อสแกนเทครบทุกถุงเท่านั้น · ถ้าถุงยังไม่ครบ ใบจะขึ้นกล่องเหลือง "ถุงยังไม่ครบ" บอกว่า Lot ไหน ชุดที่เท่าไร ขาดถุงไหน</div>
+  <figure class="pm-fig"><a href="img/s57_order_wait.webp" target="_blank" rel="noopener"><img src="img/s57_order_wait.webp" width="1400" height="488" style="max-width:min(100%,933px)" loading="lazy" alt="① รหัสที่แยกถุง ② รายการชุดที่ถุงยังไม่ครบ (ยังไม่สแกนเบิก / เทแล้วบางถุง)"></a><figcaption>① รหัสที่แยกถุง ② รายการชุดที่ถุงยังไม่ครบ (ยังไม่สแกนเบิก / เทแล้วบางถุง)</figcaption></figure>
+
   <h3>ติดตามและจัดการใบ</h3>
   <figure class="pm-fig"><a href="img/s51_order_card.webp" target="_blank" rel="noopener"><img src="img/s51_order_card.webp" width="1400" height="315" style="max-width:min(100%,933px)" loading="lazy" alt="การ์ดใบสั่งเบิก: ต้องใช้ / เบิก / เท / ในมือ / ใน PY ต่อรหัส"></a><figcaption>การ์ดใบสั่งเบิก: ต้องใช้ / เบิก / เท / ในมือ / ใน PY ต่อรหัส</figcaption></figure>
   <div class="pm-tw"><table class="pm-t"><thead><tr><th>ปุ่ม</th><th>ใช้เมื่อ</th></tr></thead><tbody>
@@ -443,6 +461,19 @@
     <div class="pm-figs"><figure class="pm-fig pm-fig-phone"><a href="img/s64_return_ok.webp" target="_blank" rel="noopener"><img src="img/s64_return_ok.webp" width="830" height="768" style="max-width:min(100%,415px)" loading="lazy" alt="คืนด้วยป้ายถุง -05 · คืนครบแล้ว ใบจึงหายจากรายการ"></a><figcaption>คืนด้วยป้ายถุง -05 · คืนครบแล้ว ใบจึงหายจากรายการ</figcaption></figure></div>
   </div>
 
+  <h3>ชุดที่แยก 2 ถุง (ป้ายมี "ถุง 1/2", "ถุง 2/2")</h3>
+  <div class="pm-step2 pm-phone">
+    <div>
+      <ol class="pm-ol pm-ol-num">
+        <li><b>เบิก</b> — ถ้าถุงแยกกัน ต้องสแกนป้าย -04 <b>ทั้ง 2 ถุง</b> (สแกนถุงแรกแล้วระบบเตือน "ยังไม่สแกนถุง 2") · ถ้าอยู่ในถุงรวม -05 สแกนป้ายถุงรวมครั้งเดียวได้</li>
+        <li><b>เท</b> — สแกนป้ายของแต่ละถุงตอนเทเข้า Mixer · ถุงแรกระบบให้เลข batch แล้วรอถุงที่เหลือ (กล่องเหลือง) · batch นั้นจะครบเมื่อเทครบทุกถุง</li>
+        <li>สแกนเทถุงที่ยังไม่ได้สแกนเบิก → ระบบไม่ให้เท ให้สลับไปโหมดเบิกก่อน</li>
+        <li><b>คืน</b> — คืนได้เฉพาะชุดที่ยังไม่ได้เทสักถุง และต้องนำคืนให้ครบทุกถุง</li>
+      </ol>
+    </div>
+    <div class="pm-figs"><figure class="pm-fig pm-fig-phone"><a href="img/s67_issue_bag.webp" target="_blank" rel="noopener"><img src="img/s67_issue_bag.webp" width="820" height="444" style="max-width:min(100%,410px)" loading="lazy" alt="เบิกถุง 1/2 — เตือนให้สแกนถุง 2"></a><figcaption>เบิกถุง 1/2 — เตือนให้สแกนถุง 2</figcaption></figure><figure class="pm-fig pm-fig-phone"><a href="img/s66_pour_bag.webp" target="_blank" rel="noopener"><img src="img/s66_pour_bag.webp" width="820" height="990" style="max-width:min(100%,410px)" loading="lazy" alt="① ชุดที่ถุงยังไม่ครบ ② เทถุง 1/2 รอเทถุง 2"></a><figcaption>① ชุดที่ถุงยังไม่ครบ ② เทถุง 1/2 รอเทถุง 2</figcaption></figure></div>
+  </div>
+
   <h3>D. สแกนผิด ต้องทำอย่างไร</h3>
   <p>แจ้ง <b>Control</b> — Control เปิดหน้า เบิก/เท/คืน → หัวข้อ <b>สแกนล่าสุด (เครื่องนี้)</b> หรือ ใบสั่งเบิก → รายการเบิก/เท แล้วกด ยกเลิก พร้อมใส่เหตุผล (เทยายกเลิกเองไม่ได้)</p>
   <figure class="pm-fig"><a href="img/s65_hist_ctl.webp" target="_blank" rel="noopener"><img src="img/s65_hist_ctl.webp" width="1400" height="169" style="max-width:min(100%,933px)" loading="lazy" alt="Control ยกเลิกรายการ: ① เหตุผล ② ยืนยันยกเลิก"></a><figcaption>Control ยกเลิกรายการ: ① เหตุผล ② ยืนยันยกเลิก</figcaption></figure>
@@ -483,6 +514,9 @@
       <tr><td>ชุดนี้อยู่คลัง PY-PC — เบิกเข้าการผลิตไม่ได้</td><td>สแกนเบิกชุดของคลัง PY-PC</td><td>ใช้ชุดคลัง PY · ถ้ารับเข้าผิดคลัง ให้พรีมิกซ์ แก้ คลัง ของ Lot</td></tr>
       <tr><td>… จ่ายออกไป BFL-PC ได้เฉพาะคลัง PY-PC</td><td>สแกนชุด/ถุงคลัง PY ในหน้าจ่ายออก</td><td>ตรวจป้าย หรือ แก้ คลัง ของ Lot (ถ้ายังไม่มีการเบิก)</td></tr>
       <tr><td>ถุงรวมต้องเป็นคลังเดียวกัน / เอกสารเดียวกัน</td><td>จัดถุงรวมจาก Lot ต่างคลังหรือต่างเอกสาร</td><td>แยกถุงตามคลัง/เอกสาร</td></tr>
+      <tr><td>ชุดนี้มี 2 ถุง — สแกนป้ายของแต่ละถุง</td><td>สแกนป้ายเก่าที่ไม่ระบุถุง</td><td>พิมพ์ป้าย -04 ใหม่ (ระบบพิมพ์ถุงละใบ)</td></tr>
+      <tr><td>ถุงที่ 2 ยังไม่ได้สแกนเบิก</td><td>สแกนเทถุงที่ยังไม่ได้สแกนเบิก</td><td>สลับไปโหมดเบิก สแกนถุงนั้น แล้วค่อยสแกนเท</td></tr>
+      <tr><td>ชุดนี้เทไปแล้วบางถุง — คืนไม่ได้</td><td>เทถุงแรกไปแล้ว</td><td>เทถุงที่เหลือให้ครบ หรือให้ Control ยกเลิกการเทก่อน</td></tr>
       <tr><td>อ่านป้ายไม่ได้</td><td>ไม่ใช่ป้าย -04/-05 หรือ QR เสีย</td><td>พิมพ์ป้ายใหม่ที่หน้า ยอด PY</td></tr>
       <tr><td>Lot No. ต้องเป็นรูปแบบ PRE-TTTYYMMDD-NN-MI</td><td>พิมพ์ Lot ผิดรูปแบบ</td><td>เช่น <span class="pm-mono">PRE-FIS261121-01-MI</span></td></tr>
       <tr><td>มี Lot … อยู่แล้ว</td><td>Lot ซ้ำ</td><td>เปลี่ยนเลขลำดับ NN</td></tr>
@@ -495,6 +529,7 @@
   <details class="pm-q"><summary>เบิกด้วยป้ายถุง แต่ถุงมีมากกว่าที่ต้องใช้?</summary><p>ระบบเบิกเฉพาะจำนวนที่ใบต้องใช้ ส่วนที่เหลือยังอยู่ PY ในถุงเดิม (ข้อความ "ข้าม … ชุด")</p></details>
   <details class="pm-q"><summary>ทำไมหา Lot การผลิตไม่เจอตอนออกใบ?</summary><p>แสดงเฉพาะ Lot 30 วันล่าสุดที่ยังไม่ยกเลิกและไม่ Finished · ลองพิมพ์เลข Lot หรือสูตรในช่องค้นหาแล้วกด ค้นหา</p></details>
   <details class="pm-q"><summary>ชุดที่รับคืนกลับไปอยู่ในถุงเดิมไหม?</summary><p>ไม่ — ชุดที่รับคืนออกจากถุงรวม และวางที่จุดรับคืน (หรือที่เลือก) ครั้งต่อไปให้สแกนป้าย -04 หรือจัดถุงรวมใหม่</p></details>
+  <details class="pm-q"><summary>1 ชุดมี 2 ถุงที่ต้องเท ทำป้ายอย่างไร?</summary><p>ตั้ง "ถุงต่อชุด = 2" ที่ Master หรือตอนรับเข้า แล้วใส่น้ำหนักแต่ละถุง · รหัส -41 และเลข Lot ไม่เปลี่ยน · ระบบพิมพ์ป้าย -04 ถุงละใบ (ใต้ QR บอก ถุง 1/2, 2/2) · ใบสั่งเบิกแสดง "ชุดละ 2 ถุง" ให้ Control เห็น · เทยาต้องสแกนครบทั้ง 2 ถุง batch จึงครบ</p></details>
   <details class="pm-q"><summary>PY กับ PY-PC ต่างกันอย่างไร?</summary><p>PY = ใช้ผลิตของ BFL (ใบสั่งเบิก/เท) · PY-PC = เตรียมไว้ส่ง BFL-PC ออกได้ทางเมนู จ่ายออก PY-PC เท่านั้น · ยอดแยกกัน (หน้า ยอด PY มีปุ่มเลือกคลัง) · ใช้ช่องจัดเก็บ Zone A/B ร่วมกัน</p></details>
   <details class="pm-q"><summary>เอกสาร BFL-PC เปลี่ยนอะไร?</summary><p>เปลี่ยนเฉพาะชื่อบริษัทบนหัวป้าย -04 / -05 เป็น "บริษัท บลูฟาโล่ เพ็ทแคร์ จำกัด" · รหัสฟอร์ม/Rev และช่องเหมือนเดิม · F-WI07 / F-WI04 ของฝ่ายผลิตยังเป็น BFL</p></details>
   <details class="pm-q"><summary>บันทึกย้อนหลังได้ไหม?</summary><p>การยกเลิก/แก้ไขรายการของวันก่อน (รอบวันเริ่ม 08:00) ต้องให้ admin ทำ</p></details>
