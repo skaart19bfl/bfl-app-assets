@@ -3514,7 +3514,7 @@ S.py = {
   data: null, loading: false, err: '', master: null, mLoading: false, init: false,
   q: '', mode: 'issue', doc: '', last: null, hist: [], cx: { id: '', reason: '' },
   rv: { item: '', iq: '', lot: '', sets: '', kg: '', note: '', bag: true, formula: '', product: '', done: null, locs: [{ loc: '', qty: '' }], store: 'PY', doc: 'BFL', docSet: false, bags: 1, bkg: [] },
-  xf: { q: '', lot: '', seqs: '', cart: [], note: '', last: null, done: '', cx: '', cxr: '', find: '' }, hs: '', ho: (() => { try { return localStorage.getItem('py.ho') || 'new'; } catch (e) { return 'new'; } })(),
+  xf: { q: '', lot: '', seqs: '', cart: [], note: '', last: null, done: '', cx: '', cxr: '', find: '' }, hs: '', hv: 'stock', hl: { from: '', to: '', lots: null, loading: false, err: '' }, ho: (() => { try { return localStorage.getItem('py.ho') || 'new'; } catch (e) { return 'new'; } })(),
   bg: { formula: '', product: '', type: 'MIXER', lot: '', qty: '', lines: [], open: false },
   od: { q: '', lots: null, lotsLoading: false, sel: null, batches: '', lines: [], iq: '', note: '' },
   oa: { doc: '', kind: '', reason: '', batches: '' }, ov: { doc: '', data: null, cx: '', reason: '' },
@@ -3646,6 +3646,11 @@ const pyOrdLabel = (o) => `${o.doc} · Lot ${o.lot} · ${o.prod || ''} · ${o.ba
 const PY_HO = [['new', 'วันที่เตรียม ใหม่→เก่า'], ['old', 'วันที่เตรียม เก่า→ใหม่'], ['item', 'รหัสชุด A→Z']];
 const pyHoCmp = (o) => (a, b) => { const d = String(a.mfg || '').localeCompare(String(b.mfg || '')); const it = pyShort(a.item).localeCompare(pyShort(b.item)); const lt = String(a.lot).localeCompare(String(b.lot));
   return o === 'item' ? it || -d || -lt : o === 'old' ? d || lt || it : -d || -lt || it; };
+// แสดง Lot: stock = เฉพาะที่ยังมีของในคลัง PY หรือรอรับคืน (ค่าเริ่มต้น) · hist = ย้อนหลังตามช่วงวันที่เตรียม (ผู้ใช้ 21 พ.ย.)
+function pyLotsSrc() { const P = S.py; if (P.hv === 'hist') return P.hl.lots || []; return ((P.data || {}).lots || []).filter((l) => Number(l.py) > 0 || Number(l.rt) > 0); }
+async function pyHistLoad() { const H = S.py.hl; if (!H.from) return; H.loading = true; H.err = ''; render();
+  try { const r = await rpc('rm_py_lot_list', { p_token: S.tok, p: { from: H.from, to: H.to || H.from } }); H.lots = r.lots || []; } catch (e) { H.err = e.message; H.lots = []; }
+  H.loading = false; render(); }
 function pyStockFilter(lots) {
   if (S.py.hs) lots = lots.filter((l) => (l.store || 'PY') === S.py.hs);
   lots = lots.slice().sort(pyHoCmp(S.py.ho));
@@ -3661,12 +3666,12 @@ function pyRange(seqs) { // "1,2,3,5" → "1-3,5"
 function pyStockRows() { // 1 แถว = Lot × ที่จัดเก็บ (เฉพาะชุดที่อยู่ PY) · Lot ที่ไม่มีชุดใน PY แต่เบิกค้าง/รอคืน = 1 แถว
   const D0 = S.py.data || {}; const bags = D0.bags || []; const sort = {}; pyLocs().forEach((l) => { sort[l.code] = l.sort; });
   const rows = [];
-  pyStockFilter(D0.lots || []).forEach((l) => { const it = pyItem(l.item) || {};
+  pyStockFilter(pyLotsSrc()).forEach((l) => { const it = pyItem(l.item) || {};
     const locs = (l.locs || []).length ? l.locs : [{ loc: null, n: 0, seqs: '' }];
     locs.forEach((x, k) => rows.push({ item: pyShort(l.item), name: l.name || it.n || '', grp: it.g || '', ttt: it.t || '', oc: l.oc || it.oc || '', on: l.on || it.on || '', store: l.store || 'PY', doc: l.doc || 'BFL', nb: l.nbags || 1, lot: l.lot, mfg: l.mfg, loc: x.n ? x.loc : null, locName: x.n ? pyLocName(x.loc) : '-', lsort: x.loc ? (sort[x.loc] || 999) : 9999,
       n: x.n, kg: Number(l.kg) || 0, tkg: (x.n || 0) * (Number(l.kg) || 0), seqs: pyRange(x.seqs), bags: bags.filter((b) => (l.bags || []).includes(b.bag) && (b.locs || []).includes(x.loc)).map((b) => b.bag).join(', '),
       is: k === 0 ? (l.is || 0) : 0, rt: k === 0 ? (l.rt || 0) : 0, lotPy: l.py, lotSets: l.sets })); });
-  const lo = {}; pyStockFilter(D0.lots || []).forEach((l, i) => { lo[l.lot] = i; }); // ตามลำดับที่เลือกบนหน้าจอ
+  const lo = {}; pyStockFilter(pyLotsSrc()).forEach((l, i) => { lo[l.lot] = i; }); // ตามลำดับที่เลือกบนหน้าจอ
   rows.sort((a, b) => lo[a.lot] - lo[b.lot] || a.lsort - b.lsort);
   return rows;
 }
@@ -3715,7 +3720,7 @@ function pyStockPdf() { // ไม่รอโหลดอะไรก่อน w
 // ===== หน้า: ยอด PY / ภาพรวม =====
 function viewPyHome() {
   const P = S.py; const D0 = P.data; if (!D0) return pyHead('PY ชุดสารเสริม') + pyLoading();
-  const pm = pyCan('premix'); const lots = D0.lots || []; const fl = pyStockFilter(lots);
+  const pm = pyCan('premix'); const lots = D0.lots || []; const src = pyLotsSrc(); const fl = pyStockFilter(src); const H = P.hl; const hid = lots.length - lots.filter((l) => Number(l.py) > 0 || Number(l.rt) > 0).length;
   const tot = (k, st) => lots.filter((l) => !st || (l.store || 'PY') === st).reduce((a, l) => a + Number(l[k] || 0), 0);
   const kpi = (l, v, s, c) => `<div class="kpi" style="border-left-color:${c}"><span class="l">${l}</span><span class="v">${v}</span>${s ? `<span class="s">${s}</span>` : ''}</div>`;
   const lp = P.lp, le = P.le, lc = P.lc;
@@ -3742,8 +3747,11 @@ function viewPyHome() {
   return pyHead('PY ชุดสารเสริม', 'ยอดชุดสารเสริมในคลัง PY · 1 ชุด = 1 batch · ป้าย 1 ใบต่อชุด')
     + `<div class="grid4" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr))">${kpi('ชุดใน PY', fmt(tot('py', 'PY')), lots.filter((l) => (l.store || 'PY') === 'PY').length + ' Lot', 'var(--blue)')}${tot('py', 'PY-PC') || lots.some((l) => l.store === 'PY-PC') ? kpi('ชุดใน PY-PC', fmt(tot('py', 'PY-PC')), 'รอจ่ายออก BFL-PC', '#c2410c') : ''}${kpi('เบิกแล้วยังไม่เท', fmt(tot('is')), 'ค้างที่ฝ่ายผลิต', '#c77700')}${kpi('รอพรีมิกซ์รับคืน', fmt((D0.returning || []).length), 'ชุด', '#b3261e')}${kpi('ใบสั่งเบิกเปิด', fmt(ords.filter((o) => o.status === 'OPEN').length), 'ใบ', '#1a7f4b')}</div>
     <div class="card"><div class="fc"><h2 style="margin:0">Lot ชุดสารเสริม</h2><span class="chips"><button type="button" class="ghost sm" data-py="stxls" ${fl.length && !S.busy ? '' : 'disabled'}>⬇ Excel</button><button type="button" class="ghost sm" data-py="stpdf" ${fl.length ? '' : 'disabled'}>🖨 PDF</button>${pm ? '<button type="button" class="sm" data-go="pyrecv" data-mod="py">+ รับเข้า PY</button>' : ''}</span></div>
-      <div class="chips" style="margin:8px 0"><input data-bind="py.hq" value="${esc(P.hq)}" placeholder="🔍 ค้นหา รหัสชุด / ชื่อ / รหัส Odoo / Lot / ที่จัดเก็บ เช่น FH26 หรือ A-C1 หรือ จุดรับคืน" autocomplete="off" style="flex:1 1 260px">${[['', 'ทุกคลัง'], ['PY', 'PY'], ['PY-PC', 'PY-PC']].map(([id, l2]) => `<button type="button" class="tg" aria-pressed="${P.hs === id}" data-py="hs" data-val="${id}">${l2}</button>`).join('')}<label class="chips" style="gap:4px"><span class="muted smt">เรียง</span><select data-bind="py.ho" style="width:auto">${PY_HO.map(([v, t]) => `<option value="${v}" ${P.ho === v ? 'selected' : ''}>${t}</option>`).join('')}</select></label>${P.hq.trim() || P.hs ? `<span class="muted smt">พบ ${fl.length} / ${lots.length} Lot · ส่งออกตามที่ค้นหา</span><button type="button" class="ghost sm" data-py="hqclr">ล้าง</button>` : ''}</div>
-      <div class="tw"><table><thead><tr><th>Lot No.</th><th>รหัสชุด</th><th>ผลิต</th><th class="num">กก./ชุด</th><th class="num">ในคลัง / ทั้งหมด</th><th class="num">เบิกค้าง</th><th class="num">รอคืน</th><th></th></tr></thead><tbody>${lotRows || `<tr><td colspan="8" class="muted">${lots.length ? 'ไม่พบตามที่ค้นหา' : 'ยังไม่มี Lot'}</td></tr>`}</tbody></table></div></div>
+      <div class="chips" style="margin:8px 0 0"><span class="muted smt">แสดง</span><button type="button" class="tg" aria-pressed="${P.hv !== 'hist'}" data-py="hv" data-val="stock">มีของในคลัง / รอคืน</button><button type="button" class="tg" aria-pressed="${P.hv === 'hist'}" data-py="hv" data-val="hist">ย้อนหลังตามวันที่เตรียม</button>
+        ${P.hv === 'hist' ? `<input type="date" data-bind="py.hl.from" value="${esc(H.from)}"> ถึง <input type="date" data-bind="py.hl.to" value="${esc(H.to)}"><button type="button" class="sm" data-py="hlload" ${H.from && !H.loading ? '' : 'disabled'}>${H.loading ? 'กำลังโหลด…' : 'ดู'}</button>${H.err ? `<span style="color:var(--bad)">${esc(H.err)}</span>` : ''}<span class="muted smt">รวม Lot ที่เบิก/เทหมดแล้ว</span>`
+          : hid ? `<span class="muted smt">ซ่อน ${hid} Lot ที่ไม่มีของในคลังแล้ว (เบิก/เท/จ่ายออกหมด)</span>` : ''}</div>
+      <div class="chips" style="margin:8px 0"><input data-bind="py.hq" value="${esc(P.hq)}" placeholder="🔍 ค้นหา รหัสชุด / ชื่อ / รหัส Odoo / Lot / ที่จัดเก็บ เช่น FH26 หรือ A-C1 หรือ จุดรับคืน" autocomplete="off" style="flex:1 1 260px">${[['', 'ทุกคลัง'], ['PY', 'PY'], ['PY-PC', 'PY-PC']].map(([id, l2]) => `<button type="button" class="tg" aria-pressed="${P.hs === id}" data-py="hs" data-val="${id}">${l2}</button>`).join('')}<label class="chips" style="gap:4px"><span class="muted smt">เรียง</span><select data-bind="py.ho" style="width:auto">${PY_HO.map(([v, t]) => `<option value="${v}" ${P.ho === v ? 'selected' : ''}>${t}</option>`).join('')}</select></label>${P.hq.trim() || P.hs ? `<span class="muted smt">พบ ${fl.length} / ${src.length} Lot · ส่งออกตามที่ค้นหา</span><button type="button" class="ghost sm" data-py="hqclr">ล้าง</button>` : ''}</div>
+      <div class="tw"><table><thead><tr><th>Lot No.</th><th>รหัสชุด</th><th>ผลิต</th><th class="num">กก./ชุด</th><th class="num">ในคลัง / ทั้งหมด</th><th class="num">เบิกค้าง</th><th class="num">รอคืน</th><th></th></tr></thead><tbody>${lotRows || `<tr><td colspan="8" class="muted">${P.hv === 'hist' ? (H.lots ? (H.lots.length ? 'ไม่พบตามที่ค้นหา' : 'ไม่มี Lot ที่เตรียมในช่วงวันที่นี้') : 'เลือกช่วงวันที่เตรียม แล้วกด ดู') : src.length ? 'ไม่พบตามที่ค้นหา' : 'ไม่มีของในคลัง PY'}</td></tr>`}</tbody></table></div></div>
     <details class="card" ${P.gridOpen ? 'open' : ''} data-pygrid="1"><summary><b>ผังที่จัดเก็บ PY</b> <span class="muted smt">Zone A = A1–F4 · Zone B = C1–G4 · ตัวเลข = จำนวนชุดที่อยู่ PY</span></summary><div style="margin-top:10px">${pyLocGrid()}</div></details>
     <div class="card"><h2 style="margin-top:0">ถุงรวม (F-WI01-PSS01-05)</h2>${bags || '<p class="muted smt">ไม่มีถุงรวมที่ยังมีชุดเหลือ</p>'}</div>
     <div class="card"><h2 style="margin-top:0">ใบสั่งเบิก</h2>${ords.length ? ords.map((o) => `<details class="lrow" style="display:block"><summary><b class="mono">${esc(o.doc)}</b> <span class="tag">${PY_OST[o.status]}</span> Lot ${esc(o.lot)} · ${esc(o.prod || '')} · ${o.batches} batch · ${esc(o.by)} ${dtm(o.at)}</summary>${pyLinesTbl(o)}</details>`).join('') : '<p class="muted smt">ไม่มีใบสั่งเบิกที่เปิดอยู่</p>'}</div>`;
@@ -4260,6 +4268,8 @@ document.addEventListener('click', async (e) => {
   if (a === 'stpdf') { pyStockPdf(); return; }
   if (a === 'hqclr') { P.hq = ''; P.hs = ''; render(); return; }
   if (a === 'hs') { P.hs = ds.val || ''; render(); return; }
+  if (a === 'hv') { P.hv = ds.val === 'hist' ? 'hist' : 'stock'; if (P.hv === 'hist' && !P.hl.from) { const d = (S.snap || {}).biz_day || todayYmd(); P.hl.to = d; P.hl.from = ntAdd(d, -7); pyHistLoad(); return; } render(); return; }
+  if (a === 'hlload') { pyHistLoad(); return; }
   if (a === 'msave') { const f = P.ms.f; pyAct('rm_py_item_save', { p: { code: f.code.trim().toUpperCase(), name: f.name.trim() || undefined, grp: f.grp.trim() || undefined, ttt: f.ttt.trim().toUpperCase() || undefined, kind: f.kind, active: !!f.active, odoo_code: (f.oc || '').trim(), odoo_name: (f.on || '').trim(), bags: int(f.bg) || 1 } },
       (r) => (r.new ? 'เพิ่ม ' : 'บันทึก ') + r.code + ' แล้ว', () => { P.ms.f = null; S.py.master = null; loadPYMaster(); }); }
 });
