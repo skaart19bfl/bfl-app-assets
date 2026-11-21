@@ -283,7 +283,7 @@ const MENU = [
   { id: 'pd', g: 'PD ฝ่ายผลิต', ic: '⚙️', desc: 'สแกนเทเข้าถัง · ยอดในถัง · NCP', roles: ['intake', 'control', 'wh'], items: [['intake', 'Intake สแกนเท'], ['bins', 'ยอดในถัง'], ['binrep', 'ยอดในถัง ณ เวลา'], ['dumplog', 'ใบบันทึกการเท'], ['ncp', 'เบิก / ใช้ผลิต NCP']] },
   { id: 'ctl', g: 'Control', ic: '🎛️', desc: 'สั่งเท · นับถัง · density · Plan batch', roles: ['control'], items: [['direct', 'เบิกเข้าถัง (ไม่ต้องสั่งเท)'], ['dumpctl', 'ใบสั่งเท'], ['dumplog', 'ใบบันทึกการเท'], ['bins', 'ยอดในถัง / นับถัง'], ['binrep', 'ยอดในถัง ณ เวลา'], ['useimp', 'Import ยอดใช้ (SCADA)'], ['dip', 'ดิ่งถัง 08:00 / 20:00'], ['master', 'Master วัตถุดิบ / NCP'], ['ncp', 'บอร์ด NCP'], ['soon', 'Plan batch', 'เฟส 3']] },
   { id: 'rep', g: 'รายงาน', ic: '📊', desc: 'รายงานประจำวัน · คงเหลือ · ยอดในถัง', roles: ['wh', 'view', 'control', 'intake'], items: [['reports', 'รายงานประจำวัน'], ['dumplog', 'ใบบันทึกการเทวัตถุดิบ'], ['stockrep', 'คงเหลือรายวัน / รายเดือน'], ['binrep', 'ยอดในถัง ณ เวลา'], ['ncptrend', 'Trend รับ NCP'], ['ncp', 'รายงาน NCP / LINE']] },
-  { id: 'py', g: 'PY ชุดสารเสริม', ic: '🧪', desc: 'รับเข้า PY · ใบสั่งเบิก · เบิก / เท / คืน', roles: ['premix', 'pour', 'control', 'wh', 'view'], items: [['pyhome', 'ยอด PY / ภาพรวม'], ['pyrecv', 'รับเข้า PY + ป้าย', '', ['premix']], ['pyret', 'รับคืน', '', ['premix']], ['pyorder', 'ใบสั่งเบิก PY', '', ['control']], ['pyscan', 'เบิก / เท / คืน (สแกน)', '', ['pour', 'control']], ['pyforms', 'ฟอร์ม F-WI04 / F-WI07', '', ['premix', 'control', 'pour', 'wh', 'view']], ['pymaster', 'Master ชุดสารเสริม', '', ['premix', 'control', 'wh', 'view']]] }, // PY Phase 1 (20 พ.ย. 2026)
+  { id: 'py', g: 'PY ชุดสารเสริม', ic: '🧪', desc: 'รับเข้า PY · ใบสั่งเบิก · เบิก / เท / คืน', roles: ['premix', 'pour', 'control', 'wh', 'view'], items: [['pyhome', 'ยอด PY / ภาพรวม'], ['pyrecv', 'รับเข้า PY + ป้าย', '', ['premix']], ['pyret', 'รับคืน', '', ['premix']], ['pyorder', 'ใบสั่งเบิก PY', '', ['control']], ['pyscan', 'เบิก / เท / คืน (สแกน)', '', ['pour', 'control']], ['pyforms', 'ฟอร์ม F-WI04 / F-WI07', '', ['premix', 'control', 'pour', 'wh', 'view']], ['pymaster', 'Master ชุดสารเสริม', '', ['premix', 'control', 'wh', 'view']], ['pyhelp', '📖 คู่มือ']] }, // PY Phase 1 (20 พ.ย. 2026)
   { id: 'sys', g: 'ระบบ', ic: '🛠️', desc: 'Master · ผู้ใช้ · ยอดยกมา', roles: ['wh', 'view'], items: [['master', 'Master วัตถุดิบ / NCP'], ['admin', 'ผู้ใช้ · ยอดยกมา · ฐานข้อมูล']] }
 ];
 const myMods = () => { const r = S.snap.me.role; return MENU.filter((g) => r === 'admin' || g.roles.includes(r)).map((g) => Object.assign({}, g, { items: g.items.filter(([id, , , rs]) => (id !== 'admin' || r === 'admin') && (!rs || r === 'admin' || rs.includes(r))) })); };
@@ -3468,7 +3468,9 @@ const PY_ST = { PY: 'อยู่ PY', ISSUED: 'เบิกแล้ว', POURE
 const PY_OST = { OPEN: 'เปิด', DONE: 'เทครบ', CLOSED: 'ปิดแล้ว', VOID: 'ยกเลิก' };
 const PY_MT = { RECEIVE: 'รับเข้า', BAG: 'ใส่ถุงรวม', UNBAG: 'ออกจากถุง', ISSUE: 'เบิก', POUR: 'เท', RETURN: 'ส่งคืน', RETURN_RECV: 'รับคืน', SCRAP: 'ไม่รับคืน', LOT_VOID: 'ยกเลิก Lot', VOID: 'ยกเลิกรายการ' };
 const PY_MODE = [['issue', 'เบิก'], ['pour', 'เท'], ['return', 'คืน']];
-const PY_IDS = ['pyhome', 'pyrecv', 'pyret', 'pyorder', 'pyscan', 'pyforms', 'pymaster'];
+const PY_IDS = ['pyhome', 'pyrecv', 'pyret', 'pyorder', 'pyscan', 'pyforms', 'pymaster', 'pyhelp'];
+const PY_HELP_SEC = { pyhome: 'stock', pyrecv: 'recv', pyret: 'ret', pyorder: 'order', pyscan: 'scan', pyforms: 'forms', pymaster: 'master' }; // หน้าจอ → หัวข้อในคู่มือ
+const PY_HELP_V = '20261121';
 const pyScreen = (sc) => PY_IDS.includes(sc);
 const pyRole = () => (S.snap && S.snap.me.role) || '';
 const pyCan = (...rs) => pyRole() === 'admin' || rs.includes(pyRole());
@@ -3487,7 +3489,7 @@ S.py = {
   rr: { q: '', last: null, scrap: '', reason: '', log: null, cx: '', cxr: '', loc: null, ul: {} }, hq: '',
   ms: { q: '', only: '', f: null },
   lp: { lot: '', seqs: '' }, mv: { lot: '', bag: '', seqs: '', to: '' }, le: { lot: '', kg: '', reason: '' }, lc: { lot: '', reason: '' }, bv: { bag: '', reason: '' },
-  fm: { from: '', to: '', doc: '', doc2: '' }
+  fm: { from: '', to: '', doc: '', doc2: '' }, help: { html: '', loading: false, err: '', sec: '' }
 };
 
 async function loadPY(silent) {
@@ -3528,7 +3530,8 @@ const pyItems = () => (S.py.master && S.py.master.items) || [];
 function pyItem(code) { if (!S.py.mIdx) { S.py.mIdx = {}; pyItems().forEach((i) => { S.py.mIdx[i.c] = i; }); } return S.py.mIdx[code] || null; }
 const pyName = (code) => (pyItem(code) || {}).n || '';
 const pyLoading = () => (S.py.err ? `<div class="msg bad">${esc(S.py.err)}</div>` : '<p class="muted">กำลังโหลด…</p>');
-const pyHead = (t, lead) => `<div><h1>${t}</h1>${lead ? `<p class="lead">${lead}</p>` : ''}</div>`;
+const pyHelpBtn = (sec) => sec ? `<button type="button" class="ghost sm" data-py="help" data-sec="${sec}" style="white-space:nowrap">📖 วิธีใช้</button>` : '';
+const pyHead = (t, lead) => `<div class="fc" style="align-items:flex-start;flex-wrap:nowrap"><div><h1>${t}</h1>${lead ? `<p class="lead">${lead}</p>` : ''}</div>${pyHelpBtn(PY_HELP_SEC[S.screen])}</div>`;
 
 // ช่องรหัสชุด: พิมพ์หรือเลือกในช่องเดียว (ผู้ใช้ 20 พ.ย.) · รายการเลื่อนดูได้ครบทุกรหัส (ผู้ใช้ 21 พ.ย. — datalist ของเบราว์เซอร์แสดงไม่ครบ)
 function pyResolve(text) { const t = String(text || '').trim().toUpperCase(); if (!t) return null; const c = t.split(' · ')[0].trim(); return pyItems().find((i) => i.a && (i.c === c || i.c === '97-' + c)) || null; }
@@ -3818,7 +3821,7 @@ function viewPyScan() {
   const ctl = pyCan('control');
   const hist = P.hist.length ? `<details class="card smt" ${P.cx.id ? 'open' : ''}><summary>สแกนล่าสุด (เครื่องนี้)</summary>${P.hist.map((h, i) => `<div class="lrow" style="flex-wrap:wrap;gap:6px;${h.void ? 'text-decoration:line-through;opacity:.6' : ''}"><span style="flex:1 1 220px">${hm(h.at)} <span class="tag">${PY_MODE.find((x) => x[0] === h.mode)[1]}</span> ${esc(h.msg)}</span>
       ${!ctl || h.void ? '' : P.cx.id === String(i) ? `<span class="chips"><input data-bind="py.cx.reason" value="${esc(P.cx.reason)}" placeholder="เหตุผล" style="width:140px"><button type="button" class="sm" data-py="hcxdo" data-i="${i}" ${P.cx.reason.trim().length >= 3 && !S.busy ? '' : 'disabled'}>ยืนยันยกเลิก</button><button type="button" class="ghost sm" data-py="hcx" data-i="">ปิด</button></span>` : `<button type="button" class="ghost sm" data-py="hcx" data-i="${i}">ยกเลิก</button>`}</div>`).join('')}</details>` : '';
-  return `<div class="chips" role="group" aria-label="โหมด" style="gap:8px">${PY_MODE.map(([id, l]) => `<button type="button" class="tg" style="font-size:20px;padding:12px 26px" aria-pressed="${m === id}" data-py="mode" data-mode="${id}">${l}</button>`).join('')}</div>
+  return `<div class="chips" role="group" aria-label="โหมด" style="gap:8px">${PY_MODE.map(([id, l]) => `<button type="button" class="tg" style="font-size:20px;padding:12px 26px" aria-pressed="${m === id}" data-py="mode" data-mode="${id}">${l}</button>`).join('')}<span style="margin-left:auto">${pyHelpBtn('scan')}</span></div>
     <div class="card" style="display:flex;flex-direction:column;gap:12px;border-color:var(--blue)">
       ${list.length ? `<div class="chips">${list.map((x) => `<button type="button" class="tg" style="font-size:16px;padding:10px 14px" aria-pressed="${x.doc === P.doc}" data-py="doc" data-doc="${esc(x.doc)}">Lot ${esc(x.lot)} · ${esc(String(x.prod || '').replace(/^98-/, ''))}</button>`).join('')}</div>` : ''}
       ${o ? `<div style="border:3px solid var(--blue);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:6px">
@@ -3873,7 +3876,27 @@ function pyPickHint(o) { // หยิบจากไหน: Lot เก่าก�
     return `<div class="lrow" style="flex-wrap:wrap;gap:6px;padding:6px 2px"><b class="mono" style="color:var(--ink)">${esc(pyShort(l.item))}</b> <span class="muted smt">ต้องเบิกอีก ${l.need - l.issued} ชุด</span> ${ls.length ? ls.slice(0, 3).map((x) => `<span class="smt">${esc(x.lot)}: ${pyLocsTxt(x.locs)}</span>`).join(' ') : '<span class="tag bad">ไม่มีใน PY</span>'}</div>`; }).join('');
   return rows ? `<div><div class="smt muted" style="margin-top:6px">หยิบจากที่จัดเก็บ (Lot เก่าก่อน)</div>${rows}</div>` : '';
 }
-const PY_VIEWS = { pyhome: viewPyHome, pyrecv: viewPyRecv, pyret: viewPyRet, pyorder: viewPyOrder, pyscan: viewPyScan, pyforms: viewPyForms, pymaster: viewPyMaster };
+// ===== คู่มือการใช้งาน (ผู้ใช้ 21 พ.ย.): เนื้อหาอยู่ที่ py-manual/index.html (#pym) · ภาพ py-manual/img/ =====
+async function pyLoadHelp() {
+  const H = S.py.help; if (H.loading) return; H.loading = true; H.err = '';
+  try {
+    const res = await fetch('py-manual/index.html?v=' + PY_HELP_V); if (!res.ok) throw new Error('HTTP ' + res.status);
+    const d = new DOMParser().parseFromString(await res.text(), 'text/html'); const m = d.getElementById('pym'); if (!m) throw new Error('ไม่พบเนื้อหาคู่มือ');
+    m.querySelectorAll('img[src]').forEach((i) => { const u = i.getAttribute('src'); if (!/^(https?:|data:|\/)/.test(u)) i.setAttribute('src', 'py-manual/' + u); });
+    m.querySelectorAll('a[href]').forEach((a) => { const u = a.getAttribute('href'); if (!/^(https?:|data:|\/|#)/.test(u)) a.setAttribute('href', 'py-manual/' + u); });
+    m.querySelectorAll('.pym-standalone').forEach((x) => x.remove());
+    const css = d.getElementById('pymcss'); H.html = (css ? css.outerHTML : '') + m.outerHTML;
+  } catch (e) { H.err = 'โหลดคู่มือไม่ได้ (' + e.message + ') — ลองกดโหลดใหม่'; }
+  H.loading = false; render(); if (H.sec) setTimeout(() => pyHelpGo(H.sec), 60);
+}
+function pyHelpGo(sec) { const el = document.getElementById('pm-' + sec); if (el) el.scrollIntoView({ block: 'start', behavior: 'smooth' }); }
+function viewPyHelp() {
+  const H = S.py.help; if (!H.html && !H.loading && !H.err) setTimeout(pyLoadHelp, 0);
+  const bar = `<div class="fc" style="align-items:center"><h1 style="margin:0">📖 คู่มือ PY ชุดสารเสริม</h1><span class="chips"><a class="btn ghost sm" href="py-manual/index.html?v=${PY_HELP_V}" target="_blank" rel="noopener" style="text-decoration:none;display:inline-flex;align-items:center;padding:6px 12px;border:1px solid var(--line);border-radius:10px">เปิดเต็มหน้า / พิมพ์</a></span></div>`;
+  return bar + (H.err ? `<div class="msg bad">${esc(H.err)}</div><button type="button" class="ghost" data-py="helpreload">โหลดใหม่</button>` : H.html || '<p class="muted">กำลังโหลดคู่มือ…</p>');
+}
+document.addEventListener('click', (e) => { const a = e.target.closest && e.target.closest('#pym a[data-sec]'); if (!a) return; e.preventDefault(); pyHelpGo(a.dataset.sec); });
+const PY_VIEWS = { pyhome: viewPyHome, pyrecv: viewPyRecv, pyret: viewPyRet, pyorder: viewPyOrder, pyscan: viewPyScan, pyforms: viewPyForms, pymaster: viewPyMaster, pyhelp: viewPyHelp };
 
 // ---------- สแกน ----------
 async function pyScanGo() {
@@ -4102,6 +4125,8 @@ document.addEventListener('click', async (e) => {
   if (a === 'mnew') { P.ms.f = { isNew: true, code: '', name: '', grp: '', ttt: '', kind: 'SET', active: true }; render(); return; }
   if (a === 'medit') { const i = pyItem(ds.code); if (!i) return; P.ms.f = { isNew: false, code: i.c, name: i.n, grp: i.g || '', ttt: i.t || '', kind: i.k, active: i.a }; render(); window.scrollTo({ top: 0 }); return; }
   if (a === 'mclose') { P.ms.f = null; render(); return; }
+  if (a === 'help') { S.py.help.sec = ds.sec || ''; S.screen = 'pyhelp'; S.mod = 'py'; render(); window.scrollTo(0, 0); if (S.py.help.html && ds.sec) setTimeout(() => pyHelpGo(ds.sec), 60); return; }
+  if (a === 'helpreload') { S.py.help.err = ''; pyLoadHelp(); return; }
   if (a === 'stxls') { pyStockXls(); return; }
   if (a === 'stpdf') { pyStockPdf(); return; }
   if (a === 'hqclr') { P.hq = ''; render(); return; }

@@ -1,0 +1,465 @@
+<!doctype html>
+<html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>คู่มือ PY ชุดสารเสริม · BFL Raw Material System</title>
+<style>html,body{margin:0;background:#eef2f7} .pym-standalone{position:sticky;top:0;z-index:5;background:#14213d;color:#fff;font:14px system-ui,sans-serif;padding:8px 14px;display:flex;flex-wrap:wrap;gap:8px 10px;align-items:center} .pym-standalone a,.pym-standalone button{color:#fff;background:#1d4ed8;border:0;border-radius:8px;padding:6px 14px;font:inherit;text-decoration:none;cursor:pointer} @media print{.pym-standalone{display:none}}</style>
+<style id="pymcss">#pym{min-width:0;width:100%;box-sizing:border-box;--pm-ink:#0f172a;--pm-mut:#516079;--pm-line:#d7dee9;--pm-card:#fff;--pm-bg:#f5f7fb;--pm-blue:#1d4ed8;--pm-red:#e11d48;--pm-premix:#0e7a5f;--pm-control:#7c3aed;--pm-pour:#c2410c;
+  color:var(--pm-ink);font-family:"Sarabun","Noto Sans Thai","Leelawadee UI","Tahoma",system-ui,sans-serif;font-size:16px;line-height:1.65;max-width:1060px;margin:0 auto;padding:14px 14px 40px}
+#pym *{box-sizing:border-box}
+#pym h1{font-size:30px;line-height:1.25;margin:4px 0 8px}
+#pym h2{font-size:24px;line-height:1.3;margin:0 0 12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+#pym h3{font-size:19px;margin:26px 0 10px;padding-left:10px;border-left:4px solid var(--pm-blue)}
+#pym p{margin:6px 0}
+#pym a{color:var(--pm-blue)}
+#pym .pm-hero{background:linear-gradient(135deg,#14213d,#1d4ed8);color:#fff;border-radius:18px;padding:26px 26px 22px;margin-bottom:14px}
+#pym .pm-hero p{opacity:.92}
+#pym .pm-kick{font-size:13px;letter-spacing:.06em;text-transform:uppercase;opacity:.8}
+#pym .pm-meta{font-size:13px;opacity:.75;margin-top:10px}
+#pym .pm-toc{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;background:var(--pm-card);border:1px solid var(--pm-line);border-radius:14px;padding:12px 14px;margin-bottom:18px}
+#pym .pm-toc b{width:100%;font-size:15px}
+#pym .pm-toc a{text-decoration:none;border:1px solid var(--pm-line);border-radius:999px;padding:4px 12px;font-size:14.5px;background:var(--pm-bg);color:var(--pm-ink)}
+#pym .pm-toc a:hover{border-color:var(--pm-blue);color:var(--pm-blue)}
+#pym .pm-toc-g{width:100%;font-size:13px;font-weight:700;margin-top:4px;color:var(--pm-mut)}
+#pym .pm-sec{background:var(--pm-card);border:1px solid var(--pm-line);border-radius:16px;padding:22px 22px 18px;margin:0 0 18px;scroll-margin-top:70px}
+#pym .pm-r-premix{border-top:5px solid var(--pm-premix)} #pym .pm-r-control{border-top:5px solid var(--pm-control)} #pym .pm-r-pour{border-top:5px solid var(--pm-pour)}
+#pym .pm-n{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:50%;background:var(--pm-blue);color:#fff;font-size:18px;flex:none}
+#pym .pm-tag{display:inline-block;font-size:13px;font-weight:600;padding:2px 10px;border-radius:999px;background:#e8eefb;color:var(--pm-blue);white-space:nowrap;vertical-align:middle}
+#pym .pm-tag.pm-bad{background:#fde8ec;color:#b3261e}
+#pym .pm-tag.pm-c-premix,#pym .pm-toc-g.pm-c-premix{color:var(--pm-premix)} #pym .pm-tag.pm-c-premix{background:#e3f4ee}
+#pym .pm-tag.pm-c-control,#pym .pm-toc-g.pm-c-control{color:var(--pm-control)} #pym .pm-tag.pm-c-control{background:#efe8fd}
+#pym .pm-tag.pm-c-pour,#pym .pm-toc-g.pm-c-pour{color:var(--pm-pour)} #pym .pm-tag.pm-c-pour{background:#fdeee3}
+#pym .pm-dot{display:inline-block;width:12px;height:12px;border-radius:3px;margin:0 4px 0 12px;vertical-align:-1px}
+#pym .pm-dot.pm-c-premix{background:#d6f0e6;border:2px solid var(--pm-premix)} #pym .pm-dot.pm-c-control{background:#ebe2fd;border:2px solid var(--pm-control)} #pym .pm-dot.pm-c-pour{background:#fde5d3;border:2px solid var(--pm-pour)}
+#pym .pm-mono{font-family:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;font-size:.92em;background:#f1f4f9;border-radius:5px;padding:0 4px;word-break:break-all}
+#pym .pm-rules{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px}
+#pym .pm-rules div{background:var(--pm-bg);border:1px solid var(--pm-line);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column}
+#pym .pm-rules b{font-size:17px;color:var(--pm-blue)} #pym .pm-rules span{font-size:14.5px;color:var(--pm-mut)}
+#pym .pm-flow{margin:6px 0 4px;background:var(--pm-bg);border-radius:12px;padding:10px}
+#pym .pm-flow svg{width:100%;height:auto;display:block}
+#pym .pm-flow rect{stroke-width:2.2}
+#pym .f-pm rect{fill:#e3f4ee;stroke:var(--pm-premix)} #pym .f-ct rect{fill:#efe8fd;stroke:var(--pm-control)} #pym .f-po rect{fill:#fdeee3;stroke:var(--pm-pour)}
+#pym .pm-flow text{fill:#0f172a}
+#pym .pm-flow figcaption{text-align:center;font-size:14px;color:var(--pm-mut)}
+#pym .pm-tw{overflow-x:auto;margin:8px 0}
+#pym .pm-t{width:100%;border-collapse:collapse;font-size:15px;min-width:560px}
+#pym .pm-t th,#pym .pm-t td{border-bottom:1px solid var(--pm-line);padding:8px 10px;text-align:left;vertical-align:top}
+#pym .pm-t th{background:var(--pm-bg);font-size:14px;color:var(--pm-mut)}
+#pym .pm-t-sm{min-width:0}
+#pym .pm-grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;align-items:start}
+#pym .pm-card{background:var(--pm-bg);border:1px solid var(--pm-line);border-radius:12px;padding:12px 14px}
+#pym .pm-note,#pym .pm-tip{border-radius:12px;padding:10px 14px;margin:12px 0;font-size:15px}
+#pym .pm-note{background:#fff8e6;border:1px solid #f3d27a}
+#pym .pm-tip{background:#e9f7ef;border:1px solid #9fd8b6}
+#pym .pm-tip::before{content:"💡 "}#pym .pm-note::before{content:"📌 "}
+#pym .pm-ex{background:#eef4ff;border:1px dashed #8fb0ef;border-radius:12px;padding:12px 14px;font-size:15px;align-self:start}
+#pym .pm-ex>b{display:block;color:var(--pm-blue);margin-bottom:4px}
+#pym .pm-ex dl{display:grid;grid-template-columns:max-content 1fr;gap:2px 12px;margin:0}
+#pym .pm-ex dt{color:var(--pm-mut)} #pym .pm-ex dd{margin:0;font-weight:600}
+#pym .pm-ex-wide{margin:4px 0 8px}
+#pym .pm-step2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:18px;align-items:start;margin:8px 0}
+#pym .pm-step2.pm-phone{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+#pym .pm-figs{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start;justify-content:center}
+#pym .pm-figs .pm-fig{flex:1 1 220px;margin:0}
+#pym .pm-ol{margin:4px 0;padding-left:0;list-style:none;counter-reset:pmc}
+#pym .pm-ol>li{counter-increment:pmc;position:relative;padding:4px 0 6px 38px}
+#pym .pm-ol>li::before{content:counter(pmc);position:absolute;left:0;top:4px;width:26px;height:26px;border-radius:50%;background:#e2e8f0;color:var(--pm-ink);font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center}
+#pym .pm-ol-num>li::before{background:var(--pm-red);color:#fff}
+#pym .pm-fig{margin:12px 0;text-align:center}
+#pym .pm-fig img{display:block;margin:0 auto;width:100%;height:auto;border:1px solid var(--pm-line);border-radius:12px;box-shadow:0 4px 14px rgba(15,23,42,.08);background:#fff}
+#pym .pm-fig-phone img{border-radius:18px;border:6px solid #1f2937}
+#pym .pm-fig figcaption{font-size:14px;color:var(--pm-mut);margin-top:6px}
+#pym .pm-tl{position:relative;margin:10px 0 0 6px;padding-left:22px;border-left:3px solid var(--pm-line)}
+#pym .pm-tl-i{position:relative;background:var(--pm-bg);border:1px solid var(--pm-line);border-radius:12px;padding:10px 14px;margin:0 0 12px}
+#pym .pm-tl-i::before{content:"";position:absolute;left:-31px;top:14px;width:14px;height:14px;border-radius:50%;background:#94a3b8;border:3px solid #fff}
+#pym .pm-c-premix-b{border-left:5px solid var(--pm-premix)} #pym .pm-c-premix-b::before{background:var(--pm-premix)}
+#pym .pm-c-control-b{border-left:5px solid var(--pm-control)} #pym .pm-c-control-b::before{background:var(--pm-control)}
+#pym .pm-c-pour-b{border-left:5px solid var(--pm-pour)} #pym .pm-c-pour-b::before{background:var(--pm-pour)}
+#pym .pm-tl-t{display:inline-block;font-size:13px;color:var(--pm-mut);margin-right:8px;font-family:"IBM Plex Mono",ui-monospace,monospace}
+#pym .pm-st{display:inline-block;margin-top:4px;font-size:13.5px;font-weight:600;background:#fff;border:1px solid var(--pm-line);border-radius:999px;padding:1px 10px}
+#pym .pm-q{border:1px solid var(--pm-line);border-radius:12px;padding:10px 14px;margin:8px 0;background:var(--pm-bg)}
+#pym .pm-q summary{cursor:pointer;font-weight:700}
+#pym .pm-foot{text-align:center;color:var(--pm-mut);font-size:13px;margin-top:18px}
+@media (max-width:760px){#pym{padding:8px 4px 30px;font-size:15.5px}#pym .pm-sec{padding:16px 12px}#pym .pm-step2,#pym .pm-step2.pm-phone{grid-template-columns:1fr}#pym h1{font-size:24px}#pym h2{font-size:20px}#pym .pm-hero{padding:18px}}
+@media print{#pym{max-width:none;padding:0}#pym .pm-sec{break-inside:auto;border-radius:0;box-shadow:none}#pym .pm-fig,#pym .pm-tl-i,#pym .pm-ex{break-inside:avoid}#pym .pm-toc a{border:0}#pym .pm-q{break-inside:avoid}#pym details.pm-q>p{display:block}}
+</style></head>
+<body>
+<div class="pym-standalone"><span>📖 คู่มือ PY ชุดสารเสริม</span><span style="flex:1"></span><button onclick="print()">พิมพ์ / บันทึก PDF</button><a href="../">กลับเข้าระบบ</a></div>
+<div id="pym">
+<header class="pm-hero">
+  <div class="pm-hero-t">
+    <div class="pm-kick">BFL Raw Material System · โมดูล PY</div>
+    <h1>คู่มือการใช้งาน PY ชุดสารเสริม</h1>
+    <p>ตั้งแต่รับชุดสารเสริมเข้าคลัง PY → ออกใบสั่งเบิก → เบิก / เท / คืน → รับคืน → พิมพ์ฟอร์ม<br>ทุกขั้นตอนมีภาพหน้าจอจริงและข้อมูลตัวอย่าง (ตัวเลขในวงกลมแดงบนภาพ = ลำดับขั้นตอน · แตะภาพเพื่อดูขนาดเต็ม)</p>
+    <div class="pm-meta">ฉบับ 21 พ.ย. 2026 · Phase 1 · ใช้กับ F-WI01-PSS01-04/-05 Rev.01 · F-WI07-PRD04-01 Rev.03 · F-WI04-PSS01-01 Rev.00</div>
+  </div>
+</header>
+
+<nav class="pm-toc" aria-label="สารบัญ">
+  <b>สารบัญ</b>
+  <a href="#pm-overview" data-sec="overview">1. ภาพรวมและหลักการ</a>
+  <a href="#pm-login" data-sec="login">2. เข้าสู่ระบบ / เมนู</a>
+  <span class="pm-toc-g pm-c-premix">จัดเตรียมพรีมิกซ์</span>
+  <a href="#pm-master" data-sec="master">3. Master ชุดสารเสริม</a>
+  <a href="#pm-recv" data-sec="recv">4. รับเข้า PY + ป้าย QR</a>
+  <a href="#pm-bag" data-sec="bag">5. ถุงรวมหลายรายการ</a>
+  <a href="#pm-stock" data-sec="stock">6. ยอด PY · ค้นหา · Export · ย้ายที่เก็บ</a>
+  <a href="#pm-ret" data-sec="ret">7. รับคืนชุดสารเสริม</a>
+  <span class="pm-toc-g pm-c-control">ควบคุมการผลิต (Control)</span>
+  <a href="#pm-order" data-sec="order">8. ออกใบสั่งเบิก / ปิดใบ</a>
+  <a href="#pm-forms" data-sec="forms">9. พิมพ์ F-WI07 / F-WI04</a>
+  <span class="pm-toc-g pm-c-pour">เทยา (ฝ่ายผลิต)</span>
+  <a href="#pm-scan" data-sec="scan">10. สแกน เบิก / เท / คืน</a>
+  <span class="pm-toc-g">ทุกคน</span>
+  <a href="#pm-example" data-sec="example">11. ตัวอย่างงานจริง 1 รอบ</a>
+  <a href="#pm-faq" data-sec="faq">12. ข้อความแจ้งเตือน & คำถามพบบ่อย</a>
+</nav>
+
+<!-- ===================== 1 ===================== -->
+<section id="pm-overview" class="pm-sec">
+  <h2><span class="pm-n">1</span> ภาพรวมและหลักการ</h2>
+  <div class="pm-rules">
+    <div><b>1 ชุด = 1 batch</b><span>ชุดสารเสริม 1 ชุด ใช้เทได้ 1 batch การผลิต</span></div>
+    <div><b>ป้าย QR 1 ใบต่อชุด</b><span>ป้าย -04 ติดทุกชุด · ป้าย -05 ติดถุงรวม</span></div>
+    <div><b>คืนเป็นชุดเต็ม</b><span>ไม่คืนเศษ · คืนได้เฉพาะชุดที่เบิกแล้วยังไม่เท</span></div>
+    <div><b>เทเข้า Mixer โดยตรง</b><span>ไม่ผ่านถัง batching · ถุงมีกี่รหัสต้องเทครบ</span></div>
+  </div>
+
+  <h3>วงจรการทำงาน</h3>
+  <figure class="pm-flow">
+    <svg viewBox="0 0 1000 300" role="img" aria-label="วงจรการทำงาน PY">
+      <defs><marker id="pmar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="#475569"/></marker></defs>
+      <g font-family="inherit" font-size="15" text-anchor="middle">
+        <g class="f-pm"><rect x="10" y="30" width="170" height="70" rx="12"/><text x="95" y="60" font-weight="700">① รับเข้า PY</text><text x="95" y="82" font-size="13">พิมพ์ป้าย -04 / -05</text></g>
+        <g class="f-pm"><rect x="215" y="30" width="170" height="70" rx="12"/><text x="300" y="60" font-weight="700">② จัดเก็บ</text><text x="300" y="82" font-size="13">Zone A / Zone B</text></g>
+        <g class="f-ct"><rect x="420" y="30" width="170" height="70" rx="12"/><text x="505" y="60" font-weight="700">③ ออกใบสั่งเบิก</text><text x="505" y="82" font-size="13">Control · PYO-…</text></g>
+        <g class="f-po"><rect x="625" y="30" width="170" height="70" rx="12"/><text x="710" y="60" font-weight="700">④ สแกนเบิก</text><text x="710" y="82" font-size="13">ป้าย -05 หรือ -04</text></g>
+        <g class="f-po"><rect x="820" y="30" width="170" height="70" rx="12"/><text x="905" y="60" font-weight="700">⑤ สแกนเท</text><text x="905" y="82" font-size="13">ป้าย -04 ทีละชุด</text></g>
+        <g class="f-ct"><rect x="820" y="190" width="170" height="70" rx="12"/><text x="905" y="220" font-weight="700">⑥ ปิดใบ / สั่งคืน</text><text x="905" y="242" font-size="13">ใช้ไม่หมด</text></g>
+        <g class="f-po"><rect x="625" y="190" width="170" height="70" rx="12"/><text x="710" y="220" font-weight="700">⑦ สแกนคืน</text><text x="710" y="242" font-size="13">ป้าย -04 หรือ -05</text></g>
+        <g class="f-pm"><rect x="420" y="190" width="170" height="70" rx="12"/><text x="505" y="220" font-weight="700">⑧ รับคืน</text><text x="505" y="242" font-size="13">วางที่ "จุดรับคืน"</text></g>
+        <g class="f-pm"><rect x="215" y="190" width="170" height="70" rx="12"/><text x="300" y="220" font-weight="700">⑨ ย้ายที่เก็บ</text><text x="300" y="242" font-size="13">กลับเข้า Zone A/B</text></g>
+      </g>
+      <g stroke="#475569" stroke-width="2.2" fill="none" marker-end="url(#pmar)">
+        <path d="M180,65H212"/><path d="M385,65H417"/><path d="M590,65H622"/><path d="M795,65H817"/>
+        <path d="M905,100V187"/><path d="M820,225H798"/><path d="M625,225H593"/><path d="M420,225H388"/>
+        <path d="M215,225H140Q95,225 95,180V103" stroke-dasharray="6 5"/>
+      </g>
+      <text x="150" y="160" font-size="13" fill="#475569" text-anchor="middle">ใช้ใหม่ได้</text>
+    </svg>
+    <figcaption><span class="pm-dot pm-c-premix"></span>จัดเตรียมพรีมิกซ์ <span class="pm-dot pm-c-control"></span>Control <span class="pm-dot pm-c-pour"></span>เทยา (ฝ่ายผลิต)</figcaption>
+  </figure>
+
+  <h3>ใครทำอะไร (สิทธิ์ในระบบ)</h3>
+  <div class="pm-tw"><table class="pm-t">
+    <thead><tr><th>หน่วยงาน</th><th>บัญชีตัวอย่าง</th><th>เมนูที่ใช้</th><th>งานหลัก</th></tr></thead>
+    <tbody>
+      <tr><td><span class="pm-tag pm-c-premix">จัดเตรียมพรีมิกซ์</span></td><td class="pm-mono">premix-1</td><td>ยอด PY · รับเข้า PY + ป้าย · รับคืน · ฟอร์ม · Master</td><td>รับชุดเข้าคลัง พิมพ์ป้าย จัดเก็บ รับคืน เพิ่มรหัส Master</td></tr>
+      <tr><td><span class="pm-tag pm-c-control">ควบคุมการผลิต</span></td><td>บัญชี Control</td><td>ใบสั่งเบิก PY · เบิก/เท/คืน · ฟอร์ม · Master (ดู)</td><td>ออกใบสั่งเบิกตาม Lot การผลิต ปิดใบ/สั่งคืน ยกเลิกรายการที่สแกนผิด พิมพ์ F-WI07</td></tr>
+      <tr><td><span class="pm-tag pm-c-pour">เทยา</span></td><td class="pm-mono">pour-1</td><td>เบิก / เท / คืน (สแกน) · ฟอร์ม</td><td>สแกนเบิก สแกนเท สแกนคืน (ใช้มือถือ/แท็บเล็ตได้)</td></tr>
+      <tr><td><span class="pm-tag">คลัง / ดูอย่างเดียว</span></td><td class="pm-mono">wh, view</td><td>ยอด PY · ฟอร์ม · Master</td><td>ดูยอดและพิมพ์รายงาน</td></tr>
+    </tbody></table></div>
+
+  <h3>ป้าย QR 2 แบบ</h3>
+  <div class="pm-grid2">
+    <div class="pm-card"><b>F-WI01-PSS01-04 · ป้ายชุด (1 ใบ/ชุด)</b><p>QR = <span class="pm-mono">BFLPY|Lot|ชุดที่</span> เช่น <span class="pm-mono">BFLPY|PRE-FIS261120-01-MI|4</span><br>ใช้สแกน: เบิก (ทีละชุด) · <b>เท (ต้องใช้ป้ายนี้)</b> · คืน · รับคืน</p></div>
+    <div class="pm-card"><b>F-WI01-PSS01-05 · ป้ายถุงรวม</b><p>QR = <span class="pm-mono">BFLPYB|เลขถุง</span> เช่น <span class="pm-mono">BFLPYB|PB-261120-001</span><br>ใช้สแกน: เบิกทั้งถุง · คืนทั้งถุง · รับคืนทั้งถุง (ห้ามใช้ตอนเท)</p></div>
+  </div>
+  <div class="pm-note"><b>รูปแบบเลขที่ควรรู้</b> · Lot ชุดสารเสริม <span class="pm-mono">PRE-TTTYYMMDD-NN-MI</span> (TTT = CAT / DOG / RAB / BIR / KOI / FIS) · ถุงรวม <span class="pm-mono">PB-YYMMDD-NNN</span> · ใบสั่งเบิก <span class="pm-mono">PYO-YYMMDD-NNN</span> · ที่จัดเก็บ Zone A = A1–F4, Zone B = C1–G4 และ "จุดรับคืน"</div>
+</section>
+
+<!-- ===================== 2 ===================== -->
+<section id="pm-login" class="pm-sec">
+  <h2><span class="pm-n">2</span> เข้าสู่ระบบ และเปิดเมนู PY</h2>
+  <div class="pm-step2">
+    <div>
+      <ol class="pm-ol">
+        <li>เปิดลิงก์ระบบ BFL Raw Material System</li>
+        <li>แตะ<b>ชื่อผู้ใช้</b>ของตัวเอง เช่น <span class="pm-mono">จัดเตรียมพรีมิกซ์ 1 (premix-1)</span></li>
+        <li>กด <b>PIN 4 หลัก</b> (ครั้งแรก PIN = <span class="pm-mono">1234</span> ระบบจะให้ตั้ง PIN ใหม่ทันที)</li>
+        <li>เลือกส่วนงาน <b>🧪 PY ชุดสารเสริม</b> แล้วเลือกเมนูที่ต้องการ</li>
+      </ol>
+      <div class="pm-tip">ทุกหน้าจอ PY มีปุ่ม <b>📖 วิธีใช้</b> มุมขวาบน กดแล้วจะเปิดคู่มือหัวข้อของหน้านั้นทันที</div>
+    </div>
+    <div class="pm-figs"><figure class="pm-fig"><a href="img/s01_login.webp" target="_blank" rel="noopener"><img src="img/s01_login.webp" width="624" height="665" style="max-width:min(100%,416px)" loading="lazy" alt="เลือกชื่อผู้ใช้"></a><figcaption>เลือกชื่อผู้ใช้</figcaption></figure><figure class="pm-fig"><a href="img/s02_pin.webp" target="_blank" rel="noopener"><img src="img/s02_pin.webp" width="624" height="1062" style="max-width:min(100%,416px)" loading="lazy" alt="กด PIN 4 หลัก"></a><figcaption>กด PIN 4 หลัก</figcaption></figure></div>
+  </div>
+  <figure class="pm-fig"><a href="img/s03_menu.webp" target="_blank" rel="noopener"><img src="img/s03_menu.webp" width="1100" height="830" style="max-width:min(100%,733px)" loading="lazy" alt="เมนูส่วนงาน PY ชุดสารเสริม (เห็นเฉพาะเมนูที่บัญชีมีสิทธิ์)"></a><figcaption>เมนูส่วนงาน PY ชุดสารเสริม (เห็นเฉพาะเมนูที่บัญชีมีสิทธิ์)</figcaption></figure>
+  <figure class="pm-fig"><a href="img/s04_tabs_premix.webp" target="_blank" rel="noopener"><img src="img/s04_tabs_premix.webp" width="1400" height="105" style="max-width:min(100%,933px)" loading="lazy" alt="แถบเมนูของจัดเตรียมพรีมิกซ์: ① ยอด PY ② รับเข้า PY ③ รับคืน ④ ฟอร์ม ⑤ Master ⑥ คู่มือ"></a><figcaption>แถบเมนูของจัดเตรียมพรีมิกซ์: ① ยอด PY ② รับเข้า PY ③ รับคืน ④ ฟอร์ม ⑤ Master ⑥ คู่มือ</figcaption></figure>
+  <figure class="pm-fig"><a href="img/s05_tabs_control.webp" target="_blank" rel="noopener"><img src="img/s05_tabs_control.webp" width="1400" height="105" style="max-width:min(100%,933px)" loading="lazy" alt="แถบเมนูของ Control: ① ใบสั่งเบิก PY ② เบิก/เท/คืน ③ ฟอร์ม ④ คู่มือ"></a><figcaption>แถบเมนูของ Control: ① ใบสั่งเบิก PY ② เบิก/เท/คืน ③ ฟอร์ม ④ คู่มือ</figcaption></figure>
+</section>
+
+<!-- ===================== 3 ===================== -->
+<section id="pm-master" class="pm-sec pm-r-premix">
+  <h2><span class="pm-n">3</span> Master ชุดสารเสริม <span class="pm-tag pm-c-premix">จัดเตรียมพรีมิกซ์</span></h2>
+  <p>รายการรหัสชุดสารเสริม (-41) ที่นำเข้าจาก 97-PREMIX.xlsx ประมาณ 1,000 รหัส ถ้ารหัสที่ต้องใช้ยังไม่มี จัดเตรียมพรีมิกซ์เพิ่มเองได้</p>
+  <figure class="pm-fig"><a href="img/s10_master.webp" target="_blank" rel="noopener"><img src="img/s10_master.webp" width="1400" height="675" style="max-width:min(100%,933px)" loading="lazy" alt="หน้า Master: ① ค้นหา ② เพิ่มรหัส ③ ตัวกรอง (มีของใน PY / เพิ่มเอง / ยังไม่มี TTT / ปิดใช้งาน) ④ แก้ไข"></a><figcaption>หน้า Master: ① ค้นหา ② เพิ่มรหัส ③ ตัวกรอง (มีของใน PY / เพิ่มเอง / ยังไม่มี TTT / ปิดใช้งาน) ④ แก้ไข</figcaption></figure>
+  <h3>เพิ่มรหัสใหม่</h3>
+  <div class="pm-step2">
+    <ol class="pm-ol">
+      <li>กด <b>+ เพิ่มรหัส</b></li>
+      <li>① เลือกประเภท <b>ชุดสารเสริม (-41)</b> หรือ <b>พรีมิกซ์ (รหัส PX)</b> สำหรับกรณีถุงที่ 2 เป็นพรีมิกซ์</li>
+      <li>② ใส่รหัส ③ ชื่อ · กลุ่ม · ④ TTT (ประเภทอาหาร 3 ตัว)</li>
+      <li>⑤ กด <b>บันทึก</b> → รหัสใช้ได้ทันทีในหน้ารับเข้าและใบสั่งเบิก</li>
+    </ol>
+    <div class="pm-ex"><b>ข้อมูลตัวอย่าง</b><dl><dt>ประเภท</dt><dd>ชุดสารเสริม (-41)</dd><dt>รหัส</dt><dd class="pm-mono">97-CT30TNMK-41</dd><dt>ชื่อ</dt><dd>Cat30% Tuna Milk -PRM</dd><dt>กลุ่ม / TTT</dt><dd>CAT / CAT</dd></dl></div>
+  </div>
+  <figure class="pm-fig"><a href="img/s11_master_new.webp" target="_blank" rel="noopener"><img src="img/s11_master_new.webp" width="1400" height="360" style="max-width:min(100%,933px)" loading="lazy" alt="ฟอร์มเพิ่มรหัส"></a><figcaption>ฟอร์มเพิ่มรหัส</figcaption></figure>
+  <div class="pm-note">ไม่ลบรหัส — ถ้าเลิกใช้ให้กด แก้ → เอาเครื่องหมาย ✓ ใช้งาน ออก (รหัสจะไม่ขึ้นในรายการเลือก)</div>
+</section>
+
+<!-- ===================== 4 ===================== -->
+<section id="pm-recv" class="pm-sec pm-r-premix">
+  <h2><span class="pm-n">4</span> รับเข้า PY + พิมพ์ป้าย QR <span class="pm-tag pm-c-premix">จัดเตรียมพรีมิกซ์</span></h2>
+  <div class="pm-ex pm-ex-wide"><b>ข้อมูลตัวอย่างที่ใช้ในหัวข้อนี้</b>
+    <dl><dt>รหัสชุด</dt><dd class="pm-mono">97-FH26MR882ML-41 · Fish26% Merry 882 ML</dd><dt>Lot No.</dt><dd class="pm-mono">PRE-FIS261121-01-MI</dd><dt>จำนวน</dt><dd>20 ชุด × 13.50 กก. = 270 กก.</dd><dt>ที่จัดเก็บ</dt><dd>A · A1 = 12 ชุด · B · C1 = 8 ชุด</dd><dt>ถุงรวม</dt><dd>ใส่ถุงรวม (ป้าย -05) → ได้ 2 ถุง แยกตามที่เก็บ</dd></dl></div>
+
+  <h3>ขั้นที่ 1 · เลือกรหัสชุด</h3>
+  <div class="pm-step2">
+    <ol class="pm-ol">
+      <li>เมนู <b>รับเข้า PY + ป้าย</b></li>
+      <li>ช่อง <b>รหัสชุดสารเสริม</b> พิมพ์บางส่วนของรหัสหรือชื่อ เช่น <span class="pm-mono">fh26</span> หรือ <span class="pm-mono">merry</span> → รายการขึ้นใต้ช่อง เลื่อนดูได้ครบทุกรหัส</li>
+      <li>แตะรหัสที่ต้องการ (หรือกด ↓ แล้ว Enter) · กด <b>▾</b> ท้ายช่องเพื่อดูทั้งหมด</li>
+      <li>ระบบเติม กก./ชุดล่าสุด, Formula Code, Product Name ให้อัตโนมัติ</li>
+    </ol>
+    <figure class="pm-fig"><a href="img/s20_recv_combo.webp" target="_blank" rel="noopener"><img src="img/s20_recv_combo.webp" width="1092" height="534" style="max-width:min(100%,728px)" loading="lazy" alt="พิมพ์ &quot;fh26&quot; แล้วเลือกจากรายการ (ตัวเลข PY = ยอดในคลังตอนนี้)"></a><figcaption>พิมพ์ "fh26" แล้วเลือกจากรายการ (ตัวเลข PY = ยอดในคลังตอนนี้)</figcaption></figure>
+  </div>
+
+  <h3>ขั้นที่ 2 · กรอกข้อมูลแล้วกดรับเข้า</h3>
+  <figure class="pm-fig"><a href="img/s21_recv_form.webp" target="_blank" rel="noopener"><img src="img/s21_recv_form.webp" width="1400" height="808" style="max-width:min(100%,933px)" loading="lazy" alt="กรอกครบแล้ว — ปุ่มรับเข้าจะกดได้เมื่อข้อมูลครบและถูกต้อง"></a><figcaption>กรอกครบแล้ว — ปุ่มรับเข้าจะกดได้เมื่อข้อมูลครบและถูกต้อง</figcaption></figure>
+  <ol class="pm-ol pm-ol-num">
+    <li><b>รหัสชุด</b> — ขึ้น ✓ สีเขียวเมื่อตรงกับ Master</li>
+    <li><b>Lot No.</b> — พิมพ์ทั้งเลขในช่องเดียว <span class="pm-mono">PRE-FIS261121-01-MI</span> (พิมพ์เล็กได้ ระบบแปลงเป็นตัวใหญ่) ขึ้น ✓ ถูกรูปแบบ พร้อมบอกประเภทและวันที่</li>
+    <li><b>จำนวนชุด</b> — 20</li>
+    <li><b>น้ำหนักต่อชุด</b> — 13.50 (ระบบคำนวณรวม 270 กก.)</li>
+    <li><b>ที่จัดเก็บ</b> — เลือกช่อง (ตัวเลขในวงเล็บ = จำนวนชุดที่มีอยู่แล้วในช่องนั้น)</li>
+    <li><b>+ เก็บอีกที่</b> — ถ้า 1 Lot แยกเก็บหลายช่อง ใส่จำนวนของแต่ละช่อง ผลรวมต้องเท่าจำนวนชุด (ขึ้น "รวม 20 / 20 ชุด" สีเขียว)</li>
+    <li><b>ใส่ถุงรวมทั้ง Lot (ป้าย -05)</b> — เปิดไว้เมื่อจะรวมชุดใส่ถุงใหญ่ ถ้าเก็บหลายช่องจะได้ถุงละช่อง · ตรวจ Formula Code / Product Name</li>
+    <li>กด <b>รับเข้า PY</b> · ถ้ายังกดไม่ได้ ดูข้อความ "ยังขาด: …" ท้ายปุ่ม</li>
+  </ol>
+  <figure class="pm-fig"><a href="img/s23_recv_badlot.webp" target="_blank" rel="noopener"><img src="img/s23_recv_badlot.webp" width="810" height="186" style="max-width:min(100%,540px)" loading="lazy" alt="ตัวอย่าง Lot ผิดรูปแบบ — ระบบแจ้งทันทีและไม่ให้บันทึก"></a><figcaption>ตัวอย่าง Lot ผิดรูปแบบ — ระบบแจ้งทันทีและไม่ให้บันทึก</figcaption></figure>
+
+  <h3>ขั้นที่ 3 · พิมพ์ป้าย</h3>
+  <figure class="pm-fig"><a href="img/s22_recv_done.webp" target="_blank" rel="noopener"><img src="img/s22_recv_done.webp" width="1400" height="164" style="max-width:min(100%,933px)" loading="lazy" alt="รับเข้าสำเร็จ: ① พิมพ์ป้ายชุด -04 (20 ใบ) ② พิมพ์ป้ายถุง -05 แต่ละถุง"></a><figcaption>รับเข้าสำเร็จ: ① พิมพ์ป้ายชุด -04 (20 ใบ) ② พิมพ์ป้ายถุง -05 แต่ละถุง</figcaption></figure>
+  <div class="pm-grid2">
+    <figure class="pm-fig"><a href="img/s24_label04.webp" target="_blank" rel="noopener"><img src="img/s24_label04.webp" width="1400" height="1145" style="max-width:min(100%,933px)" loading="lazy" alt="ป้าย F-WI01-PSS01-04 · กระดาษ Letter · 8 ป้าย/แผ่น · มุมล่าง QR บอกชุดที่ เช่น 4/20"></a><figcaption>ป้าย F-WI01-PSS01-04 · กระดาษ Letter · 8 ป้าย/แผ่น · มุมล่าง QR บอกชุดที่ เช่น 4/20</figcaption></figure>
+    <figure class="pm-fig"><a href="img/s25_label05.webp" target="_blank" rel="noopener"><img src="img/s25_label05.webp" width="1400" height="1145" style="max-width:min(100%,933px)" loading="lazy" alt="ป้าย F-WI01-PSS01-05 · ติดถุงรวม"></a><figcaption>ป้าย F-WI01-PSS01-05 · ติดถุงรวม</figcaption></figure>
+  </div>
+  <div class="pm-tip">หน้าต่างพิมพ์จะเปิดเป็นแท็บใหม่ — ถ้าไม่ขึ้นให้อนุญาต popup ของเว็บนี้ · พิมพ์ป้ายซ้ำภายหลังได้ที่หน้า <a href="#pm-stock" data-sec="stock">ยอด PY</a> (ปุ่ม พิมพ์ป้าย -04 ใส่ชุดที่ เช่น <span class="pm-mono">1-10</span> หรือ <span class="pm-mono">3,5</span>)</div>
+</section>
+
+<!-- ===================== 5 ===================== -->
+<section id="pm-bag" class="pm-sec pm-r-premix">
+  <h2><span class="pm-n">5</span> จัดถุงรวมหลายรายการ (ป้าย -05) <span class="pm-tag pm-c-premix">จัดเตรียมพรีมิกซ์</span></h2>
+  <p>ใช้เมื่อ 1 ถุงใหญ่มีหลายรหัส เช่น ชุดหลัก + TITANIUM (หรือชุด + พรีมิกซ์) เพื่อให้เทยาสแกนป้ายถุงเดียวแล้วเบิกครบทุกรหัส</p>
+  <div class="pm-step2">
+    <ol class="pm-ol">
+      <li>หน้า <b>รับเข้า PY</b> → เปิดหัวข้อ <b>จัดถุงรวมหลายรายการ</b> (ด้านล่าง)</li>
+      <li>ใส่ Formula Code / Product Name</li>
+      <li>① เลือก Lot ที่มีชุดใน PY ใส่จำนวน → ② <b>+ เพิ่ม</b> (ทำซ้ำได้ไม่เกิน 10 รายการ)</li>
+      <li>③ กด <b>สร้างถุงรวม</b> → พิมพ์ป้าย -05 ของถุงใหม่</li>
+    </ol>
+    <div class="pm-ex"><b>ข้อมูลตัวอย่าง</b><dl><dt>Formula</dt><dd class="pm-mono">98-FH26MR882ML</dd><dt>รายการ 1</dt><dd class="pm-mono">PRE-FIS261120-01-MI · FH26MR882ML-41 × 4</dd><dt>รายการ 2</dt><dd class="pm-mono">PRE-FIS261120-02-MI · TI1KG-41 × 4</dd></dl></div>
+  </div>
+  <figure class="pm-fig"><a href="img/s26_bagmulti.webp" target="_blank" rel="noopener"><img src="img/s26_bagmulti.webp" width="1400" height="465" style="max-width:min(100%,933px)" loading="lazy" alt="ถุงรวม 2 รหัส × 4 ชุด (สำหรับผลิต 4 batch)"></a><figcaption>ถุงรวม 2 รหัส × 4 ชุด (สำหรับผลิต 4 batch)</figcaption></figure>
+  <div class="pm-note">ชุดที่อยู่ในถุงอื่นแล้วจะเลือกซ้ำไม่ได้ · ยกเลิกถุงได้ที่หน้า ยอด PY (ชุดยังอยู่ PY ตามเดิม แค่ออกจากถุง)</div>
+</section>
+
+<!-- ===================== 6 ===================== -->
+<section id="pm-stock" class="pm-sec pm-r-premix">
+  <h2><span class="pm-n">6</span> ยอด PY · ค้นหา · Export · ย้ายที่เก็บ</h2>
+  <figure class="pm-fig"><a href="img/s30_home.webp" target="_blank" rel="noopener"><img src="img/s30_home.webp" width="1400" height="565" style="max-width:min(100%,933px)" loading="lazy" alt="หน้า ยอด PY / ภาพรวม"></a><figcaption>หน้า ยอด PY / ภาพรวม</figcaption></figure>
+  <ol class="pm-ol pm-ol-num">
+    <li><b>ช่องค้นหา</b> — พิมพ์รหัส ชื่อ Lot เลขถุง หรือที่จัดเก็บ เช่น <span class="pm-mono">FH26</span>, <span class="pm-mono">A-C1</span>, <span class="pm-mono">จุดรับคืน</span> (หลายคำคั่นด้วยเว้นวรรค = ต้องตรงทุกคำ)</li>
+    <li><b>⬇ Excel</b> — ดาวน์โหลดไฟล์ <span class="pm-mono">PY-stock-YYMMDD-HHMM.xlsx</span> มี 2 ชีต: <i>ตามรหัส</i> และ <i>ตามที่จัดเก็บ</i> (ใช้ Filter หาชุดได้)</li>
+    <li><b>🖨 PDF</b> — เปิดรายงาน A4 แนวนอน กดพิมพ์ แล้วเลือก "บันทึกเป็น PDF"</li>
+    <li><b>พิมพ์ป้าย -04</b> — พิมพ์ป้ายซ้ำ (ระบุชุดที่ได้)</li>
+    <li><b>ย้ายที่เก็บ</b> — ย้ายชุดระหว่างช่อง</li>
+  </ol>
+  <div class="pm-note">ตัวเลขในแท็กใต้ชื่อ เช่น <span class="pm-tag">A · A1 ×9</span> = มี 9 ชุดอยู่ช่อง A1 · <span class="pm-tag pm-bad">ยังไม่ระบุที่เก็บ</span> = ต้องกด ย้ายที่เก็บ เพื่อระบุ · Export จะส่งออก <b>ตามผลค้นหา</b> (ล้างช่องค้นหาก่อนถ้าต้องการทั้งหมด)</div>
+  <figure class="pm-fig"><a href="img/s31_search.webp" target="_blank" rel="noopener"><img src="img/s31_search.webp" width="1400" height="340" style="max-width:min(100%,933px)" loading="lazy" alt="ค้นหา &quot;RET&quot; (จุดรับคืน) — เห็นเฉพาะ Lot ที่มีชุดวางอยู่จุดรับคืน"></a><figcaption>ค้นหา "RET" (จุดรับคืน) — เห็นเฉพาะ Lot ที่มีชุดวางอยู่จุดรับคืน</figcaption></figure>
+
+  <h3>รายงานที่ได้ (PDF / Excel)</h3>
+  <figure class="pm-fig"><a href="img/s35_stockpdf.webp" target="_blank" rel="noopener"><img src="img/s35_stockpdf.webp" width="1400" height="986" style="max-width:min(100%,933px)" loading="lazy" alt="รายงานยอดคงคลัง PY — 1 แถว = Lot × ที่จัดเก็บ · บอกชุดที่ ถุงรวม เบิกค้าง รอคืน และแถวรวม"></a><figcaption>รายงานยอดคงคลัง PY — 1 แถว = Lot × ที่จัดเก็บ · บอกชุดที่ ถุงรวม เบิกค้าง รอคืน และแถวรวม</figcaption></figure>
+  <div class="pm-tw"><table class="pm-t pm-t-sm"><thead><tr><th>คอลัมน์</th><th>ความหมาย</th></tr></thead><tbody>
+    <tr><td>ที่จัดเก็บ</td><td>ช่องที่ชุดวางอยู่ตอนนี้ (A · A1, B · C1, จุดรับคืน)</td></tr>
+    <tr><td>ชุด / รวม กก.</td><td>จำนวนชุดที่อยู่ PY ในช่องนั้น × กก./ชุด</td></tr>
+    <tr><td>ชุดที่</td><td>เลขชุดบนป้าย -04 เช่น <span class="pm-mono">4-10,12-13</span> = ชุดที่ 4 ถึง 10 และ 12 ถึง 13</td></tr>
+    <tr><td>เบิกค้าง / รอคืน</td><td>ชุดที่เบิกไปแล้วยังไม่เท / ส่งคืนแล้วรอพรีมิกซ์รับ (ทั้ง Lot)</td></tr>
+  </tbody></table></div>
+
+  <h3>ย้ายที่เก็บ</h3>
+  <div class="pm-step2">
+    <ol class="pm-ol">
+      <li>กด <b>ย้ายที่เก็บ</b> ที่แถว Lot</li>
+      <li>① ใส่ชุดที่ เช่น <span class="pm-mono">2-3</span> (ว่าง = ทุกชุดที่อยู่ PY)</li>
+      <li>② เลือกช่องปลายทาง เช่น <span class="pm-mono">A · A1</span></li>
+      <li>③ กด <b>ย้าย</b></li>
+    </ol>
+    <div class="pm-ex"><b>ตัวอย่าง</b><p>ชุดที่ 2-3 ของ <span class="pm-mono">PRE-FIS261120-01-MI</span> รับคืนมาวางที่จุดรับคืน ตรวจแล้วย้ายกลับ <span class="pm-mono">A · A1</span></p><p>ถุงรวมย้ายทั้งถุงได้ที่การ์ด ถุงรวม → <b>ย้ายทั้งถุง</b></p></div>
+  </div>
+  <figure class="pm-fig"><a href="img/s32_move.webp" target="_blank" rel="noopener"><img src="img/s32_move.webp" width="1400" height="502" style="max-width:min(100%,933px)" loading="lazy" alt="ย้ายชุดที่ 2-3 ไป A · A1"></a><figcaption>ย้ายชุดที่ 2-3 ไป A · A1</figcaption></figure>
+  <div class="pm-grid2">
+    <figure class="pm-fig"><a href="img/s33_grid.webp" target="_blank" rel="noopener"><img src="img/s33_grid.webp" width="1400" height="515" style="max-width:min(100%,933px)" loading="lazy" alt="ผังที่จัดเก็บ — ตัวเลข = จำนวนชุดใน PY · จุดรับคืนแสดงแยกด้านบน"></a><figcaption>ผังที่จัดเก็บ — ตัวเลข = จำนวนชุดใน PY · จุดรับคืนแสดงแยกด้านบน</figcaption></figure>
+    <figure class="pm-fig"><a href="img/s34_bags.webp" target="_blank" rel="noopener"><img src="img/s34_bags.webp" width="1400" height="261" style="max-width:min(100%,933px)" loading="lazy" alt="ถุงรวมที่ยังมีชุดเหลือ — พิมพ์ป้าย -05 ซ้ำ / ย้ายทั้งถุง / ยกเลิกถุง"></a><figcaption>ถุงรวมที่ยังมีชุดเหลือ — พิมพ์ป้าย -05 ซ้ำ / ย้ายทั้งถุง / ยกเลิกถุง</figcaption></figure>
+  </div>
+  <div class="pm-note"><b>แก้ กก./ชุด</b> (ต้องใส่เหตุผล) และ <b>ยกเลิก Lot</b> (ทำได้เมื่อยังไม่มีการเบิก) อยู่ที่ปุ่มในแถว Lot</div>
+</section>
+
+<!-- ===================== 7 ===================== -->
+<section id="pm-ret" class="pm-sec pm-r-premix">
+  <h2><span class="pm-n">7</span> รับคืนชุดสารเสริม <span class="pm-tag pm-c-premix">จัดเตรียมพรีมิกซ์</span></h2>
+  <p>หลังฝ่ายผลิตสแกนคืน ชุดจะขึ้นในรายการ <b>รอรับคืน</b> ตรวจของจริงแล้วรับคืนเข้า Lot เดิม</p>
+  <figure class="pm-fig"><a href="img/s40_ret.webp" target="_blank" rel="noopener"><img src="img/s40_ret.webp" width="1400" height="420" style="max-width:min(100%,933px)" loading="lazy" alt="หน้ารับคืน"></a><figcaption>หน้ารับคืน</figcaption></figure>
+  <ol class="pm-ol pm-ol-num">
+    <li><b>วางคืนที่</b> — ค่าเริ่มต้น <b>จุดรับคืน</b> (เปลี่ยนเป็นช่องอื่น หรือ "ที่เดิมของชุด" ได้)</li>
+    <li><b>สแกน</b> ป้ายชุด -04 = รับคืนทีละชุด · ป้ายถุง -05 = รับคืน<b>ทุกชุดในถุง</b>ที่รอรับคืน (กด 📷 สแกน เพื่อใช้กล้อง)</li>
+    <li>หรือกด <b>รับคืนเข้า PY</b> ทีละรายการ (เลือกที่วางของรายการนั้นได้)</li>
+    <li><b>ไม่รับ</b> — ของเสีย/ปนเปื้อน ใส่เหตุผล → ชุดถูกตัดออก (ไม่กลับเข้า PY)</li>
+  </ol>
+  <figure class="pm-fig"><a href="img/s41_ret_scrap.webp" target="_blank" rel="noopener"><img src="img/s41_ret_scrap.webp" width="1400" height="191" style="max-width:min(100%,933px)" loading="lazy" alt="ไม่รับคืน: ① ใส่เหตุผล ② ยืนยัน"></a><figcaption>ไม่รับคืน: ① ใส่เหตุผล ② ยืนยัน</figcaption></figure>
+  <figure class="pm-fig"><a href="img/s42_ret_log.webp" target="_blank" rel="noopener"><img src="img/s42_ret_log.webp" width="1400" height="178" style="max-width:min(100%,933px)" loading="lazy" alt="รับคืนวันนี้ — กด ① ยกเลิก ถ้ารับผิด (ชุดกลับเป็นรอรับคืน ที่เดิม ถุงเดิม)"></a><figcaption>รับคืนวันนี้ — กด ① ยกเลิก ถ้ารับผิด (ชุดกลับเป็นรอรับคืน ที่เดิม ถุงเดิม)</figcaption></figure>
+  <div class="pm-tip">แนะนำ: รับคืนทั้งหมดไว้ที่ <b>จุดรับคืน</b> ก่อน → ตรวจสภาพ → ใช้ <a href="#pm-stock" data-sec="stock">ย้ายที่เก็บ</a> เข้าช่อง Zone A/B · ชุดที่รับคืนจะ<b>ออกจากถุงรวม</b> (ต้องสแกนป้าย -04 ตอนเบิกครั้งต่อไป)</div>
+</section>
+
+<!-- ===================== 8 ===================== -->
+<section id="pm-order" class="pm-sec pm-r-control">
+  <h2><span class="pm-n">8</span> ออกใบสั่งเบิกชุดสารเสริม <span class="pm-tag pm-c-control">Control</span></h2>
+  <div class="pm-ex pm-ex-wide"><b>ข้อมูลตัวอย่าง</b><dl><dt>Lot การผลิต</dt><dd class="pm-mono">261118035 · 98-FH26MR882L (แผน 30 batch)</dd><dt>สั่งเบิก</dt><dd>4 batch</dd><dt>รหัสที่เททุก batch</dt><dd class="pm-mono">97-FH26MR882ML-41 × 1 ชุด/batch · 97-TI1KG-41 × 1 ชุด/batch</dd><dt>ผลลัพธ์</dt><dd>ใบ <span class="pm-mono">PYO-261120-001</span> ต้องใช้รหัสละ 4 ชุด</dd></dl></div>
+  <figure class="pm-fig"><a href="img/s50_order_new.webp" target="_blank" rel="noopener"><img src="img/s50_order_new.webp" width="1400" height="981" style="max-width:min(100%,933px)" loading="lazy" alt="ออกใบสั่งเบิก"></a><figcaption>ออกใบสั่งเบิก</figcaption></figure>
+  <ol class="pm-ol pm-ol-num">
+    <li><b>ค้นหา</b> Lot การผลิต หรือสูตร (แสดง Lot 30 วันล่าสุดจาก production_lot · <b>ไม่แสดง Lot ที่ Finished</b>)</li>
+    <li>แตะ<b>เลข Lot การผลิต</b> ที่จะผลิต</li>
+    <li><b>จำนวน batch</b> ที่จะเท (เริ่มต้น = แผน แก้ได้)</li>
+    <li><b>ชุด/batch</b> ของแต่ละรหัส (ปกติ 1) · คอลัมน์ "ใน PY" แสดง <span class="pm-tag pm-bad">ไม่พอ</span> ถ้าของในคลังไม่พอ</li>
+    <li><b>เพิ่มรหัส</b> — กดปุ่ม "แนะนำ" หรือพิมพ์/เลือกรหัสในช่อง (เลื่อนดูได้ครบ) ไม่เกิน 20 รหัส · ถ้าถุงมีพรีมิกซ์ด้วยต้องใส่รหัสพรีมิกซ์ด้วย</li>
+    <li>กด <b>ออกใบสั่งเบิก</b> → ใบขึ้นที่หน้าจอเทยาทันที</li>
+  </ol>
+
+  <h3>ติดตามและจัดการใบ</h3>
+  <figure class="pm-fig"><a href="img/s51_order_card.webp" target="_blank" rel="noopener"><img src="img/s51_order_card.webp" width="1400" height="315" style="max-width:min(100%,933px)" loading="lazy" alt="การ์ดใบสั่งเบิก: ต้องใช้ / เบิก / เท / ในมือ / ใน PY ต่อรหัส"></a><figcaption>การ์ดใบสั่งเบิก: ต้องใช้ / เบิก / เท / ในมือ / ใน PY ต่อรหัส</figcaption></figure>
+  <div class="pm-tw"><table class="pm-t"><thead><tr><th>ปุ่ม</th><th>ใช้เมื่อ</th></tr></thead><tbody>
+    <tr><td>① แก้จำนวน batch</td><td>แผนเปลี่ยน เพิ่ม/ลด batch (ลดต่ำกว่าที่เทแล้วไม่ได้)</td></tr>
+    <tr><td>② ปิดใบ / สั่งคืน</td><td>ผลิตจบหรือหยุด แต่ยังมีชุดเบิกค้าง (ในมือ) → ชุดที่ค้างจะขึ้นให้เทยาสแกนคืน</td></tr>
+    <tr><td>③ รายการเบิก/เท</td><td>ดูทีละชุด: batch ไหน เวลา ใครสแกน · ยกเลิกรายการที่สแกนผิด</td></tr>
+    <tr><td>④ พิมพ์ F-WI07</td><td>บันทึกการเทสารผสมล่วงหน้า (ดูหัวข้อ 9)</td></tr>
+    <tr><td>เปิดใบอีกครั้ง</td><td>ปิดใบไปแล้วแต่จะผลิตต่อ</td></tr>
+    <tr><td>ยกเลิกใบ</td><td>ออกใบผิด และยังไม่มีการเบิก</td></tr>
+  </tbody></table></div>
+  <div class="pm-note">ใบสถานะ <b>เทครบ</b> จะเกิดเองเมื่อเทครบทุก batch · ถ้าเทครบแต่ยังมีชุดในมือ ให้กด ปิดใบ / สั่งคืน</div>
+  <figure class="pm-fig"><a href="img/s52_order_close.webp" target="_blank" rel="noopener"><img src="img/s52_order_close.webp" width="1400" height="369" style="max-width:min(100%,933px)" loading="lazy" alt="ปิดใบ / สั่งคืน: ① เหตุผล (เช่น ผลิตหยุด ใช้ไม่หมด) ② ยืนยัน"></a><figcaption>ปิดใบ / สั่งคืน: ① เหตุผล (เช่น ผลิตหยุด ใช้ไม่หมด) ② ยืนยัน</figcaption></figure>
+  <figure class="pm-fig"><a href="img/s53_order_detail.webp" target="_blank" rel="noopener"><img src="img/s53_order_detail.webp" width="1400" height="806" style="max-width:min(100%,933px)" loading="lazy" alt="รายการเบิก/เท รายชุด — ① ยกเลิกรายการที่สแกนผิด (ต้องใส่เหตุผล)"></a><figcaption>รายการเบิก/เท รายชุด — ① ยกเลิกรายการที่สแกนผิด (ต้องใส่เหตุผล)</figcaption></figure>
+</section>
+
+<!-- ===================== 9 ===================== -->
+<section id="pm-forms" class="pm-sec pm-r-control">
+  <h2><span class="pm-n">9</span> พิมพ์ฟอร์ม F-WI07 / F-WI04</h2>
+  <figure class="pm-fig"><a href="img/s54_forms.webp" target="_blank" rel="noopener"><img src="img/s54_forms.webp" width="1400" height="369" style="max-width:min(100%,933px)" loading="lazy" alt="เมนู ฟอร์ม F-WI04 / F-WI07"></a><figcaption>เมนู ฟอร์ม F-WI04 / F-WI07</figcaption></figure>
+  <ol class="pm-ol pm-ol-num">
+    <li><b>รอบวัน</b> (เริ่ม 08:00 ถึง 07:59 วันถัดไป)</li>
+    <li><b>พิมพ์ F-WI04</b> ใบเบิก-คืนสารเสริม/ชุดสารเสริม (A4 แนวนอน) — 1 แถว = รหัส + Lot เดียวกันในใบสั่งเดียวกัน</li>
+    <li>เลือก<b>ใบสั่งเบิก</b> (หรือพิมพ์เลขใบ PYO-…)</li>
+    <li><b>พิมพ์ F-WI07</b> บันทึกการเทสารผสมล่วงหน้า (A4 แนวตั้ง) — ✓ = เทแล้ว · เวลาเทเสร็จ = เวลาสแกนเทรายการสุดท้ายของ batch</li>
+  </ol>
+  <div class="pm-grid2">
+    <figure class="pm-fig"><a href="img/s55_f07.webp" target="_blank" rel="noopener"><img src="img/s55_f07.webp" width="1191" height="1677" style="max-width:min(100%,794px)" loading="lazy" alt="F-WI07-PRD04-01 Rev.03 (ข้อมูลจากการสแกนเท)"></a><figcaption>F-WI07-PRD04-01 Rev.03 (ข้อมูลจากการสแกนเท)</figcaption></figure>
+    <figure class="pm-fig"><a href="img/s56_f04.webp" target="_blank" rel="noopener"><img src="img/s56_f04.webp" width="1400" height="986" style="max-width:min(100%,933px)" loading="lazy" alt="F-WI04-PSS01-01 Rev.00 (ข้อมูลจากการสแกนเบิก/คืน)"></a><figcaption>F-WI04-PSS01-01 Rev.00 (ข้อมูลจากการสแกนเบิก/คืน)</figcaption></figure>
+  </div>
+</section>
+
+<!-- ===================== 10 ===================== -->
+<section id="pm-scan" class="pm-sec pm-r-pour">
+  <h2><span class="pm-n">10</span> สแกน เบิก / เท / คืน <span class="pm-tag pm-c-pour">เทยา</span></h2>
+  <p>ใช้มือถือ แท็บเล็ต หรือเครื่องสแกนบาร์โค้ด (ยิงแล้วกด Enter อัตโนมัติ) · ปุ่ม <b>📷 สแกน</b> = ใช้กล้องมือถือ · บัญชีเทยาเข้าระบบแล้วเปิดหน้านี้ให้เอง</p>
+
+  <h3>A. เบิก — หยิบชุดจาก PY ไปที่ Mixer</h3>
+  <div class="pm-step2 pm-phone">
+    <div>
+      <ol class="pm-ol pm-ol-num">
+        <li>เลือกโหมด <b>เบิก</b></li>
+        <li>แตะ<b>ใบสั่ง</b> (Lot การผลิต) ที่จะผลิต — ระบบบอก "หยิบจากที่จัดเก็บ" ว่าต้องไปหยิบ Lot ไหนจากช่องไหน (Lot เก่าก่อน)</li>
+        <li><b>สแกนป้ายถุง -05</b> = เบิกทุกชุดในถุงที่อยู่ในใบ (ไม่เกินจำนวนที่ต้องใช้) · หรือสแกนป้ายชุด -04 ทีละชุด</li>
+        <li>หรือกด <b>📷 สแกน</b> เพื่อใช้กล้อง</li>
+      </ol>
+      <div class="pm-ex"><b>ตัวอย่าง</b><p>ใบ <span class="pm-mono">PYO-261120-001</span> ต้องใช้ FH26MR882ML-41 4 ชุด → สแกน <span class="pm-mono">PB-261120-001</span> (ถุงมี 20 ชุด) → ระบบเบิก <b>4 ชุด</b> ส่วนที่เหลือ 16 ชุดยังอยู่ในถุง (ข้าม)</p></div>
+    </div>
+    <div class="pm-figs"><figure class="pm-fig pm-fig-phone"><a href="img/s60_issue.webp" target="_blank" rel="noopener"><img src="img/s60_issue.webp" width="830" height="1654" style="max-width:min(100%,415px)" loading="lazy" alt="หน้าจอเบิก (มือถือ)"></a><figcaption>หน้าจอเบิก (มือถือ)</figcaption></figure><figure class="pm-fig pm-fig-phone"><a href="img/s61_issue_ok.webp" target="_blank" rel="noopener"><img src="img/s61_issue_ok.webp" width="820" height="624" style="max-width:min(100%,410px)" loading="lazy" alt="สแกนถุง -05 สำเร็จ"></a><figcaption>สแกนถุง -05 สำเร็จ</figcaption></figure></div>
+  </div>
+
+  <h3>B. เท — สแกนทุกชุดตอนเทเข้า Mixer</h3>
+  <div class="pm-step2 pm-phone">
+    <div>
+      <ol class="pm-ol pm-ol-num">
+        <li>เลือกโหมด <b>เท</b></li>
+        <li><b>สแกนป้ายชุด -04</b> ของชุดที่กำลังเท (ต้องสแกนทีละชุด ป้ายถุงใช้ไม่ได้) → ระบบลง batch ให้อัตโนมัติ</li>
+      </ol>
+      <div class="pm-note">ถุงมีหลายรหัส (เช่น ชุด + TITANIUM) <b>ต้องเทและสแกนครบทุกรหัส</b> batch นั้นจึงนับว่าครบ · เมื่อเทครบทุก batch ใบจะเปลี่ยนเป็น "เทครบ" เอง</div>
+    </div>
+    <div class="pm-figs"><figure class="pm-fig pm-fig-phone"><a href="img/s62_pour_ok.webp" target="_blank" rel="noopener"><img src="img/s62_pour_ok.webp" width="830" height="1500" style="max-width:min(100%,415px)" loading="lazy" alt="เทสำเร็จ: เท batch 4 · ชุดที่ 11"></a><figcaption>เทสำเร็จ: เท batch 4 · ชุดที่ 11</figcaption></figure><figure class="pm-fig pm-fig-phone"><a href="img/s63_pour_err.webp" target="_blank" rel="noopener"><img src="img/s63_pour_err.webp" width="820" height="324" style="max-width:min(100%,410px)" loading="lazy" alt="ตัวอย่างสแกนผิด — ขึ้นสีแดง เครื่องสั่น"></a><figcaption>ตัวอย่างสแกนผิด — ขึ้นสีแดง เครื่องสั่น</figcaption></figure></div>
+  </div>
+
+  <h3>C. คืน — ชุดที่เบิกแล้วใช้ไม่หมด</h3>
+  <div class="pm-step2 pm-phone">
+    <div>
+      <ol class="pm-ol pm-ol-num">
+        <li>รอ Control กด <b>ปิดใบ / สั่งคืน</b> ก่อน (ใบที่ยังเปิดคืนไม่ได้)</li>
+        <li>เลือกโหมด <b>คืน</b> → สแกนป้ายชุด -04 ทีละชุด หรือ<b>ป้ายถุง -05 = คืนทุกชุดในถุง</b>ที่เบิกแล้วยังไม่เท</li>
+        <li>นำของไปวางที่ <b>จุดรับคืน</b> ให้จัดเตรียมพรีมิกซ์รับคืน</li>
+      </ol>
+    </div>
+    <div class="pm-figs"><figure class="pm-fig pm-fig-phone"><a href="img/s64_return_ok.webp" target="_blank" rel="noopener"><img src="img/s64_return_ok.webp" width="830" height="768" style="max-width:min(100%,415px)" loading="lazy" alt="คืนด้วยป้ายถุง -05 · คืนครบแล้ว ใบจึงหายจากรายการ"></a><figcaption>คืนด้วยป้ายถุง -05 · คืนครบแล้ว ใบจึงหายจากรายการ</figcaption></figure></div>
+  </div>
+
+  <h3>D. สแกนผิด ต้องทำอย่างไร</h3>
+  <p>แจ้ง <b>Control</b> — Control เปิดหน้า เบิก/เท/คืน → หัวข้อ <b>สแกนล่าสุด (เครื่องนี้)</b> หรือ ใบสั่งเบิก → รายการเบิก/เท แล้วกด ยกเลิก พร้อมใส่เหตุผล (เทยายกเลิกเองไม่ได้)</p>
+  <figure class="pm-fig"><a href="img/s65_hist_ctl.webp" target="_blank" rel="noopener"><img src="img/s65_hist_ctl.webp" width="1400" height="169" style="max-width:min(100%,933px)" loading="lazy" alt="Control ยกเลิกรายการ: ① เหตุผล ② ยืนยันยกเลิก"></a><figcaption>Control ยกเลิกรายการ: ① เหตุผล ② ยืนยันยกเลิก</figcaption></figure>
+</section>
+
+<!-- ===================== 11 ===================== -->
+<section id="pm-example" class="pm-sec">
+  <h2><span class="pm-n">11</span> ตัวอย่างงานจริง 1 รอบ (ข้อมูลตัวอย่าง)</h2>
+  <p>ผลิต Lot <span class="pm-mono">261118035</span> สูตร <span class="pm-mono">98-FH26MR882L</span> จำนวน 4 batch ใช้ชุด FH26MR882ML-41 และ TI1KG-41 อย่างละ 1 ชุด/batch</p>
+  <div class="pm-tl">
+    <div class="pm-tl-i pm-c-premix-b"><span class="pm-tl-t">20/11 08:00</span><b>พรีมิกซ์ · รับเข้า PY</b><p>PRE-FIS261120-01-MI · FH26MR882ML-41 · 20 ชุด × 13.50 กก. ใส่ถุง PB-261120-001 เก็บ A · A1<br>PRE-FIS261120-02-MI · TI1KG-41 · 10 ชุด × 1 กก. ใส่ถุง PB-261120-002 เก็บ B · C1<br>พิมพ์ป้าย -04 รวม 30 ใบ + ป้าย -05 2 ใบ</p><span class="pm-st">PY: FH26 20 · TI1KG 10</span></div>
+    <div class="pm-tl-i pm-c-control-b"><span class="pm-tl-t">08:31</span><b>Control · ออกใบสั่งเบิก</b><p>PYO-261120-001 · Lot 261118035 · 4 batch · FH26MR882ML-41 ×1 · TI1KG-41 ×1</p><span class="pm-st">ต้องใช้: รหัสละ 4 ชุด</span></div>
+    <div class="pm-tl-i pm-c-pour-b"><span class="pm-tl-t">09:00</span><b>เทยา · เบิก</b><p>สแกน PB-261120-001 → เบิก FH26 4 ชุด · สแกน PB-261120-002 → เบิก TI1KG 4 ชุด</p><span class="pm-st">PY: FH26 16 · TI1KG 6 · ในมือ 8</span></div>
+    <div class="pm-tl-i pm-c-pour-b"><span class="pm-tl-t">09:10–11:00</span><b>เทยา · เท</b><p>เทและสแกนป้าย -04 ทีละชุด batch 1–3 ครบทั้ง 2 รหัส</p><span class="pm-st">เทแล้ว 3/4 batch · ในมือ 2 (รหัสละ 1)</span></div>
+    <div class="pm-tl-i pm-c-control-b"><span class="pm-tl-t">11:30</span><b>Control · ปิดใบ / สั่งคืน</b><p>เครื่องหยุด ผลิตแค่ 3 batch → ปิดใบ เหตุผล "ผลิตหยุด ใช้ไม่หมด"</p><span class="pm-st">ค้างคืน 2 ชุด</span></div>
+    <div class="pm-tl-i pm-c-pour-b"><span class="pm-tl-t">11:40</span><b>เทยา · คืน</b><p>โหมดคืน สแกนป้าย -04 ของ 2 ชุดที่เหลือ (หรือสแกนป้ายถุง -05 ทีละถุง) วางที่จุดรับคืน</p><span class="pm-st">รอรับคืน 2</span></div>
+    <div class="pm-tl-i pm-c-premix-b"><span class="pm-tl-t">13:00</span><b>พรีมิกซ์ · รับคืน</b><p>ตรวจของ → สแกนรับคืน วางที่ "จุดรับคืน" → ตรวจแล้ว ย้ายที่เก็บ FH26 → A · A1, TI1KG → B · C1</p><span class="pm-st">PY: FH26 17 · TI1KG 7</span></div>
+    <div class="pm-tl-i"><span class="pm-tl-t">สิ้นวัน</span><b>เอกสาร</b><p>Control พิมพ์ F-WI07 ของ PYO-261120-001 (✓ batch 1–3) · พิมพ์ F-WI04 รอบวัน 20/11 (เบิก 8 · คืน 2) · พรีมิกซ์ Export ยอด PY เป็น Excel</p></div>
+  </div>
+</section>
+
+<!-- ===================== 12 ===================== -->
+<section id="pm-faq" class="pm-sec">
+  <h2><span class="pm-n">12</span> ข้อความแจ้งเตือน & คำถามพบบ่อย</h2>
+  <div class="pm-tw"><table class="pm-t">
+    <thead><tr><th>ข้อความที่เห็น</th><th>สาเหตุ</th><th>วิธีแก้</th></tr></thead>
+    <tbody>
+      <tr><td>เลือกใบสั่งเบิกก่อนสแกน</td><td>โหมดเบิกยังไม่ได้เลือกใบ</td><td>แตะปุ่มใบสั่ง (Lot การผลิต) ก่อนสแกน</td></tr>
+      <tr><td>รหัส … ไม่อยู่ในใบสั่ง …</td><td>หยิบชุดผิดรหัส</td><td>ตรวจรหัสบนป้าย · ถ้าต้องใช้จริงให้ Control เพิ่มรหัส (ออกใบใหม่)</td></tr>
+      <tr><td>เบิก … ครบแล้ว (… ชุด)</td><td>เบิกรหัสนี้ครบตามจำนวน batch แล้ว</td><td>ไม่ต้องเบิกเพิ่ม · ถ้าจะผลิตเพิ่มให้ Control แก้จำนวน batch</td></tr>
+      <tr><td>ชุดนี้เบิกไปแล้ว (ใบ …)</td><td>สแกนป้ายเดิมซ้ำ</td><td>ไม่ต้องทำอะไร</td></tr>
+      <tr><td>ชุดนี้ยังไม่ได้เบิก</td><td>สแกนเทชุดที่ยังไม่ได้สแกนเบิก</td><td>สลับไปโหมด เบิก สแกนชุดนั้นก่อน แล้วค่อยสแกนเท</td></tr>
+      <tr><td>เทต้องสแกนป้ายทีละชุด (-04)</td><td>สแกนป้ายถุงในโหมดเท</td><td>สแกนป้ายชุด -04 ที่ติดแต่ละชุด</td></tr>
+      <tr><td>ใบสั่ง … ปิดแล้ว — ให้ Control เปิดใหม่ หรือสแกนคืน</td><td>Control ปิดใบแล้วแต่ยังจะเท</td><td>แจ้ง Control กด เปิดใบอีกครั้ง หรือคืนชุดนั้น</td></tr>
+      <tr><td>ใบสั่ง … ยังเปิดอยู่ — ให้ Control ปิดใบ (สั่งคืน) ก่อน</td><td>สแกนคืนขณะใบยังเปิด</td><td>แจ้ง Control กด ปิดใบ / สั่งคืน</td></tr>
+      <tr><td>คืนได้เฉพาะชุดที่เบิกแล้วยังไม่เท</td><td>ชุดเทไปแล้ว หรืออยู่ PY</td><td>ตรวจป้าย — ชุดที่เทแล้วคืนไม่ได้</td></tr>
+      <tr><td>ไม่มีชุดในถุง … ที่เบิกแล้วยังไม่เท / ที่รอรับคืน</td><td>ชุดในถุงคืน/รับคืนครบแล้ว</td><td>ไม่ต้องทำอะไร</td></tr>
+      <tr><td>อ่านป้ายไม่ได้</td><td>ไม่ใช่ป้าย -04/-05 หรือ QR เสีย</td><td>พิมพ์ป้ายใหม่ที่หน้า ยอด PY</td></tr>
+      <tr><td>Lot No. ต้องเป็นรูปแบบ PRE-TTTYYMMDD-NN-MI</td><td>พิมพ์ Lot ผิดรูปแบบ</td><td>เช่น <span class="pm-mono">PRE-FIS261121-01-MI</span></td></tr>
+      <tr><td>มี Lot … อยู่แล้ว</td><td>Lot ซ้ำ</td><td>เปลี่ยนเลขลำดับ NN</td></tr>
+      <tr><td>เบราว์เซอร์บล็อกหน้าต่างพิมพ์</td><td>popup ถูกปิด</td><td>อนุญาต popup ของเว็บนี้แล้วกดใหม่</td></tr>
+    </tbody></table></div>
+
+  <h3>คำถามพบบ่อย</h3>
+  <details class="pm-q"><summary>ป้ายหาย / ป้ายเสีย ทำอย่างไร?</summary><p>หน้า ยอด PY → แถว Lot → <b>พิมพ์ป้าย -04</b> ใส่เลขชุดที่ เช่น <span class="pm-mono">7</span> · ป้ายถุงกด <b>ป้ายถุง PB-…</b> หรือ <b>พิมพ์ป้าย -05</b> ในการ์ดถุงรวม</p></details>
+  <details class="pm-q"><summary>คืนต้องสแกนป้าย -04 อย่างเดียวหรือไม่?</summary><p>ไม่ — ได้ทั้ง 2 แบบ ป้ายชุด -04 คืนทีละชุด ป้ายถุง -05 คืนทุกชุดในถุงที่เบิกแล้วยังไม่เท (ทั้งฝ่ายผลิตสแกนคืน และพรีมิกซ์รับคืน) ยกเว้น "ไม่รับคืน" ต้องเลือกทีละชุด</p></details>
+  <details class="pm-q"><summary>เบิกด้วยป้ายถุง แต่ถุงมีมากกว่าที่ต้องใช้?</summary><p>ระบบเบิกเฉพาะจำนวนที่ใบต้องใช้ ส่วนที่เหลือยังอยู่ PY ในถุงเดิม (ข้อความ "ข้าม … ชุด")</p></details>
+  <details class="pm-q"><summary>ทำไมหา Lot การผลิตไม่เจอตอนออกใบ?</summary><p>แสดงเฉพาะ Lot 30 วันล่าสุดที่ยังไม่ยกเลิกและไม่ Finished · ลองพิมพ์เลข Lot หรือสูตรในช่องค้นหาแล้วกด ค้นหา</p></details>
+  <details class="pm-q"><summary>ชุดที่รับคืนกลับไปอยู่ในถุงเดิมไหม?</summary><p>ไม่ — ชุดที่รับคืนออกจากถุงรวม และวางที่จุดรับคืน (หรือที่เลือก) ครั้งต่อไปให้สแกนป้าย -04 หรือจัดถุงรวมใหม่</p></details>
+  <details class="pm-q"><summary>บันทึกย้อนหลังได้ไหม?</summary><p>การยกเลิก/แก้ไขรายการของวันก่อน (รอบวันเริ่ม 08:00) ต้องให้ admin ทำ</p></details>
+  <details class="pm-q"><summary>ใช้ภาษาอังกฤษได้ไหม?</summary><p>กดปุ่ม EN ที่แถบบนเพื่อสลับภาษาเมนู (คู่มือนี้เป็นภาษาไทย)</p></details>
+</section>
+<footer class="pm-foot">BFL Raw Material System · PY ชุดสารเสริม Phase 1 · คู่มือฉบับ 21 พ.ย. 2026 · ภาพประกอบใช้ข้อมูลตัวอย่าง</footer>
+
+</div>
+</body></html>
