@@ -180,7 +180,7 @@ html[data-theme=dark] .prev{background:#0b111c}
   <video id="camv" playsinline muted style="max-width:100%;max-height:70vh;border-radius:12px;background:#000"></video>
   <span id="cammsg" style="color:#fff"></span><button type="button" id="camx" style="min-width:140px">ปิดกล้อง</button></div>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
-<script src="i18n-en.js?v=20261120e"></script>
+<script src="i18n-en.js?v=20261121a"></script>
 <script>
 'use strict';
 const SB_URL = 'https://kdytxuufvigwjccebrki.supabase.co';
@@ -311,7 +311,7 @@ const S = {
   f: { source: 'purchase', plant: 'BFL-PC', lot: '', tdoc: '', slot: '', item: '', itemText: '', pack: 'BAG', cont: '', supKg: '', sup: '', supText: '', plate: '', exp: '', ticket: '', weighIn: '', delivery: '', po: '', province: '', qci: '', qcin: '', per: '', labels: '', bigbags: '', location: 'S-01', vehN: '1', vehU: 'คัน', method: '', tStart: '', tEnd: '', note: '' },
   net: {}, ud: {}, wo: {}, rt: { plant: 'BFL-PC', key: '', tdoc: '', pack: 'BAG', n: '', per: '', last: '', big: '', net: '', loc: 'S-01', note: '' }, rtc: { doc: '', reason: '' }, lotTab: 'label', le: { lot: '' }, holdReason: '', rw: { net: '', reason: '' },
   ob: { item: '', itemText: '', lot: '', store: 'RM', pack: 'BAG', cont: '', recv: '', exp: '', sup: '', loc: 'S-01', n: '', bags: '', kgb: '', lastBags: '', total: '', lines: '', tb: '', tkg: '' }, labelLot: '', labelP: '', lsel: { lot: '', ps: {} }, pf: { unit: '', bags: '', reason: '' }, cancel: '', cxReason: '', docPs: '',
-  rep: { day: '', data: null, loading: false }, mf: null, dl: { from: '', to: '', shift: '', grp: '', bin: '', src: '', q: '', showVoid: true, data: null, loading: false, err: '', span: '' }, nt: { range: '90', from: '', to: '', measure: 'q', group: 'week', by: 'pr', pr: '', it: '', ex: '', data: null, loading: false, err: '', span: '' }, fx: { doc: '' }, gLast: '', adj: { unit: '' }, adjq: '', gW: [], mm: {}, mmTo: '', scan: { open: false, q: '', to: '' }, sr: { mode: 'day', day: '', month: '', from: '', to: '', data: null, loading: false }, users: null, uf: { mode: 'new', username: '', name: '', role: 'wh', active: true, password: '' }, upw: { user: '', pw: '' },
+  rep: { day: '', data: null, loading: false }, mf: null, dlc: { key: '', reason: '' }, dl: { from: '', to: '', shift: '', grp: '', bin: '', src: '', q: '', showVoid: true, data: null, loading: false, err: '', span: '' }, nt: { range: '90', from: '', to: '', measure: 'q', group: 'week', by: 'pr', pr: '', it: '', ex: '', data: null, loading: false, err: '', span: '' }, fx: { doc: '' }, gLast: '', adj: { unit: '' }, adjq: '', gW: [], mm: {}, mmTo: '', scan: { open: false, q: '', to: '' }, sr: { mode: 'day', day: '', month: '', from: '', to: '', data: null, loading: false }, users: null, uf: { mode: 'new', username: '', name: '', role: 'wh', active: true, password: '' }, upw: { user: '', pw: '' },
   gSel: {}, gPart: {}, gQ: '', gDest: 'PD', gCount: '1', gKg: '', gPd: PD_DESTS[0], gLoc: '',
   iType: 'fat', iItem: '', iStore: '', iKg: '', iRef: '', iPick: {},
   storeF: 'ALL', view: 'sum', card: null, cardRows: null,
@@ -1462,10 +1462,10 @@ async function loadHist() {
 }
 function histRec(x, today) {
   const ctl = isCtl(); const A = S.hx.act; const open = A && A.id === x.id && A.kind === x.kind; const canEdit = x.kind === 'ncp' || (x.kind_u === 'PALLET' && x.bags > 0);
-  const can = ctl && !x.void && (x.day === today || S.snap.me.role === 'admin');
+  const can = ctl && !x.void && (x.day >= ntAdd(today, -1) || S.snap.me.role === 'admin'); // ย้อนหลัง 1 รอบวัน (ผู้ใช้ 21 พ.ย.)
   const what = x.kind === 'ncp' ? `BB <span class="mono">${esc(x.p)}</span>` : `<span class="mono">${esc(x.lot)} ${esc(pl(x.p))}</span>${x.bags ? ' · ' + fmt(x.bags) + ' ถุง' : ''}`;
   return `<div class="lrow smt" style="flex-wrap:wrap;gap:6px;${x.void ? 'opacity:.6' : ''}"><span style="flex:1 1 260px;${x.void ? 'text-decoration:line-through' : ''}">${hm(x.at)} ${what} → <b class="mono">${esc(x.bin)}</b> · <b>${fmt(x.kg)} กก.</b> · ${esc(x.by || '')}${x.kind === 'ncp' && Number(x.kgSys) !== Number(x.kg) ? ' <span class="muted">(BB ' + fmt(x.kgSys) + ' กก.)</span>' : ''}</span>
-    ${x.void ? `<span class="tag bad">ยกเลิก</span> <span class="muted">${esc(x.vreason || '')} · ${esc(x.vby || '')}</span>` : can && !open ? `<span class="chips">${canEdit ? `<button type="button" class="ghost sm" data-hxact="edit" data-kind="${x.kind}" data-id="${x.id}">แก้จำนวน</button>` : ''}<button type="button" class="ghost sm" data-hxact="cancel" data-kind="${x.kind}" data-id="${x.id}">ยกเลิก</button></span>` : ''}
+    ${x.void ? `<span class="tag bad">ยกเลิก</span> <span class="muted">${esc(x.vreason || '')} · ${esc(x.vby || '')}</span>` : can && !open ? `<span class="chips">${canEdit && (x.day === today || S.snap.me.role === 'admin') ? `<button type="button" class="ghost sm" data-hxact="edit" data-kind="${x.kind}" data-id="${x.id}">แก้จำนวน</button>` : ''}<button type="button" class="ghost sm" data-hxact="cancel" data-kind="${x.kind}" data-id="${x.id}">ยกเลิก</button></span>` : ''}
     ${open ? `<div class="note" style="flex:1 1 100%;display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end">${A.mode === 'edit' ? `<label class="fld">${x.kind === 'ncp' ? 'กก. ที่เทจริง' : 'จำนวนถุงที่เทจริง (สูงสุด ' + fmt(x.max) + ')'}<input data-bind="hx.act.qty" value="${esc(A.qty)}" inputmode="decimal" style="width:120px"></label>` : ''}
       <label class="fld" style="flex:1 1 200px">${A.mode === 'edit' ? 'เหตุผลที่แก้ไข' : 'เหตุผลที่ยกเลิก'}<input data-bind="hx.act.reason" value="${esc(A.reason)}" maxlength="120"></label>
       <button type="button" data-hxdo="1" ${A.reason.trim().length >= 3 && !S.busy && (A.mode !== 'edit' || num(A.qty) > 0) ? '' : 'disabled'}>${A.mode === 'edit' ? 'บันทึกจำนวนใหม่' : 'ยืนยันยกเลิก'}</button><button type="button" class="ghost sm" data-hxclose="1">ปิด</button></div>` : ''}</div>`;
@@ -1783,6 +1783,17 @@ function dlRows(d) {
 }
 const dlWhat = (r) => dlIsNcp(r) ? 'BB ' + (r.bb || '') + (r.lot ? ' · Lot ' + r.lot : '') : (r.lot || '') + (r.p ? ' ' + pl(r.p) : '');
 const dlNote = (r) => [dlComment(r), r.void ? 'ยกเลิก' + (r.vreason ? ': ' + r.vreason : '') + (r.vby ? ' (' + r.vby + ')' : '') : '', r.src === 'ncp' && r.kgTag && Number(r.kgTag) !== Number(r.kg) ? 'น้ำหนักป้าย ' + fmt(r.kgTag) + ' กก.' : '', r.src === 'ncp' && !r.doc ? 'ไม่ผูกใบสั่ง' : ''].filter(Boolean).join(' · ');
+// ผู้ใช้ 21 พ.ย.: Control ยกเลิกรายการเบิก/เทผิดได้จากใบบันทึกการเท · วันนี้ + ย้อนหลัง 1 รอบวัน (เกินนั้น admin) · ต้องใส่เหตุผล
+// ถ้าถังดิ่งหลังรายการแล้ว ระบบคืนพาเลท/BB แต่ไม่หักยอดถังซ้ำ (rm_dump_cancel / rm_ncp_bb_cancel)
+const dlCanCx = (r) => isCtl() && !r.void && (r.src === 'ncp' || (['scan', 'pick', 'direct'].includes(r.src) && r.mid)) && (S.snap.me.role === 'admin' || r.day >= ntAdd(S.snap.biz_day, -1));
+function dlCxRow(r) {
+  const C = S.dlc; const ok = C.reason.trim().length >= 3;
+  return `<tr><td colspan="11" style="background:var(--warn-bg, rgba(232,131,58,.08))"><div class="chips" style="gap:8px">
+    <b>ยกเลิก ${esc(r.src === 'ncp' ? 'BB ' + (r.bb || '') : (r.lot || '') + ' ' + pl(r.p))} → ${esc(r.bin || '')} · ${fmt(r.kg)} กก.</b>
+    <input data-bind="dlc.reason" value="${esc(C.reason)}" placeholder="เหตุผล เช่น เบิกผิดพาเลท / ผิดถัง" autocomplete="off" style="flex:1 1 240px">
+    <button type="button" data-dlcxdo="1" ${ok && !S.busy ? '' : 'disabled'}>ยืนยันยกเลิก</button><button type="button" class="ghost" data-dlcxno="1">ไม่ยกเลิก</button>
+    <span class="muted smt" style="flex-basis:100%">${r.src === 'ncp' ? 'BB กลับเป็นยอดรอเท และยกเลิกการเบิกในระบบ NCP' : 'คืนจำนวนเข้าพาเลทเดิมในคลัง'} · ถ้าถังนี้ดิ่งหลังเวลารายการแล้ว จะไม่หักยอดถังซ้ำ (ยอดดิ่งถูกอยู่แล้ว)</span></div></td></tr>`;
+}
 function dlSum(rows) { // สรุปต่อ ถัง + วัตถุดิบ (ไม่นับที่ยกเลิก)
   const g = {}; rows.filter((r) => !r.void).forEach((r) => { const k = (r.bin || '–') + '|' + r.item; const x = (g[k] = g[k] || { bin: r.bin || '–', item: r.item, n: 0, bags: 0, kg: 0, ncp: dlIsNcp(r) }); x.n++; x.bags += Number(r.bags) || 0; x.kg += Number(r.kg) || 0; });
   return Object.values(g).sort((a, b) => a.bin.localeCompare(b.bin) || b.kg - a.kg);
@@ -1810,7 +1821,7 @@ function viewDumpLog(d, embed) {
   const kgN = live.filter(dlIsNcp).reduce((a, r) => a + Number(r.kg || 0), 0); const kgM = live.filter((r) => r.src === 'ncpman').reduce((a, r) => a + Number(r.kg || 0), 0); const nv = rows.length - live.length;
   const body = rows.map((r) => `<tr class="${r.void ? 'void' : ''}"><td class="smt">${one ? '' : dmy(r.day) + ' '}${hm(r.at)}</td><td class="mono"><b>${r.bin ? esc(r.bin) : '<span class="muted">–</span>'}</b></td><td class="mono smt">${esc(r.item)}</td><td class="smt">${esc(inm(d, r.item))}${dlIsNcp(r) ? ' <span class="tag" style="font-size:10px">NCP</span>' : ''}</td>
     <td class="mono smt">${esc(dlWhat(r))}</td><td class="num">${r.bags ? fmt(r.bags) : ''}</td><td class="num"><b>${fmt(r.kg)}</b></td><td class="mono smt">${esc(r.doc || r.iss || '–')}</td>
-    <td class="smt">${dlManual(r) ? '<span class="tag warn" style="font-size:10px">Manual</span> ' : ''}${esc(DL_SRC[r.src] || r.src)}${r.point ? ' · ' + esc(IKNAME[r.point] || r.point) : ''}</td><td class="smt">${esc(r.by || '')}</td><td class="smt ${r.void ? 'err' : 'muted'}">${esc(dlNote(r))}</td></tr>`).join('');
+    <td class="smt">${dlManual(r) ? '<span class="tag warn" style="font-size:10px">Manual</span> ' : ''}${esc(DL_SRC[r.src] || r.src)}${r.point ? ' · ' + esc(IKNAME[r.point] || r.point) : ''}</td><td class="smt">${esc(r.by || '')}</td><td class="smt ${r.void ? 'err' : 'muted'}">${esc(dlNote(r))}${dlCanCx(r) ? ` <button type="button" class="ghost sm" data-dlcx="${esc(String(r.id))}" ${S.busy ? 'disabled' : ''}>ยกเลิก</button>` : ''}</td></tr>${S.dlc.key === String(r.id) ? dlCxRow(r) : ''}`).join('');
   const sum = dlSum(rows); const sumB = sum.map((x) => `<tr><td class="mono"><b>${esc(x.bin)}</b></td><td class="mono smt">${esc(x.item)}</td><td class="smt">${esc(inm(d, x.item))}${x.ncp ? ' <span class="tag" style="font-size:10px">NCP</span>' : ''}</td><td class="num">${x.n}</td><td class="num">${x.bags ? fmt(x.bags) : ''}</td><td class="num"><b>${fmt(Math.round(x.kg * 100) / 100)}</b></td></tr>`).join('');
   return `${head}
     <div class="card" style="display:flex;flex-direction:column;gap:10px">
@@ -3137,6 +3148,14 @@ document.addEventListener('click', async (e) => {
   if (ds.dlsrc !== undefined) { S.dl.src = ds.dlsrc; render(); return; }
   if (ds.dlvoid) { S.dl.showVoid = !S.dl.showVoid; render(); return; }
   if (ds.dlprint) { dlPrint(D()); return; }
+  if (ds.dlcx) { S.dlc = { key: ds.dlcx, reason: '' }; S.keepScroll = true; render(); return; }
+  if (ds.dlcxno) { S.dlc = { key: '', reason: '' }; render(); return; }
+  if (ds.dlcxdo) { const r = ((S.dl.data || {}).rows || []).find((x) => String(x.id) === S.dlc.key); if (!r) return; const why = S.dlc.reason.trim(); S.keepScroll = true;
+    const done = () => { S.dlc = { key: '', reason: '' }; loadDL(); };
+    const tail = (x) => x.dip ? ' · ไม่หักยอดถัง (ดิ่ง ' + dtm(x.dip) + ' หลังรายการแล้ว)' : '';
+    if (r.src === 'ncp') act('rm_ncp_bb_cancel', { p_id: Number(r.id), p_reason: why }, (x) => 'ยกเลิก BB ' + x.no + ' แล้ว · ' + fmt(x.kg) + ' กก.' + tail(x), done);
+    else act('rm_dump_cancel', { p_move: Number(r.mid), p_reason: why }, (x) => 'ยกเลิกการเท ' + x.lot + ' ' + pl(x.p) + ' แล้ว · คืน ' + fmt(x.kg) + ' กก. เข้าพาเลทเดิม' + tail(x), done);
+    return; }
   if (ds.dlform) { dlForms(D(), ds.dlform); return; }
   if (ds.dlxlsx) { dlExcel(D()); return; }
   if (ds.dlsh !== undefined) { S.dl.shift = ds.dlsh; render(); return; }

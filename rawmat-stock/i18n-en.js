@@ -1771,4 +1771,8 @@ window.RM_I18N_EN = {
 "Max ต้องไม่น้อยกว่า ROP": "Max must not be less than ROP",
 "ปิดใช้งานแล้ว รหัสนี้จะไม่แสดงเป็นตัวเลือกตอนรับเข้า · ยอดคงเหลือเดิมยังอยู่": "Once inactive, this code is no longer offered when receiving · existing stock stays",
 "— ใช้ปุ่มแก้ไขที่แถวนั้น": "— use the Edit button on that row",
+"เหตุผล เช่น เบิกผิดพาเลท / ผิดถัง": "Reason e.g. wrong pallet / wrong bin",
+"BB กลับเป็นยอดรอเท และยกเลิกการเบิกในระบบ NCP": "BB returns to awaiting-dump and the NCP issue is voided",
+"คืนจำนวนเข้าพาเลทเดิมในคลัง": "Quantity returns to the original pallet in the warehouse",
+"ถ้าถังนี้ดิ่งหลังเวลารายการแล้ว จะไม่หักยอดถังซ้ำ (ยอดดิ่งถูกอยู่แล้ว)": "If this bin was dipped after the entry, the bin balance is not reduced again (the dip is already correct)",
 };
