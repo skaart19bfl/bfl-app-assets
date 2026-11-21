@@ -3514,7 +3514,7 @@ S.py = {
   data: null, loading: false, err: '', master: null, mLoading: false, init: false,
   q: '', mode: 'issue', doc: '', last: null, hist: [], cx: { id: '', reason: '' },
   rv: { item: '', iq: '', lot: '', sets: '', kg: '', note: '', bag: true, formula: '', product: '', done: null, locs: [{ loc: '', qty: '' }], store: 'PY', doc: 'BFL', docSet: false, bags: 1, bkg: [] },
-  xf: { q: '', lot: '', seqs: '', cart: [], note: '', last: null, done: '', cx: '', cxr: '', find: '' }, hs: '',
+  xf: { q: '', lot: '', seqs: '', cart: [], note: '', last: null, done: '', cx: '', cxr: '', find: '' }, hs: '', ho: (() => { try { return localStorage.getItem('py.ho') || 'new'; } catch (e) { return 'new'; } })(),
   bg: { formula: '', product: '', type: 'MIXER', lot: '', qty: '', lines: [], open: false },
   od: { q: '', lots: null, lotsLoading: false, sel: null, batches: '', lines: [], iq: '', note: '' },
   oa: { doc: '', kind: '', reason: '', batches: '' }, ov: { doc: '', data: null, cx: '', reason: '' },
@@ -3642,8 +3642,14 @@ const pyOrders = () => ((S.py.data || {}).orders || []);
 const pyOrdLabel = (o) => `${o.doc} · Lot ${o.lot} · ${o.prod || ''} · ${o.batches} batch`;
 
 // ===== ยอดคงคลัง PY: ค้นหา + ส่งออก Excel / PDF (ผู้ใช้ 21 พ.ย.) =====
+// เรียง Lot: new = วันที่เตรียม ใหม่→เก่า · old = เก่า→ใหม่ (ใช้ก่อน) · item = รหัสชุด A→Z (ผู้ใช้ 21 พ.ย.)
+const PY_HO = [['new', 'วันที่เตรียม ใหม่→เก่า'], ['old', 'วันที่เตรียม เก่า→ใหม่'], ['item', 'รหัสชุด A→Z']];
+const pyHoCmp = (o) => (a, b) => { const d = String(a.mfg || '').localeCompare(String(b.mfg || '')); const it = pyShort(a.item).localeCompare(pyShort(b.item)); const lt = String(a.lot).localeCompare(String(b.lot));
+  return o === 'item' ? it || -d || -lt : o === 'old' ? d || lt || it : -d || -lt || it; };
 function pyStockFilter(lots) {
   if (S.py.hs) lots = lots.filter((l) => (l.store || 'PY') === S.py.hs);
+  lots = lots.slice().sort(pyHoCmp(S.py.ho));
+  try { if (localStorage.getItem('py.ho') !== S.py.ho) localStorage.setItem('py.ho', S.py.ho); } catch (e) { /* จำค่าไม่ได้ก็ไม่เป็นไร */ }
   const ws = String(S.py.hq || '').toUpperCase().split(/\s+/).filter(Boolean); if (!ws.length) return lots;
   return lots.filter((l) => { const t = [l.lot, l.item, l.name, l.oc, l.on, l.store, l.doc, ...(l.bags || []), ...(l.locs || []).map((x) => (x.loc || '') + ' ' + pyLocName(x.loc))].join(' ').toUpperCase(); return ws.every((w) => t.includes(w)); });
 }
@@ -3660,7 +3666,8 @@ function pyStockRows() { // 1 แถว = Lot × ที่จัดเก็บ 
     locs.forEach((x, k) => rows.push({ item: pyShort(l.item), name: l.name || it.n || '', grp: it.g || '', ttt: it.t || '', oc: l.oc || it.oc || '', on: l.on || it.on || '', store: l.store || 'PY', doc: l.doc || 'BFL', nb: l.nbags || 1, lot: l.lot, mfg: l.mfg, loc: x.n ? x.loc : null, locName: x.n ? pyLocName(x.loc) : '-', lsort: x.loc ? (sort[x.loc] || 999) : 9999,
       n: x.n, kg: Number(l.kg) || 0, tkg: (x.n || 0) * (Number(l.kg) || 0), seqs: pyRange(x.seqs), bags: bags.filter((b) => (l.bags || []).includes(b.bag) && (b.locs || []).includes(x.loc)).map((b) => b.bag).join(', '),
       is: k === 0 ? (l.is || 0) : 0, rt: k === 0 ? (l.rt || 0) : 0, lotPy: l.py, lotSets: l.sets })); });
-  rows.sort((a, b) => a.item.localeCompare(b.item) || a.lot.localeCompare(b.lot) || a.lsort - b.lsort);
+  const lo = {}; pyStockFilter(D0.lots || []).forEach((l, i) => { lo[l.lot] = i; }); // ตามลำดับที่เลือกบนหน้าจอ
+  rows.sort((a, b) => lo[a.lot] - lo[b.lot] || a.lsort - b.lsort);
   return rows;
 }
 const pyStamp = () => { const d = new Date(); const p = (n) => String(n).padStart(2, '0'); return { ymd: `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`, hm: `${p(d.getHours())}:${p(d.getMinutes())}`, file: `${String(d.getFullYear()).slice(2)}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}` }; };
@@ -3682,7 +3689,7 @@ async function pyStockXls() {
       const n = list.length; const tr = ws.addRow(['', '', '', 'รวม', '', '', '', '', '', '', '', '', { formula: `SUM(M4:M${n + 3})`, result: list.reduce((a, r) => a + (r.n || 0), 0) }, '', { formula: `SUM(O4:O${n + 3})`, result: list.reduce((a, r) => a + r.tkg, 0) }, '', '', { formula: `SUM(R4:R${n + 3})` }, { formula: `SUM(S4:S${n + 3})` }]);
       tr.eachCell({ includeEmpty: true }, (x) => { x.font = { ...F, bold: true }; x.border = bd; }); tr.getCell(15).numFmt = '#,##0.00';
       ws.autoFilter = { from: { row: 3, column: 1 }, to: { row: 3 + n, column: cols.length } }; };
-    sheet('ตามรหัส', rows, '· เรียงตามรหัสชุด');
+    sheet(S.py.ho === 'item' ? 'ตามรหัส' : 'ตามวันที่เตรียม', rows, '· เรียงตาม' + (PY_HO.find((x) => x[0] === S.py.ho) || PY_HO[0])[1]);
     sheet('ตามที่จัดเก็บ', rows.filter((r) => r.n).slice().sort((a, b) => a.lsort - b.lsort || a.item.localeCompare(b.item) || a.lot.localeCompare(b.lot)), '· เรียงตามที่จัดเก็บ');
     const buf = await wb.xlsx.writeBuffer();
     const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })); a.download = `PY-stock-${st.file}.xlsx`; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 2000);
@@ -3697,7 +3704,7 @@ function pyStockPdf() { // ไม่รอโหลดอะไรก่อน w
   const sumN = rows.reduce((a, r) => a + (r.n || 0), 0); const sumKg = rows.reduce((a, r) => a + r.tkg, 0); const np = Math.max(1, Math.ceil(rows.length / per));
   for (let p = 0; p < np; p++) { const part = rows.slice(p * per, p * per + per);
     pages.push(`<div class="pg landscape">${css}${fHead('ยอดคงคลังชุดสารเสริม (PY)', `แผ่น ${p + 1}/${np}`)}
-      <div class="stkm"><span>ณ วันที่ ${dmy(st.ymd)} เวลา ${st.hm} น.${S.py.hs ? ' · คลัง ' + S.py.hs : ''}${S.py.hq.trim() ? ' · ค้นหา: ' + esc(S.py.hq.trim()) : ''}</span><span>รวม ${fmt(sumN)} ชุด · ${fmt(sumKg)} กก. · ${new Set(rows.map((r) => r.lot)).size} Lot</span></div>
+      <div class="stkm"><span>ณ วันที่ ${dmy(st.ymd)} เวลา ${st.hm} น.${S.py.hs ? ' · คลัง ' + S.py.hs : ''} · เรียง${esc((PY_HO.find((x) => x[0] === S.py.ho) || PY_HO[0])[1])}${S.py.hq.trim() ? ' · ค้นหา: ' + esc(S.py.hq.trim()) : ''}</span><span>รวม ${fmt(sumN)} ชุด · ${fmt(sumKg)} กก. · ${new Set(rows.map((r) => r.lot)).size} Lot</span></div>
       <table class="stk"><colgroup><col style="width:9mm"><col style="width:13mm"><col style="width:36mm"><col><col style="width:38mm"><col style="width:18mm"><col style="width:20mm"><col style="width:12mm"><col style="width:15mm"><col style="width:18mm"><col style="width:24mm"><col style="width:28mm"><col style="width:12mm"><col style="width:12mm"></colgroup>
       <tr><th>#</th><th>คลัง</th><th>รหัสชุดสารเสริม</th><th>ชื่อ</th><th>Lot No.</th><th>วันผลิต</th><th>ที่จัดเก็บ</th><th>ชุด</th><th>กก./ชุด</th><th>รวม กก.</th><th>ชุดที่</th><th>ถุงรวม</th><th>เบิกค้าง</th><th>รอคืน</th></tr>
       ${part.map((r, i) => `<tr><td class="c">${p * per + i + 1}</td><td class="c">${esc(r.store)}</td><td>${esc(r.item)}${r.oc ? `<span style="font-size:9pt"> · ${esc(r.oc)}</span>` : ''}</td><td>${esc(r.name)}</td><td>${esc(r.lot)}</td><td class="c">${dmy(r.mfg)}</td><td class="c">${esc(r.locName)}</td><td class="c">${r.n || 0}</td><td class="r">${fmt(r.kg)}</td><td class="r">${fmt(r.tkg)}</td><td>${esc(r.seqs)}</td><td>${esc(r.bags)}</td><td class="c">${r.is || ''}</td><td class="c">${r.rt || ''}</td></tr>`).join('')}
@@ -3735,7 +3742,7 @@ function viewPyHome() {
   return pyHead('PY ชุดสารเสริม', 'ยอดชุดสารเสริมในคลัง PY · 1 ชุด = 1 batch · ป้าย 1 ใบต่อชุด')
     + `<div class="grid4" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr))">${kpi('ชุดใน PY', fmt(tot('py', 'PY')), lots.filter((l) => (l.store || 'PY') === 'PY').length + ' Lot', 'var(--blue)')}${tot('py', 'PY-PC') || lots.some((l) => l.store === 'PY-PC') ? kpi('ชุดใน PY-PC', fmt(tot('py', 'PY-PC')), 'รอจ่ายออก BFL-PC', '#c2410c') : ''}${kpi('เบิกแล้วยังไม่เท', fmt(tot('is')), 'ค้างที่ฝ่ายผลิต', '#c77700')}${kpi('รอพรีมิกซ์รับคืน', fmt((D0.returning || []).length), 'ชุด', '#b3261e')}${kpi('ใบสั่งเบิกเปิด', fmt(ords.filter((o) => o.status === 'OPEN').length), 'ใบ', '#1a7f4b')}</div>
     <div class="card"><div class="fc"><h2 style="margin:0">Lot ชุดสารเสริม</h2><span class="chips"><button type="button" class="ghost sm" data-py="stxls" ${fl.length && !S.busy ? '' : 'disabled'}>⬇ Excel</button><button type="button" class="ghost sm" data-py="stpdf" ${fl.length ? '' : 'disabled'}>🖨 PDF</button>${pm ? '<button type="button" class="sm" data-go="pyrecv" data-mod="py">+ รับเข้า PY</button>' : ''}</span></div>
-      <div class="chips" style="margin:8px 0"><input data-bind="py.hq" value="${esc(P.hq)}" placeholder="🔍 ค้นหา รหัสชุด / ชื่อ / รหัส Odoo / Lot / ที่จัดเก็บ เช่น FH26 หรือ A-C1 หรือ จุดรับคืน" autocomplete="off" style="flex:1 1 260px">${[['', 'ทุกคลัง'], ['PY', 'PY'], ['PY-PC', 'PY-PC']].map(([id, l2]) => `<button type="button" class="tg" aria-pressed="${P.hs === id}" data-py="hs" data-val="${id}">${l2}</button>`).join('')}${P.hq.trim() || P.hs ? `<span class="muted smt">พบ ${fl.length} / ${lots.length} Lot · ส่งออกตามที่ค้นหา</span><button type="button" class="ghost sm" data-py="hqclr">ล้าง</button>` : ''}</div>
+      <div class="chips" style="margin:8px 0"><input data-bind="py.hq" value="${esc(P.hq)}" placeholder="🔍 ค้นหา รหัสชุด / ชื่อ / รหัส Odoo / Lot / ที่จัดเก็บ เช่น FH26 หรือ A-C1 หรือ จุดรับคืน" autocomplete="off" style="flex:1 1 260px">${[['', 'ทุกคลัง'], ['PY', 'PY'], ['PY-PC', 'PY-PC']].map(([id, l2]) => `<button type="button" class="tg" aria-pressed="${P.hs === id}" data-py="hs" data-val="${id}">${l2}</button>`).join('')}<label class="chips" style="gap:4px"><span class="muted smt">เรียง</span><select data-bind="py.ho" style="width:auto">${PY_HO.map(([v, t]) => `<option value="${v}" ${P.ho === v ? 'selected' : ''}>${t}</option>`).join('')}</select></label>${P.hq.trim() || P.hs ? `<span class="muted smt">พบ ${fl.length} / ${lots.length} Lot · ส่งออกตามที่ค้นหา</span><button type="button" class="ghost sm" data-py="hqclr">ล้าง</button>` : ''}</div>
       <div class="tw"><table><thead><tr><th>Lot No.</th><th>รหัสชุด</th><th>ผลิต</th><th class="num">กก./ชุด</th><th class="num">ในคลัง / ทั้งหมด</th><th class="num">เบิกค้าง</th><th class="num">รอคืน</th><th></th></tr></thead><tbody>${lotRows || `<tr><td colspan="8" class="muted">${lots.length ? 'ไม่พบตามที่ค้นหา' : 'ยังไม่มี Lot'}</td></tr>`}</tbody></table></div></div>
     <details class="card" ${P.gridOpen ? 'open' : ''} data-pygrid="1"><summary><b>ผังที่จัดเก็บ PY</b> <span class="muted smt">Zone A = A1–F4 · Zone B = C1–G4 · ตัวเลข = จำนวนชุดที่อยู่ PY</span></summary><div style="margin-top:10px">${pyLocGrid()}</div></details>
     <div class="card"><h2 style="margin-top:0">ถุงรวม (F-WI01-PSS01-05)</h2>${bags || '<p class="muted smt">ไม่มีถุงรวมที่ยังมีชุดเหลือ</p>'}</div>
