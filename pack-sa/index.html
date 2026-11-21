@@ -758,7 +758,10 @@ function makeLR(o) {
         Charset: { UTF_8: 'utf8' }, DigestAlgorithm: { MD5: 'md5', SHA_256: 'sha256' },
         computeDigest: (alg, s) => pseudoDigest(s), computeHmacSha256Signature: () => W('hmac'),
         base64Encode: b64, base64EncodeWebSafe: (b) => b64(b).replace(/\+/g, '-').replace(/\//g, '_'),
-        newBlob: () => W('blob'), gzip: () => W('gzip'), ungzip: () => W('gzip'), base64Decode: () => W('b64d'), sleep: noop
+        // v101 (21 Nov): in pack these are used only by the shared result cache (pkPut_ / pkGet_, inside try) — the phone keeps no such cache,
+        // so a big result (> 90 KB, e.g. getState / reportData late in the month) skips it instead of blocking the whole call ("LR_BLOCKED blob")
+        newBlob: () => { throw new Error('LR_NOCACHE'); }, gzip: () => { throw new Error('LR_NOCACHE'); }, ungzip: () => { throw new Error('LR_NOCACHE'); },
+        base64Decode: () => { throw new Error('LR_NOCACHE'); }, sleep: noop
       },
       UrlFetchApp: { fetch: (url, opt) => {
         const fn = String(url).split('/rpc/')[1], b = fn ? JSON.parse(opt.payload) : {};
