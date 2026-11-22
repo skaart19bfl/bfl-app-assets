@@ -680,7 +680,7 @@ function makeLR(o) {
     if (q.p_tab === '__jobs') { S.jobs = Object.assign({}, res.jobs || {}); S.reqs.set(key(q), res.v); return; }
     const t = S.tabs[q.p_tab] || (S.tabs[q.p_tab] = { h: res.h, kc: res.kc, rows: new Map() });
     t.h = res.h; if (res.kc != null) t.kc = res.kc;
-    (res.rows || []).forEach((r) => { const d = Object.assign({}, r); delete d._k; delete d._s; t.rows.set(String(r._k), { d: d, s: r._s }); });
+    (res.rows || []).forEach((r) => { const d = Object.assign({}, r); delete d._k; delete d._s; delete d._v; t.rows.set(String(r._k), { d: d, s: r._s }); });
     if (String(q.p_col || '').charAt(0) === '@') (S.picks || (S.picks = new Map())).set(key(q), (res.rows || []).map((r) => String(r._k)));   // v99: '@month' = rows Supabase chose
     S.reqs.set(key(q), res.v);
   }
@@ -1272,16 +1272,62 @@ async function sbRpc(fn, body) {
 // v97: reads the phone already has come back as {same} (no rows) — FG_Lot / FG_Detail / users were downloaded on every screen.
 const PKC = new Map();
 const pkClone = (o) => (typeof structuredClone === 'function' ? structuredClone(o) : JSON.parse(JSON.stringify(o)));
+// E2 (22 Nov 2026, egress): a full tab the phone holds is asked with since = its highest _v → only the changed rows ({d}), merged and checked
+// with count#sum(_v) = m (a deleted row → the whole tab again). Full tabs are kept in IndexedDB, so opening the page again costs nothing.
+const PKB = { db: null, ready: null };
+function pkbOpen() {
+  if (PKB.ready) return PKB.ready;
+  PKB.ready = new Promise((ok) => {
+    try {
+      const rq = indexedDB.open('pack-sa-rc', 1);
+      rq.onupgradeneeded = () => rq.result.createObjectStore('rc');
+      rq.onerror = () => ok(null);
+      rq.onsuccess = () => {
+        PKB.db = rq.result;
+        try { const c = PKB.db.transaction('rc', 'readonly').objectStore('rc').openCursor();
+          c.onsuccess = () => { const cur = c.result; if (cur) { if (!PKC.has(cur.key)) PKC.set(cur.key, cur.value); cur.continue(); } else ok(PKB.db); };
+          c.onerror = () => ok(PKB.db);
+        } catch (e) { ok(PKB.db); }
+      };
+    } catch (e) { ok(null); }
+  });
+  return PKB.ready;
+}
+function pkbPut(k, v) { try { if (PKB.db) PKB.db.transaction('rc', 'readwrite').objectStore('rc').put(v, k); } catch (e) { /* no space: memory only */ } }
+const pkMark = (rows) => { let n = 0, t = BigInt(0); rows.forEach((r) => { n++; t += BigInt(r._v || 0); }); return n + '#' + t.toString(); };
 async function pkStore(ticket, reqs) {
+  await pkbOpen();
   const ks = reqs.map((q) => (q.tab === '__jobs' ? null : JSON.stringify([q.tab, q.col || '', q.vals || null, q.tail == null ? null : q.tail])));
-  const res = await sbRpc('pkr_get', { p_ticket: ticket, p_reqs: reqs.map((q, i) => (ks[i] && PKC.has(ks[i]) ? Object.assign({}, q, { have: PKC.get(ks[i]).a }) : q)) });
-  return res.map((r, i) => {
+  const full = (q) => !q.col && q.tail == null;
+  const keep = (i, e) => { const k = ks[i]; PKC.delete(k); PKC.set(k, e); if (full(reqs[i]) && e.m) pkbPut(k, e); while (PKC.size > 40) PKC.delete(PKC.keys().next().value); };
+  const send = reqs.map((q, i) => {
+    const c = ks[i] && PKC.get(ks[i]); if (!c) return q;
+    const o = Object.assign({}, q, { have: c.a });
+    if (full(q) && c.m && c.rows) { let mx = 0; c.rows.forEach((r) => { if (r._v > mx) mx = r._v; }); if (mx) o.since = mx; }
+    return o;
+  });
+  const res = await sbRpc('pkr_get', { p_ticket: ticket, p_reqs: send });
+  const again = [];
+  const out = res.map((r, i) => {
     const k = ks[i];
     if (!k) return r;
-    if (r && r.same) { const c = PKC.get(k); if (!c) throw new Error('LR_DB cache'); PKC.delete(k); PKC.set(k, c); return pkClone(c); }
-    if (r && r.a && Array.isArray(r.rows)) { PKC.delete(k); PKC.set(k, pkClone(r)); while (PKC.size > 40) PKC.delete(PKC.keys().next().value); }
+    const c = PKC.get(k);
+    if (r && r.same) { if (!c) { again.push(i); return null; } PKC.delete(k); PKC.set(k, c); return pkClone(c); }
+    if (r && r.d) {
+      if (!c) { again.push(i); return null; }
+      const by = new Map(c.rows.map((x) => [String(x._k), x])); r.rows.forEach((x) => by.set(String(x._k), x));
+      const rows = Array.from(by.values()).sort((p, q) => p._s - q._s);
+      if (pkMark(rows) !== r.m) { again.push(i); return null; }
+      const e = { h: r.h, kc: r.kc, v: r.v, a: r.a, m: r.m, rows: rows }; keep(i, e); return pkClone(e);
+    }
+    if (r && r.a && Array.isArray(r.rows)) keep(i, pkClone(r));
     return r;
   });
+  if (again.length) {   // no copy / a row was deleted → the whole tab
+    const r2 = await sbRpc('pkr_get', { p_ticket: ticket, p_reqs: again.map((i) => reqs[i]) });
+    again.forEach((i, j) => { const x = r2[j]; if (x && x.a && Array.isArray(x.rows)) keep(i, pkClone(x)); out[i] = x; });
+  }
+  return out;
 }
 function lrGet() {
   if (!LRS.lr) LRS.lr = makeLR({
@@ -1289,7 +1335,7 @@ function lrGet() {
     rdCtx: (want, have) => call('rdCtx', S.session.token, want, have),
     store: pkStore,
     commit: async (ticket, fn, reads, ops, comp, jobs) => {
-      try { const r = await sbRpc('pkw_commit', { p_ticket: ticket, p_fn: fn, p_reads: reads, p_ops: ops, p_comp: comp, p_jobs: jobs }); PKC.clear(); return r; }
+      try { const r = await sbRpc('pkw_commit', { p_ticket: ticket, p_fn: fn, p_reads: reads, p_ops: ops, p_comp: comp, p_jobs: jobs }); return r; }   // E2: no cache wipe
       catch (e) { if (isNet(e)) throw new Error('LR_NET'); throw e; }
     },
     sheetsFor: { getState: ['Packing_App_Users', 'FG_Detail'], tagList: ['Packing_App_Users', 'FG_Detail'], record: ['Packing_App_Users', 'FG_Detail'],
