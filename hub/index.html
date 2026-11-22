@@ -191,6 +191,12 @@ function editHtml() {
  * Hub Admin only (RPC md_list / md_get / md_save, logged in md_log). The sheet gets each change from the Production App copy job (≤ 15 min),
  * where Extruder Log still reads them. Rows are never deleted: switch them off (Cancelled / Active = N). */
 const mdVal = (v) => v == null ? '' : typeof v === 'object' && v.$d != null ? new Date(v.$d).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' }) : String(v);
+// step 6: RuntimeType "Std Time" = the sheet's time cell (30/12/1899 + minutes, as Apps Script dates it) → shown / edited in minutes
+const MD_T0 = -2209185724000, mdIs = (c, k, x) => (c[k] || []).indexOf(x) >= 0;
+const mdMin = (v) => v && typeof v === 'object' && v.$d != null ? String(Math.round((v.$d - MD_T0) / 60000)) : v == null ? '' : String(v);
+const mdBool = (v) => v === true || /^true$/i.test(String(v)) ? 'TRUE' : v === false || /^false$/i.test(String(v)) ? 'FALSE' : '';
+const mdShow = (c, x, v) => mdIs(c, 'dur', x) ? (v == null || v === '' ? '' : mdMin(v) + ' นาที') : mdIs(c, 'bool', x) ? (mdBool(v) || mdVal(v)) : mdVal(v);
+const mdEditVal = (c, x, v) => mdIs(c, 'dur', x) ? mdMin(v) : mdIs(c, 'bool', x) ? mdBool(v) : v == null ? '' : typeof v === 'object' ? mdVal(v) : String(v);
 const mdOff = (c, d) => c.flagYN ? /^(n|no|false|0)$/i.test(String(d[c.flag] == null ? '' : d[c.flag]).trim()) : d[c.flag] === true || /^true$/i.test(String(d[c.flag] || ''));
 function mdName(col, id) { const L = (S.md.data.look || {})[col]; if (!L || id == null || id === '') return ''; const x = L.find((o) => o.id === String(id)); return x ? x.name : '⚠ ไม่พบในรายการ'; }
 function mdHtml() {
@@ -207,8 +213,8 @@ function mdHtml() {
     body = '<div class="row" style="margin-top:12px"><input id="mdq" placeholder="ค้นหา…" style="flex:1;min-width:160px"><button class="primary" data-act="mdNew" style="min-height:46px">+ เพิ่ม</button></div>'
       + '<div class="card md" style="margin-top:10px;overflow:auto"><table><thead><tr>' + cols.map((x) => '<th>' + esc(x) + '</th>').join('') + '<th>' + esc(c.flag) + '</th><th></th></tr></thead><tbody>'
       + M.data.rows.map((r) => { const off = mdOff(c, r.d);
-          return '<tr class="' + (off ? 'off' : '') + '" data-q="' + esc((r.k + ' ' + cols.map((x) => mdVal(r.d[x]) + ' ' + mdName(x, r.d[x])).join(' ')).toLowerCase()) + '">'
-            + cols.map((x, i) => '<td class="' + (i < c.key.length ? 'k' : '') + '">' + esc(mdVal(r.d[x])) + ((c.look || {})[x] && r.d[x] != null ? '<small>' + esc(mdName(x, r.d[x])) + '</small>' : '') + '</td>').join('')
+          return '<tr class="' + (off ? 'off' : '') + '" data-q="' + esc((r.k + ' ' + cols.map((x) => mdShow(c, x, r.d[x]) + ' ' + mdName(x, r.d[x])).join(' ')).toLowerCase()) + '">'
+            + cols.map((x, i) => '<td class="' + (i < c.key.length ? 'k' : '') + '">' + esc(mdShow(c, x, r.d[x])) + ((c.look || {})[x] && r.d[x] != null ? '<small>' + esc(mdName(x, r.d[x])) + '</small>' : '') + '</td>').join('')
             + '<td>' + (off ? (c.flagYN ? 'ปิด' : 'ยกเลิก') : (c.flagYN ? 'ใช้' : '')) + '</td><td><button data-act="mdEdit" data-arg="' + esc(r.k) + '">แก้ไข</button></td></tr>'; }).join('')
       + '</tbody></table></div><p class="muted small">' + M.data.rows.length + ' แถว · คีย์ ' + esc(c.key.join(' + ')) + (c.new === 'id8' ? ' (สร้างให้อัตโนมัติ)' : '') + '</p>';
   }
@@ -220,8 +226,11 @@ function mdEditHtml() {
     const v = e.d[x] == null ? '' : typeof e.d[x] === 'object' ? mdVal(e.d[x]) : String(e.d[x]), L = (c.look || {})[x] && (M.data.look || {})[x];
     if (L) return '<label>' + esc(x) + '<select data-md="' + esc(x) + '"><option value="">—</option>' + (v && !L.some((o) => o.id === v) ? '<option value="' + esc(v) + '" selected>' + esc(v) + ' · ⚠ ไม่พบในรายการ</option>' : '')
       + L.filter((o) => !o.off || o.id === v).map((o) => '<option value="' + esc(o.id) + '"' + (o.id === v ? ' selected' : '') + '>' + esc(o.name ? o.name + ' (' + o.id + ')' : o.id) + '</option>').join('') + '</select></label>';
-    const num = (c.num || []).indexOf(x) >= 0;
-    return '<label>' + esc(x) + (key ? ' (คีย์ — แก้ภายหลังไม่ได้)' : '') + '<input data-md="' + esc(x) + '" value="' + esc(v) + '"' + (num ? ' inputmode="decimal"' : '') + ' autocomplete="off"></label>';
+    const O = mdIs(c, 'bool', x) ? ['', 'TRUE', 'FALSE'] : (c.opts || {})[x];
+    if (O) return '<label>' + esc(x) + '<select data-md="' + esc(x) + '">' + (v && O.indexOf(v) < 0 ? '<option value="' + esc(v) + '" selected>' + esc(v) + ' · ⚠ ไม่อยู่ในรายการ</option>' : '')
+      + O.map((o) => '<option value="' + esc(o) + '"' + (o === v ? ' selected' : '') + '>' + esc(o || '—') + '</option>').join('') + '</select></label>';
+    const num = mdIs(c, 'num', x) || mdIs(c, 'dur', x);
+    return '<label>' + esc(x) + (key ? ' (คีย์ — แก้ภายหลังไม่ได้)' : '') + (mdIs(c, 'dur', x) ? ' — นาที (0 = ไม่มี)' : '') + '<input data-md="' + esc(x) + '" value="' + esc(v) + '"' + (num ? ' inputmode="decimal"' : '') + ' autocomplete="off"></label>';
   };
   const keys = isNew && c.new !== 'id8' ? c.key.map((x) => fld(x, true)).join('') : '<span class="muted small">' + esc(c.key.join(' + ')) + ': <b class="k">' + esc(isNew ? '(สร้างให้อัตโนมัติ)' : e.k) + '</b></span>';
   const off = mdOff(c, e.d);
@@ -374,7 +383,11 @@ const ACT = {
   },
   async mdTab(t) { S.md.tab = t; S.md.data = null; S.md.edit = null; S.err = ''; render(); await mdLoad(); },
   mdNew() { S.md.edit = { k: '', d: {}, orig: {} }; S.err = ''; render(); },
-  mdEdit(k) { const r = S.md.data.rows.find((x) => x.k === k); if (!r) return; S.md.edit = { k: r.k, d: Object.assign({}, r.d), orig: r.d }; S.err = ''; render(); },
+  mdEdit(k) {
+    const r = S.md.data.rows.find((x) => x.k === k), c = S.md.data.cfg; if (!r) return;
+    const d = {}; c.key.concat(c.edit).forEach((x) => { d[x] = mdEditVal(c, x, r.d[x]); }); d[c.flag] = r.d[c.flag];   // edited as text (minutes, TRUE/FALSE) · the flag as stored
+    S.md.edit = { k: r.k, d: d, orig: Object.assign({}, d) }; S.err = ''; render();
+  },
   mdBack() { S.md.edit = null; S.err = ''; render(); },
   async mdSave() {
     const M = S.md, c = M.data.cfg, e = M.edit, cols = (e.k ? [] : c.key).concat(c.edit, [c.flag]), p = {};
