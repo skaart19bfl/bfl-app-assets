@@ -628,6 +628,74 @@ async function pdCtx(write) {
   try { const r = await sbRpc('pd_ctx', { p_token: S.session.token, p_write: !!write }); return r && !r.off ? r : null; }
   catch (e) { if (!pdOwn(pdMsg(e))) LRS.authOff = Date.now() + 2 * 60e3; return null; }   // AUTH / PIN_CHANGE → Apps Script says it the usual way
 }
+// E6 (22 Nov 2026, egress): the sheet-only tabs (Moisture, Production_Lot, Fineness, NCP …) come as rows [k, seq, ver, cells] — only the rows changed
+// since the phone's copy (pdr_sheets2 since = highest ver), merged, sorted like the sheet (R-number of k, then seq) and checked with count#sum(ver) = m.
+// The copy is kept in IndexedDB 'prod-sa-sh', so opening the page again asks only for what changed. Back to the old way: PD_SHEETS2 = false.
+const PD_SHEETS2 = true;
+const PSH = { db: null, ready: null, mem: new Map() };
+function pshOpen() {
+  if (PSH.ready) return PSH.ready;
+  PSH.ready = new Promise((ok) => {
+    try {
+      const rq = indexedDB.open('prod-sa-sh', 1);
+      rq.onupgradeneeded = () => rq.result.createObjectStore('sh');
+      rq.onerror = () => ok(null);
+      rq.onsuccess = () => {
+        PSH.db = rq.result;
+        try { const c = PSH.db.transaction('sh', 'readonly').objectStore('sh').openCursor();
+          c.onsuccess = () => { const cur = c.result; if (cur) { if (!PSH.mem.has(cur.key)) PSH.mem.set(cur.key, cur.value); cur.continue(); } else ok(PSH.db); };
+          c.onerror = () => ok(PSH.db);
+        } catch (e) { ok(PSH.db); }
+      };
+    } catch (e) { ok(null); }
+  });
+  return PSH.ready;
+}
+function pshPut(t, e) { try { if (PSH.db) PSH.db.transaction('sh', 'readwrite').objectStore('sh').put(e, t); } catch (x) { /* no space: memory only */ } }
+const pshRn = (k) => (/^R\d+$/.test(String(k)) ? Number(String(k).slice(1)) : null);
+function pshSort(a, b) {
+  const x = pshRn(a[0]), y = pshRn(b[0]);
+  if (x === null || y === null) { if (x !== y) return x === null ? 1 : -1; } else if (x !== y) return x - y;
+  return a[1] - b[1];
+}
+const pshMark = (rows) => { let n = 0, t = BigInt(0); rows.forEach((r) => { n++; t += BigInt(r[2] || 0); }); return n + '#' + t.toString(); };
+const pshSheet = (h, rows) => [h].concat(rows.map((q) => q[3]));
+async function pdSheets(ticket, ref, have) {
+  await pshOpen();
+  const h2 = Object.assign({}, have), since = {};
+  ref.forEach((t) => { const e = PSH.mem.get(t); if (!e) return; if (!h2[t]) h2[t] = e.hx; let mx = 0; e.rows.forEach((q) => { if (q[2] > mx) mx = q[2]; }); if (mx) since[t] = mx; });
+  const r = await sbRpc('pdr_sheets2', { p_ticket: ticket, p_tabs: ref, p_have: h2, p_since: since });
+  if (!r || r.off) return r;
+  const out = { sheets: {}, same: {}, hash: Object.assign({}, r.hash || {}), missing: (r.missing || []).slice() }, again = [];
+  const keep = (t, hx, x, rows) => { const e = { hx: hx, h: x.h, rows: rows }; PSH.mem.set(t, e); pshPut(t, e); out.sheets[t] = pshSheet(x.h, rows); };
+  ref.forEach((t) => {
+    if (out.missing.indexOf(t) >= 0) return;
+    const e = PSH.mem.get(t), hx = (r.hash || {})[t];
+    if (r.same && r.same[t]) {
+      if (have[t] === hx) { out.same[t] = 1; return; }                      // the engine holds it
+      if (e && e.hx === hx) { out.sheets[t] = pshSheet(e.h, e.rows); return; } // our copy (page opened again)
+      again.push(t); return;
+    }
+    const x = r.rows && r.rows[t]; if (!x) { again.push(t); return; }
+    let rows = x.rows;
+    if (x.d) {
+      if (!e || JSON.stringify(e.h) !== JSON.stringify(x.h)) { again.push(t); return; }
+      const by = new Map(e.rows.map((q) => [String(q[0]), q])); x.rows.forEach((q) => by.set(String(q[0]), q));
+      rows = Array.from(by.values()).sort(pshSort);
+    }
+    if (pshMark(rows) !== x.m) { again.push(t); return; }
+    keep(t, hx, x, rows);
+  });
+  if (again.length) {   // no copy / a row was deleted / headers changed → the whole tab
+    const r2 = await sbRpc('pdr_sheets2', { p_ticket: ticket, p_tabs: again, p_have: {}, p_since: {} });
+    again.forEach((t) => {
+      const x = r2 && r2.rows && r2.rows[t];
+      if (x && pshMark(x.rows) === x.m) { out.hash[t] = r2.hash[t]; keep(t, r2.hash[t], x, x.rows); }
+      else { delete out.hash[t]; out.missing.push(t); }   // → Apps Script, as before
+    });
+  }
+  return out;
+}
 async function lrCtx(want, have, write) {
   const now = Date.now(), C = LRS.ctx, REF = PD_PHONE.REF || [];
   const ref = now > LRS.refOff ? want.filter((n) => REF.indexOf(n) >= 0) : [], rest = want.filter((n) => ref.indexOf(n) < 0);
@@ -645,7 +713,8 @@ async function lrCtx(want, have, write) {
   }
   if (!ref.length || !c.ticket) return c;   // no ticket → the phone stops (LR_OFF) as before
   let r = null;
-  try { r = await sbRpc('pdr_sheets', { p_ticket: c.ticket, p_tabs: ref, p_have: pick(ref) }); } catch (e) { r = null; LRS.refOff = Date.now() + 2 * 60e3; }   // Supabase trouble → Apps Script tabs for 2 min
+  try { r = PD_SHEETS2 ? await pdSheets(c.ticket, ref, pick(ref)) : await sbRpc('pdr_sheets', { p_ticket: c.ticket, p_tabs: ref, p_have: pick(ref) }); }
+  catch (e) { r = null; LRS.refOff = Date.now() + 2 * 60e3; }   // Supabase trouble → Apps Script tabs for 2 min
   let back = ref;
   if (r && r.off) LRS.refOff = Date.now() + 10 * 60e3;
   else if (r) { put(c, r); back = r.missing || []; LRS.ref++; }
