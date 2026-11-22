@@ -217,7 +217,7 @@ let loadN=0;
 function loading(on){loadN+=on?1:-1;if(loadN<0)loadN=0;$('#loader').classList.toggle('show',loadN>0)}
 function toast(m,err){const t=$('#toast');t.textContent=m;t.className=err?'err':'';t.style.display='block';clearTimeout(t._h);t._h=setTimeout(()=>t.style.display='none',err?6000:2800)}
 /* เวอร์ชันเว็บ: ตรรกะเดิมรันใน Web Worker (worker.js) แล้วคุยกับ Supabase ตรง — ไม่ผ่าน Apps Script */
-const W=new Worker('worker.js?v=202611170858');let _wid=0;const _wp={};
+const W=new Worker('worker.js?v=202611221400');let _wid=0;const _wp={};
 W.onmessage=e=>{const m=e.data,p=_wp[m.id];if(p){delete _wp[m.id];p(m)}};
 W.onerror=e=>{toast('โหลดตัวประมวลผลไม่สำเร็จ — กดรีเฟรช',1)};
 function call(fn,...args){

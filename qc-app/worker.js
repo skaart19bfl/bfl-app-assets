@@ -19,9 +19,39 @@ function xhr_(url, o) {
   catch (e) { throw new Error('เชื่อมต่อไม่ได้ — ตรวจสอบอินเทอร์เน็ต'); }
   return { getResponseCode: function () { return x.status; }, getContentText: function () { return x.responseText; } };
 }
+// E9 (22 Nov 2026, egress): qc_read — each request carries have = the hash of the answer this worker already holds (the worker lives as long
+// as the page) → Supabase answers {same} and the copy is used, instead of whole reference tabs (FG_Lot, Production_Lot …) every call.
+var QCR = {}, QCR_MAX = 80;   // JSON of the request (without have) → last answer
+function qcrSend_(o) {
+  var body; try { body = JSON.parse(o.payload); } catch (e) { return null; }
+  if (!body || !Array.isArray(body.p_reqs)) return null;
+  var reqs = body.p_reqs, keys = reqs.map(function (q) { return JSON.stringify(q); });
+  var send = Object.assign({}, body, { p_reqs: reqs.map(function (q, i) { var c = QCR[keys[i]]; return c && c.hash ? Object.assign({}, q, { have: c.hash }) : q; }) });
+  return { send: send, reqs: reqs, keys: keys };
+}
+function qcrFix_(st, resp) {
+  if (resp.getResponseCode() >= 300) return resp;
+  var j; try { j = JSON.parse(resp.getContentText()); } catch (e) { return resp; }
+  if (!j || typeof j !== 'object') return resp;
+  var again = false;
+  st.reqs.forEach(function (q, i) {
+    var t = q.tab, r = j[t]; if (!r) return;
+    if (r.same) { var c = QCR[st.keys[i]]; if (c && c.hash === r.hash) j[t] = Object.assign({}, c, { synced: r.synced }); else again = true; }
+    else if (r.hash) { delete QCR[st.keys[i]]; QCR[st.keys[i]] = r; var ks = Object.keys(QCR); if (ks.length > QCR_MAX) delete QCR[ks[0]]; }
+  });
+  if (again) return null;   // no copy for a {same} (should not happen) → ask again without have
+  var txt = JSON.stringify(j);
+  return { getResponseCode: function () { return 200; }, getContentText: function () { return txt; } };
+}
 var UrlFetchApp = {
-  fetch: function (url, o) { return xhr_(url, o); },
-  fetchAll: function (reqs) { return reqs.map(function (r) { return xhr_(r.url, r); }); }
+  fetch: function (url, o) {
+    if (/\/rpc\/qc_read$/.test(url) && o && o.payload) {
+      var st = qcrSend_(o);
+      if (st) { var r = qcrFix_(st, xhr_(url, Object.assign({}, o, { payload: JSON.stringify(st.send) }))); if (r) return r; }
+    }
+    return xhr_(url, o);
+  },
+  fetchAll: function (reqs) { return reqs.map(function (r) { return UrlFetchApp.fetch(r.url, r); }); }
 };
 var _mem = {};
 var CacheService = { getScriptCache: function () { return {
