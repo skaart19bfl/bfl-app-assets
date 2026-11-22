@@ -68,6 +68,8 @@
   html[data-theme=dark] .tag { color:#cfe0ff; }
   .toast { font-weight:600; position:fixed; left:50%; bottom:20px; transform:translateX(-50%); background:var(--ink); color:var(--bg); padding:10px 16px; border-radius:12px; z-index:9; max-width:92vw; }
   .toast.e { background:var(--bad); color:#fff; }
+  .chips { display:flex; gap:6px; flex-wrap:wrap; } .chips button { min-height:40px; font-size:14px; } .chips button.on { background:var(--blue); border-color:var(--blue); color:#fff; }
+  .md td.k { font-family:'IBM Plex Mono',monospace; font-size:13px; white-space:nowrap; } .md tr.off td { opacity:.45; } .md td small { color:var(--muted); display:block; }
   @media (max-width:520px) { .top .hide-sm { display:none; } }
 </style>
 </head>
@@ -83,7 +85,9 @@ const LS = { get(k, d) { try { const v = localStorage.getItem(k); return v == nu
   set(k, v) { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} } };
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const S = { view: 'loading', theme: LS.get('hub-theme', 'light'), shared: LS.get('hub-shared', false), session: LS.get('hub-session', null),
-  names: [], pick: null, pin: '', pin1: '', oldPin: '', err: '', apps: [], open: {}, tab: 'home', admin: null, edit: null, busy: false };
+  names: [], pick: null, pin: '', pin1: '', oldPin: '', err: '', apps: [], open: {}, tab: 'home', admin: null, edit: null, busy: false,
+  md: { list: null, tab: '', data: null, edit: null } };
+const PAGES = ['home', 'admin', 'md'];   // Hub pages (not apps)
 document.documentElement.dataset.theme = S.theme;
 
 async function rpc(fn, args) {
@@ -133,10 +137,10 @@ V.newpin = () => {
 };
 
 V.app = () => {
-  const me = S.session.me, tabs = [{ key: 'home', name: 'หน้าแรก' }].concat(S.apps).concat(me.is_admin ? [{ key: 'admin', name: 'ผู้ใช้' }] : []);
+  const me = S.session.me, tabs = [{ key: 'home', name: 'หน้าแรก' }].concat(S.apps).concat(me.is_admin ? [{ key: 'admin', name: 'ผู้ใช้' }, { key: 'md', name: 'ข้อมูลหลัก' }] : []);
   return '<div id="shell"><div class="top"><img class="logo" src="logo-128.png" alt="BFL Production">'
     + '<div class="who"><b>' + esc(me.name) + '</b><small>' + esc(me.dept || '') + (S.session.shared ? ' · เครื่องประจำจุด ถึง ' + new Date(S.session.exp).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) : '') + '</small></div>'
-    + (S.tab !== 'home' && S.tab !== 'admin' ? '<button data-act="reload" title="โหลดแอปนี้ใหม่">↻<span class="hide-sm"> โหลดใหม่</span></button><button data-act="popout" title="เปิดแอปนี้ในแท็บใหม่">↗<span class="hide-sm"> แท็บใหม่</span></button>' : '')
+    + (!PAGES.includes(S.tab) ? '<button data-act="reload" title="โหลดแอปนี้ใหม่">↻<span class="hide-sm"> โหลดใหม่</span></button><button data-act="popout" title="เปิดแอปนี้ในแท็บใหม่">↗<span class="hide-sm"> แท็บใหม่</span></button>' : '')
     + '<button data-act="theme">' + (S.theme === 'dark' ? '☀︎' : '☾') + '</button>'
     + '<button data-act="logout">' + (S.session.shared ? 'เปลี่ยนผู้ใช้' : 'ออก') + '</button></div>'
     + '<div class="tabs">' + tabs.map((t) => '<button class="' + (S.tab === t.key ? 'on' : '') + '" data-act="tab" data-arg="' + t.key + '">' + esc(t.name) + '</button>').join('') + '</div>'
@@ -181,6 +185,50 @@ function editHtml() {
     + '<label class="switch"><input type="checkbox" data-in="is_admin"' + (e.is_admin ? ' checked' : '') + '> Admin (จัดการผู้ใช้ได้)</label>'
     + (isNew ? '' : '<label class="switch"><input type="checkbox" data-in="active"' + (e.active ? ' checked' : '') + '> เปิดใช้งาน</label>')
     + errBox() + '<button class="primary" data-act="saveUser">บันทึก</button><button class="ghost" data-act="cancelEdit">← กลับ</button></div>';
+}
+
+/* ---------- ข้อมูลหลัก (step 5, 22 Nov 2026 — Sheet retire plan): masters that were edited in the sheet / AppSheet, now kept in Supabase.
+ * Hub Admin only (RPC md_list / md_get / md_save, logged in md_log). The sheet gets each change from the Production App copy job (≤ 15 min),
+ * where Extruder Log still reads them. Rows are never deleted: switch them off (Cancelled / Active = N). */
+const mdVal = (v) => v == null ? '' : typeof v === 'object' && v.$d != null ? new Date(v.$d).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' }) : String(v);
+const mdOff = (c, d) => c.flagYN ? /^(n|no|false|0)$/i.test(String(d[c.flag] == null ? '' : d[c.flag]).trim()) : d[c.flag] === true || /^true$/i.test(String(d[c.flag] || ''));
+function mdName(col, id) { const L = (S.md.data.look || {})[col]; if (!L || id == null || id === '') return ''; const x = L.find((o) => o.id === String(id)); return x ? x.name : '⚠ ไม่พบในรายการ'; }
+function mdHtml() {
+  const M = S.md;
+  if (!M.list) return '<div class="page"><div class="wrap muted">กำลังโหลด…</div></div>';
+  const chips = '<div class="chips">' + M.list.map((t) => '<button class="' + (M.tab === t.tab ? 'on' : '') + '" data-act="mdTab" data-arg="' + esc(t.tab) + '">'
+    + esc(t.title.replace(/ \(.*\)$/, '')) + (t.ready ? ' · ' + t.n : ' · รอสลับ') + '</button>').join('') + '</div>';
+  let body = '<p class="muted small" style="margin-top:12px">เลือกตาราง · แก้ที่นี่ที่เดียว (ชีตได้สำเนาภายใน ~15 นาที) · ไม่ลบแถว ใช้ปิดใช้งานแทน</p>';
+  if (M.tab && !M.data) body = '<div class="muted" style="margin-top:12px">กำลังโหลด…</div>';
+  else if (M.data && !M.data.ok) body = '<div class="err" style="margin-top:12px">' + esc(M.data.error) + '</div>';
+  else if (M.data && M.edit) body = mdEditHtml();
+  else if (M.data) {
+    const c = M.data.cfg, cols = c.key.concat(c.edit.filter((x) => c.key.indexOf(x) < 0));
+    body = '<div class="row" style="margin-top:12px"><input id="mdq" placeholder="ค้นหา…" style="flex:1;min-width:160px"><button class="primary" data-act="mdNew" style="min-height:46px">+ เพิ่ม</button></div>'
+      + '<div class="card md" style="margin-top:10px;overflow:auto"><table><thead><tr>' + cols.map((x) => '<th>' + esc(x) + '</th>').join('') + '<th>' + esc(c.flag) + '</th><th></th></tr></thead><tbody>'
+      + M.data.rows.map((r) => { const off = mdOff(c, r.d);
+          return '<tr class="' + (off ? 'off' : '') + '" data-q="' + esc((r.k + ' ' + cols.map((x) => mdVal(r.d[x]) + ' ' + mdName(x, r.d[x])).join(' ')).toLowerCase()) + '">'
+            + cols.map((x, i) => '<td class="' + (i < c.key.length ? 'k' : '') + '">' + esc(mdVal(r.d[x])) + ((c.look || {})[x] && r.d[x] != null ? '<small>' + esc(mdName(x, r.d[x])) + '</small>' : '') + '</td>').join('')
+            + '<td>' + (off ? (c.flagYN ? 'ปิด' : 'ยกเลิก') : (c.flagYN ? 'ใช้' : '')) + '</td><td><button data-act="mdEdit" data-arg="' + esc(r.k) + '">แก้ไข</button></td></tr>'; }).join('')
+      + '</tbody></table></div><p class="muted small">' + M.data.rows.length + ' แถว · คีย์ ' + esc(c.key.join(' + ')) + (c.new === 'id8' ? ' (สร้างให้อัตโนมัติ)' : '') + '</p>';
+  }
+  return '<div class="page"><div class="wrap" style="max-width:980px"><h2>ข้อมูลหลัก</h2>' + chips + body + '</div></div>';
+}
+function mdEditHtml() {
+  const M = S.md, c = M.data.cfg, e = M.edit, isNew = !e.k;
+  const fld = (x, key) => {
+    const v = e.d[x] == null ? '' : typeof e.d[x] === 'object' ? mdVal(e.d[x]) : String(e.d[x]), L = (c.look || {})[x] && (M.data.look || {})[x];
+    if (L) return '<label>' + esc(x) + '<select data-md="' + esc(x) + '"><option value="">—</option>' + (v && !L.some((o) => o.id === v) ? '<option value="' + esc(v) + '" selected>' + esc(v) + ' · ⚠ ไม่พบในรายการ</option>' : '')
+      + L.filter((o) => !o.off || o.id === v).map((o) => '<option value="' + esc(o.id) + '"' + (o.id === v ? ' selected' : '') + '>' + esc(o.name ? o.name + ' (' + o.id + ')' : o.id) + '</option>').join('') + '</select></label>';
+    const num = (c.num || []).indexOf(x) >= 0;
+    return '<label>' + esc(x) + (key ? ' (คีย์ — แก้ภายหลังไม่ได้)' : '') + '<input data-md="' + esc(x) + '" value="' + esc(v) + '"' + (num ? ' inputmode="decimal"' : '') + ' autocomplete="off"></label>';
+  };
+  const keys = isNew && c.new !== 'id8' ? c.key.map((x) => fld(x, true)).join('') : '<span class="muted small">' + esc(c.key.join(' + ')) + ': <b class="k">' + esc(isNew ? '(สร้างให้อัตโนมัติ)' : e.k) + '</b></span>';
+  const off = mdOff(c, e.d);
+  return '<div class="card col" style="margin-top:12px;max-width:560px"><h2>' + (isNew ? 'เพิ่มแถว' : 'แก้ไข') + ' · ' + esc(M.data.cfg.title.replace(/ \(.*\)$/, '')) + '</h2>' + keys
+    + c.edit.filter((x) => c.key.indexOf(x) < 0).map((x) => fld(x)).join('')
+    + '<label class="switch"><input type="checkbox" data-md="__flag"' + ((c.flagYN ? !off : off) ? ' checked' : '') + '> ' + (c.flagYN ? 'ใช้งาน (' + esc(c.flag) + ' = Y)' : 'ยกเลิก (' + esc(c.flag) + ')') + '</label>'
+    + errBox() + '<button class="primary" data-act="mdSave"' + (S.busy ? ' disabled' : '') + '>บันทึก</button><button class="ghost" data-act="mdBack">← กลับ</button></div>';
 }
 
 /* ---------- poll guard (20 Nov 2026): apps kept alive in hidden frames (or with the screen off) don't poll for changes ----------
@@ -231,6 +279,7 @@ function render() {
     + '<button class="primary" data-act="popout" style="min-height:56px;font-size:18px">เปิด ' + esc(tabApp.name) + ' ↗</button></div></div>');
   if (S.tab === 'home') st.insertAdjacentHTML('beforeend', homeHtml());
   else if (S.tab === 'admin') st.insertAdjacentHTML('beforeend', adminHtml());
+  else if (S.tab === 'md') st.insertAdjacentHTML('beforeend', mdHtml());
 }
 async function openApp(key, force) {
   const a = S.apps.find((x) => x.key === key); if (!a) return;
@@ -252,7 +301,7 @@ async function openApp(key, force) {
   st.appendChild(f); render();
 }
 function expired() { toast('หมดเวลาเข้าใช้งาน — login ใหม่', true); clearSession(); start(); }
-function clearSession() { S.session = null; LS.set('hub-session', null); S.apps = []; S.tab = 'home'; S.admin = null; S.edit = null; const r = document.getElementById('root'); if (r) r.innerHTML = ''; }
+function clearSession() { S.session = null; LS.set('hub-session', null); S.apps = []; S.tab = 'home'; S.admin = null; S.edit = null; S.md = { list: null, tab: '', data: null, edit: null }; const r = document.getElementById('root'); if (r) r.innerHTML = ''; }
 
 /* ---------- actions ---------- */
 const ACT = {
@@ -304,6 +353,7 @@ const ACT = {
   async tab(k) {
     S.tab = k; S.edit = null; render();
     if (k === 'admin') { await loadAdmin(); return; }
+    if (k === 'md') { await mdLoadList(); return; }
     if (k !== 'home') await openApp(k).catch((e) => toast(e.message, true));
   },
   // some apps (e.g. ones that need a Google sign-in) may not open inside a frame on every phone → open in a new tab, signed in the same way
@@ -313,7 +363,7 @@ const ACT = {
     if (a.sso) { const r = await rpc('hub_ticket', { p_token: tok(), p_app: a.key }); if (!r.ok) { if (w) w.close(); return toast(r.error, true); } url += (url.indexOf('?') >= 0 ? '&' : '?') + 'hub=' + r.ticket; }
     if (w) w.location.href = url; else location.href = url;
   },
-  async reload() { if (S.tab !== 'home' && S.tab !== 'admin') await openApp(S.tab, true).catch((e) => toast(e.message, true)); },
+  async reload() { if (!PAGES.includes(S.tab)) await openApp(S.tab, true).catch((e) => toast(e.message, true)); },
   newUser() { S.edit = { name: '', dept: '', apps: {}, is_admin: false, active: true, pin: '' }; S.err = ''; render(); },
   editUser(id) { const u = S.admin.users.find((x) => x.id === id); S.edit = Object.assign({ pin: '' }, JSON.parse(JSON.stringify(u))); S.err = ''; render(); },
   cancelEdit() { S.edit = null; S.err = ''; render(); },
@@ -322,6 +372,23 @@ const ACT = {
     const r = await rpc('hub_user_save', { p_token: tok(), p }); if (!r.ok) { S.err = r.error; return render(); }
     toast(e.pin ? 'บันทึกแล้ว · แจ้ง PIN ชั่วคราวให้ผู้ใช้' : 'บันทึกแล้ว'); S.edit = null; await loadAdmin();
   },
+  async mdTab(t) { S.md.tab = t; S.md.data = null; S.md.edit = null; S.err = ''; render(); await mdLoad(); },
+  mdNew() { S.md.edit = { k: '', d: {}, orig: {} }; S.err = ''; render(); },
+  mdEdit(k) { const r = S.md.data.rows.find((x) => x.k === k); if (!r) return; S.md.edit = { k: r.k, d: Object.assign({}, r.d), orig: r.d }; S.err = ''; render(); },
+  mdBack() { S.md.edit = null; S.err = ''; render(); },
+  async mdSave() {
+    const M = S.md, c = M.data.cfg, e = M.edit, cols = (e.k ? [] : c.key).concat(c.edit, [c.flag]), p = {};
+    cols.forEach((x) => { if (!(x in e.d)) return; const v = e.d[x], o = e.orig[x];
+      if (typeof v === 'object' && v !== null) return;   // dates are never edited here
+      if (!e.k ? v !== '' && v != null : String(v == null ? '' : v) !== String(o == null ? '' : typeof o === 'object' ? mdVal(o) : o)) p[x] = v; });
+    if (e.k && !Object.keys(p).length) { S.err = 'ยังไม่ได้แก้อะไร'; return render(); }
+    S.busy = true; render();
+    try {
+      const r = await rpc('md_save', { p_token: tok(), p_tab: M.tab, p_k: e.k || null, p_d: p });
+      toast('บันทึกแล้ว · ' + r.k + ' (ชีตได้สำเนาภายใน ~15 นาที)'); M.edit = null; S.err = ''; await mdLoad();
+    } catch (er) { if (er.message === 'AUTH') return expired(); S.err = er.message; }
+    finally { S.busy = false; render(); }
+  },
   async saveUrl(k) {
     const r = await rpc('hub_app_save', { p_token: tok(), p: { key: k, url: document.getElementById('url_' + k).value.trim() } });
     if (!r.ok) return toast(r.error, true);
@@ -329,6 +396,16 @@ const ACT = {
   },
 };
 async function loadAdmin() { const r = await rpc('hub_user_list', { p_token: tok() }); if (!r.ok) { if (r.error === 'AUTH') return expired(); return toast(r.error, true); } S.admin = r; render(); }
+async function mdLoadList() {
+  try { const r = await rpc('md_list', { p_token: tok() }); S.md.list = r.tabs; if (!S.md.tab && r.tabs.length) S.md.tab = (r.tabs.find((t) => t.ready) || r.tabs[0]).tab; render(); if (S.md.tab) await mdLoad(); }
+  catch (e) { if (e.message === 'AUTH') return expired(); toast(e.message, true); }
+}
+async function mdLoad() {
+  const t = S.md.tab;
+  try { const r = await rpc('md_get', { p_token: tok(), p_tab: t }); if (S.md.tab !== t) return; S.md.data = r;
+    const L = S.md.list && S.md.list.find((x) => x.tab === t); if (L && r.ok) { L.n = r.rows.length; L.ready = true; } render(); }
+  catch (e) { if (e.message === 'AUTH') return expired(); S.md.data = { ok: false, error: e.message }; render(); }
+}
 async function loadApps() { const r = await rpc('hub_apps', { p_token: tok() }); if (!r.ok) return expired(); S.apps = r.apps; }
 async function enter() { await loadApps(); S.tab = 'home'; go('app'); setTimeout(warmApps, 1500); }
 /* GitHub Pages apps (user 10 Nov 2026): after login, quietly fetch each app's page into this browser (same store gas/boot.js reads,
@@ -363,10 +440,14 @@ document.addEventListener('click', (ev) => {
 document.addEventListener('change', (ev) => {
   const el = ev.target;
   if (el.dataset.act === 'shared') return ACT.shared(el);
+  if (el.dataset.md && S.md.edit) { const c = S.md.data.cfg;
+    if (el.dataset.md === '__flag') S.md.edit.d[c.flag] = c.flagYN ? (el.checked ? 'Y' : 'N') : el.checked; else S.md.edit.d[el.dataset.md] = el.value; return; }
   if (el.dataset.in && S.edit) { const k = el.dataset.in, v = el.type === 'checkbox' ? el.checked : el.value;
     if (k.indexOf('app_') === 0) { S.edit.apps = S.edit.apps || {}; S.edit.apps[k.slice(4)] = v; } else S.edit[k] = v; }
 });
-document.addEventListener('input', (ev) => { const el = ev.target; if (el.dataset.in && S.edit && el.type !== 'checkbox' && el.tagName !== 'SELECT') { const k = el.dataset.in; if (k.indexOf('app_') === 0) { S.edit.apps[k.slice(4)] = el.value; } else S.edit[k] = el.value; } });
+document.addEventListener('input', (ev) => { const el = ev.target;
+  if (el.id === 'mdq') { const q = el.value.trim().toLowerCase(); document.querySelectorAll('.md tr[data-q]').forEach((tr) => { tr.style.display = !q || tr.dataset.q.indexOf(q) >= 0 ? '' : 'none'; }); return; }
+  if (el.dataset.md && S.md.edit && el.type !== 'checkbox') { S.md.edit.d[el.dataset.md] = el.value; return; } if (el.dataset.in && S.edit && el.type !== 'checkbox' && el.tagName !== 'SELECT') { const k = el.dataset.in; if (k.indexOf('app_') === 0) { S.edit.apps[k.slice(4)] = el.value; } else S.edit[k] = el.value; } });
 document.addEventListener('keydown', (ev) => { const padView = S.view === 'pin' || S.view === 'newpin' || (S.view === 'setup' && S.setupName); if (!padView) return; if (/^\d$/.test(ev.key)) ACT.key(ev.key); else if (ev.key === 'Backspace') ACT.del(); });
 // shared device: end of shift → back to the login screen (checked every 30 s)
 setInterval(() => { if (S.session && S.session.exp && Date.now() > S.session.exp) expired(); }, 30000);
