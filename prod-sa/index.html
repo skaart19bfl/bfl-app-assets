@@ -299,7 +299,7 @@ function makeLR(o) {
     if (q.p_tab === '__jobs') { S.jobs = Object.assign({}, res.jobs || {}); S.reqs.set(key(q), res.v); return; }
     const t = S.tabs[q.p_tab] || (S.tabs[q.p_tab] = { h: res.h, kc: res.kc, rows: new Map() });
     t.h = res.h; if (res.kc != null) t.kc = res.kc;
-    (res.rows || []).forEach((r) => { const d = Object.assign({}, r); delete d._k; delete d._s; t.rows.set(String(r._k), { d: d, s: r._s }); });
+    (res.rows || []).forEach((r) => { const d = Object.assign({}, r); delete d._k; delete d._s; delete d._v; t.rows.set(String(r._k), { d: d, s: r._s }); });
     S.reqs.set(key(q), res.v);
   }
   function runView(S) {   // a fresh copy of the rows for one run (its writes stay in it)
@@ -549,14 +549,60 @@ async function sbRpc(fn, body) {
   return JSON.parse(t);
 }
 // a tab the phone already has is not downloaded again when it did not change (Supabase answers {same} for the fingerprint we send)
+// E1 (22 Nov 2026, egress): a full tab the phone holds is asked with since = its highest _v → only the changed rows come back ({d}), merged here
+// and checked with count#sum(_v) = m (a deleted row → the whole tab again). Full tabs are kept in IndexedDB: opening the page again costs nothing.
+const PDB = { db: null, ready: null };
+function pdbOpen() {
+  if (PDB.ready) return PDB.ready;
+  PDB.ready = new Promise((ok) => {
+    try {
+      const rq = indexedDB.open('prod-sa-rc', 1);
+      rq.onupgradeneeded = () => rq.result.createObjectStore('rc');
+      rq.onerror = () => ok(null);
+      rq.onsuccess = () => {
+        PDB.db = rq.result;
+        try { const c = PDB.db.transaction('rc', 'readonly').objectStore('rc').openCursor();
+          c.onsuccess = () => { const cur = c.result; if (cur) { if (!LRS.cache.has(cur.key)) LRS.cache.set(cur.key, cur.value); cur.continue(); } else ok(PDB.db); };
+          c.onerror = () => ok(PDB.db);
+        } catch (e) { ok(PDB.db); }
+      };
+    } catch (e) { ok(null); }
+  });
+  return PDB.ready;
+}
+function pdbPut(k, v) { try { if (PDB.db) PDB.db.transaction('rc', 'readwrite').objectStore('rc').put(v, k); } catch (e) { /* no space: memory only */ } }
+const pdMark = (rows) => { let n = 0, t = BigInt(0); rows.forEach((r) => { n++; t += BigInt(r._v || 0); }); return n + '#' + t.toString(); };
 async function lrStore(ticket, reqs) {
+  await pdbOpen();
   const C = LRS.cache, ks = reqs.map((q) => JSON.stringify([q.tab, q.col, q.vals, q.tail]));
-  const res = await sbRpc('pdr_get', { p_ticket: ticket, p_reqs: reqs.map((q, i) => (C.has(ks[i]) ? Object.assign({}, q, { have: C.get(ks[i]).a }) : q)) });
-  return res.map((r, i) => {
-    if (r && r.same) { const c = C.get(ks[i]); if (!c) throw new Error('LR_DB cache'); C.delete(ks[i]); C.set(ks[i], c); return c; }
-    if (r && r.a) { C.delete(ks[i]); C.set(ks[i], r); while (C.size > 40) C.delete(C.keys().next().value); }
+  const full = (q) => q.col == null && q.tail == null;
+  const keep = (i, e) => { C.delete(ks[i]); C.set(ks[i], e); if (full(reqs[i]) && e.m) pdbPut(ks[i], e); while (C.size > 40) C.delete(C.keys().next().value); };
+  const send = reqs.map((q, i) => {
+    const c = C.get(ks[i]); if (!c) return q;
+    const o = Object.assign({}, q, { have: c.a });
+    if (full(q) && c.m && c.rows) { let mx = 0; c.rows.forEach((r) => { if (r._v > mx) mx = r._v; }); if (mx) o.since = mx; }
+    return o;
+  });
+  const res = await sbRpc('pdr_get', { p_ticket: ticket, p_reqs: send });
+  const again = [];
+  const out = res.map((r, i) => {
+    const c = C.get(ks[i]);
+    if (r && r.same) { if (!c) { again.push(i); return null; } C.delete(ks[i]); C.set(ks[i], c); return c; }
+    if (r && r.d) {
+      if (!c) { again.push(i); return null; }
+      const by = new Map(c.rows.map((x) => [String(x._k), x])); r.rows.forEach((x) => by.set(String(x._k), x));
+      const rows = Array.from(by.values()).sort((p, q) => p._s - q._s);
+      if (pdMark(rows) !== r.m) { again.push(i); return null; }
+      const e = { h: r.h, kc: r.kc, v: r.v, a: r.a, m: r.m, rows: rows }; keep(i, e); return e;
+    }
+    if (r && r.a) keep(i, r);
     return r;
   });
+  if (again.length) {   // no copy / a row was deleted → the whole tab
+    const r2 = await sbRpc('pdr_get', { p_ticket: ticket, p_reqs: again.map((i) => reqs[i]) });
+    again.forEach((i, j) => { const x = r2[j]; if (x && x.a) keep(i, x); out[i] = x; });
+  }
+  return out;
 }
 // v56: the sheet-only tabs (Lot, NCP, products, users, Moisture …) come from their Supabase copies (pdr_sheets) — Apps Script only gives the ticket
 // (kept 10 min for screens; a save always asks Apps Script again, so its switches are fresh). Copy missing / switched off / Supabase down → Apps Script.
@@ -617,7 +663,7 @@ async function lrCommit(ticket, fn, reads, ops, comp, jobs, hooks) {
   let r;
   try { r = await sbRpc('pdw_commit', { p_ticket: ticket, p_fn: fn, p_reads: reads, p_ops: ops, p_hooks: hooks || [] }); }
   catch (e) { if (/LR_DB net/.test(String(e && e.message))) throw new Error('LR_NET'); throw new Error(String(e && e.message).replace(/^LR_DB /, '')); }
-  if (r && r.ok) { LRS.cache.clear(); lrCalc(ticket, hooks || [], r.hooks || []); }
+  if (r && r.ok) lrCalc(ticket, hooks || [], r.hooks || []);   // E1: cached tabs stay — the next read sends have/since and gets only what changed
   return r;
 }
 // the main script's realtime recalcs of this save (Capacity, Duration, Tool Life …) — in Supabase now; not waited for.
