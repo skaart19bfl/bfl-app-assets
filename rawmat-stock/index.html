@@ -431,7 +431,42 @@ async function act(fn, args, okMsg, after) {
   S.busy = false; render(); if (S.keepScroll) { S.keepScroll = false; return; } window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-async function load() { S.snap = await rpc('rm_snapshot', { p_token: S.tok }); if (!S.docDay) S.docDay = S.snap.biz_day;
+// E3 egress (22 Nov 2026): rm_snapshot2 — the page says what it already holds (hashes), the answer leaves out what has not changed:
+// st (items/suppliers/zones/locations/options ≈100 KB) · units · returnable by hash, lots row by row (lots_k = [lot, h8] for every lot).
+// The copy is kept in localStorage (rm_snap_c1) so opening the page again also gets only what changed. Back to the old way: RM_SNAP2 = false.
+const RM_SNAP2 = true;
+const RMC = { hs: {}, st: null, units: null, ret: null, lots: new Map() };
+try { const j = JSON.parse(localStorage.getItem('rm_snap_c1') || 'null');
+  if (j && j.st && j.units && j.ret) { RMC.hs = j.hs || {}; RMC.st = j.st; RMC.units = j.units; RMC.ret = j.ret; RMC.lots = new Map((j.lots || []).map((x) => [x[0], { h: x[1], row: x[2] }])); }
+} catch (e) { /* no copy */ }
+const rmClone = (v) => JSON.parse(JSON.stringify(v));
+async function rmSnap(full) {
+  const have = full ? null : { st: RMC.st ? RMC.hs.st : null, units: RMC.units ? RMC.hs.units : null, ret: RMC.ret ? RMC.hs.ret : null,
+    lots: Object.fromEntries(Array.from(RMC.lots, ([k, v]) => [k, v.h])) };
+  const r = await rpc('rm_snapshot2', { p_token: S.tok, p_have: have });
+  let dirty = r.lots.length > 0;
+  if ('items' in r) { RMC.st = { items: r.items, suppliers: r.suppliers, zones: r.zones, locations: r.locations, options: r.options }; RMC.hs.st = r.hs.st; dirty = true; }
+  if ('units' in r) { RMC.units = r.units; RMC.hs.units = r.hs.units; dirty = true; }
+  if ('returnable' in r) { RMC.ret = r.returnable; RMC.hs.ret = r.hs.ret; dirty = true; }
+  const fresh = new Map(r.lots.map((l) => [l.lot, l])), nm = new Map(), lots = []; let miss = !RMC.st || !RMC.units || !RMC.ret;
+  for (const [k, h] of r.lots_k) {
+    let row = fresh.get(k); if (!row) { const c = RMC.lots.get(k); if (c && c.h === h) row = c.row; }
+    if (!row) { miss = true; break; }
+    nm.set(k, { h: h, row: row }); lots.push(row);
+  }
+  if (miss) {   // the copy does not fit (should not happen) → everything once
+    if (full) throw new Error('rm_snapshot2: ข้อมูลไม่ครบ');
+    RMC.hs = {}; RMC.st = RMC.units = RMC.ret = null; RMC.lots = new Map(); return rmSnap(true);
+  }
+  if (nm.size !== RMC.lots.size) dirty = true;
+  RMC.lots = nm;
+  if (dirty) { try { localStorage.setItem('rm_snap_c1', JSON.stringify({ hs: RMC.hs, st: RMC.st, units: RMC.units, ret: RMC.ret, lots: Array.from(nm, ([k, v]) => [k, v.h, v.row]) })); }
+    catch (e) { try { localStorage.removeItem('rm_snap_c1'); } catch (e2) { /* ignore */ } } }
+  const snap = Object.assign({}, r, rmClone(RMC.st), { units: rmClone(RMC.units), returnable: rmClone(RMC.ret), lots: rmClone(lots) });
+  delete snap.hs; delete snap.lots_k;
+  return snap;
+}
+async function load() { S.snap = RM_SNAP2 ? await rmSnap() : await rpc('rm_snapshot', { p_token: S.tok }); if (!S.docDay) S.docDay = S.snap.biz_day;
   if (!S.roleInit) { S.roleInit = true; if (pdScreen(S.screen)) loadPD(); } }
 
 function logout(silent) {
