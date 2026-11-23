@@ -3595,7 +3595,7 @@ const pyFormula = (code) => '98-' + String(code || '').replace(/^97-/, '').repla
 S.py = {
   data: null, loading: false, err: '', master: null, mLoading: false, init: false,
   q: '', mode: 'issue', doc: '', last: null, hist: [], cx: { id: '', reason: '' },
-  rv: { item: '', iq: '', lot: '', sets: '', kg: '', note: '', bag: true, formula: '', product: '', done: null, locs: [{ loc: '', qty: '' }], store: 'PY', doc: 'BFL', docSet: false, bags: 1, bkg: [] },
+  rv: { item: '', iq: '', lot: '', sets: '', kg: '', note: '', bag: true, formula: '', product: '', done: null, locs: [{ loc: '', qty: '' }], store: 'PY', doc: 'BFL', docSet: false, bags: 1, bkg: [], pcl: '' },
   xf: { q: '', lot: '', seqs: '', cart: [], note: '', last: null, done: '', cx: '', cxr: '', find: '' }, hs: '', hv: 'stock', hl: { from: '', to: '', lots: null, loading: false, err: '' }, ho: (() => { try { return localStorage.getItem('py.ho') || 'new'; } catch (e) { return 'new'; } })(),
   bg: { formula: '', product: '', type: 'MIXER', lot: '', qty: '', lines: [], open: false },
   od: { q: '', lots: null, lotsLoading: false, sel: null, batches: '', lines: [], iq: '', note: '' },
@@ -3815,7 +3815,7 @@ function viewPyHome() {
         <button type="button" class="sm" data-py="mvdo" ${mv.to && !S.busy ? '' : 'disabled'}>ย้าย</button><button type="button" class="ghost sm" data-py="mvopen" data-lot="">ปิด</button></div></td></tr>`
       : lp.lot === l.lot ? `<tr><td colspan="8"><div class="chips">ชุดที่ <input data-bind="py.lp.seqs" value="${esc(lp.seqs)}" placeholder="ว่าง = ทุกชุด · เช่น 1-10 หรือ 3,5" style="width:220px">
         <button type="button" class="sm" data-py="plab" data-lot="${esc(l.lot)}">พิมพ์ป้าย F-WI01-PSS01-04</button><button type="button" class="ghost sm" data-py="lpopen" data-lot="">ปิด</button></div></td></tr>`
-      : le.lot === l.lot ? `<tr><td colspan="8"><div class="chips">${(l.nbags || 1) > 1 ? le.bkg.map((x, i) => `ถุง ${i + 1} <input data-bind="py.le.bkg.${i}" value="${esc(x)}" inputmode="decimal" style="width:76px">`).join(' ') + ' กก.' : `กก./ชุด <input data-bind="py.le.kg" value="${esc(le.kg)}" inputmode="decimal" style="width:90px">`} คลัง <select data-bind="py.le.store" style="width:100px">${PY_STORES.map((x) => `<option ${le.store === x ? 'selected' : ''}>${x}</option>`).join('')}</select> เอกสาร <select data-bind="py.le.doc" style="width:110px">${PY_DOCS.map((x) => `<option ${le.doc === x ? 'selected' : ''}>${x}</option>`).join('')}</select> เหตุผล <input data-bind="py.le.reason" value="${esc(le.reason)}" style="width:200px" maxlength="200">
+      : le.lot === l.lot ? `<tr><td colspan="8"><div class="chips">${(l.nbags || 1) > 1 ? le.bkg.map((x, i) => `ถุง ${i + 1} <input data-bind="py.le.bkg.${i}" value="${esc(x)}" inputmode="decimal" style="width:76px">`).join(' ') + ' กก.' : `กก./ชุด <input data-bind="py.le.kg" value="${esc(le.kg)}" inputmode="decimal" style="width:90px">`} คลัง <select data-bind="py.le.store" style="width:100px">${PY_STORES.map((x) => `<option ${le.store === x ? 'selected' : ''}>${x}</option>`).join('')}</select> เอกสาร <select data-bind="py.le.doc" style="width:110px">${PY_DOCS.map((x) => `<option ${le.doc === x ? 'selected' : ''}>${x}</option>`).join('')}</select>${le.store === 'PY-PC' || le.pcl ? ` Lot รับเข้า BFL-PC${le.store === 'PY-PC' ? '*' : ''} <input data-bind="py.le.pcl" value="${esc(le.pcl || '')}" maxlength="40" style="width:150px;text-transform:uppercase">` : ''} เหตุผล <input data-bind="py.le.reason" value="${esc(le.reason)}" style="width:200px" maxlength="200">
         <button type="button" class="sm" data-py="ledo" ${(le.bkg.length ? le.bkg.every((x) => num(x) > 0) : num(le.kg) > 0) && le.reason.trim().length >= 3 && !S.busy ? '' : 'disabled'}>บันทึก</button><button type="button" class="ghost sm" data-py="leopen" data-lot="">ปิด</button></div></td></tr>`
       : lc.lot === l.lot ? `<tr><td colspan="8"><div class="chips">ยกเลิกทั้ง Lot · เหตุผล <input data-bind="py.lc.reason" value="${esc(lc.reason)}" style="width:220px" maxlength="200">
         <button type="button" class="sm" data-py="lcdo" ${lc.reason.trim().length >= 3 && !S.busy ? '' : 'disabled'}>ยืนยันยกเลิก</button><button type="button" class="ghost sm" data-py="lcopen" data-lot="">ปิด</button></div></td></tr>` : '';
@@ -3850,7 +3850,8 @@ function viewPyRecv() {
   const nb = v.bags || 1; while (v.bkg.length < nb) v.bkg.push(''); const bOk = nb === 1 || v.bkg.slice(0, nb).every((x) => num(x) > 0); const kgSet = nb > 1 ? (bOk ? v.bkg.slice(0, nb).reduce((a, x) => a + num(x), 0) : 0) : num(v.kg);
   const nSets = int(v.sets); const one = v.locs.length === 1; const lsum = one ? nSets : v.locs.reduce((a, x) => a + int(x.qty), 0);
   const locOk = v.locs.every((x) => x.loc) && (one || (v.locs.every((x) => int(x.qty) > 0) && lsum === nSets)) && new Set(v.locs.map((x) => x.loc)).size === v.locs.length;
-  const miss = [!it && 'เลือกรหัสชุด', !lotOk && 'Lot No.', !(nSets > 0) && 'จำนวนชุด', !(kgSet > 0) && (nb > 1 ? 'น้ำหนักทุกถุง' : 'น้ำหนักต่อชุด'), !locOk && 'ที่จัดเก็บ', v.bag && !v.product.trim() && 'Product Name'].filter(Boolean);
+  const pcl = String(v.pcl || '').replace(/\s+/g, '').toUpperCase(); const pclDup = pcl && ((S.py.data || {}).lots || []).find((l) => l.pcl === pcl);
+  const miss = [!it && 'เลือกรหัสชุด', !lotOk && 'Lot No.', v.store === 'PY-PC' && !pcl && 'Lot รับเข้า BFL-PC', pclDup && 'Lot รับเข้า BFL-PC ซ้ำ', !(nSets > 0) && 'จำนวนชุด', !(kgSet > 0) && (nb > 1 ? 'น้ำหนักทุกถุง' : 'น้ำหนักต่อชุด'), !locOk && 'ที่จัดเก็บ', v.bag && !v.product.trim() && 'Product Name'].filter(Boolean);
   const ok = !miss.length && !S.busy;
   const done = v.done ? `<div class="card" style="border-color:var(--ok, #1a7f4b)"><h2 style="margin-top:0">✓ รับเข้า ${esc(v.done.lot)} แล้ว · ${v.done.sets} ชุด · คลัง ${esc(v.done.store || 'PY')} · เอกสาร ${esc(v.done.doc || 'BFL')}</h2>
       <div class="chips"><button type="button" data-py="plab" data-lot="${esc(v.done.lot)}">🖨 พิมพ์ป้าย F-WI01-PSS01-04 (${v.done.sets * (v.done.nbags || 1)} ใบ${(v.done.nbags || 1) > 1 ? ' · ชุดละ ' + v.done.nbags + ' ถุง' : ''})</button>${(v.done.bags || []).map((b) => `<button type="button" data-py="pbag" data-bag="${esc(b)}">🖨 พิมพ์ป้ายถุง F-WI01-PSS01-05 · ${esc(b)}</button>`).join('')}<button type="button" class="ghost" data-py="rvclose">ปิด</button></div></div>` : '';
@@ -3864,6 +3865,8 @@ function viewPyRecv() {
       ${it ? `<div class="smt muted">กลุ่ม ${esc(it.g || '–')} · TTT ${esc(it.t || '–')} · กก./ชุดล่าสุด ${it.kg ? fmt(it.kg) : '–'} · ใน PY ${it.py || 0} · PY-PC ${it.pc || 0} ชุด${it.oc ? ' · Odoo ' + esc(it.oc) : ''}</div>` : `<div class="smt muted">ไม่พบรหัส? เพิ่มได้ที่ <button type="button" class="ghost sm" data-go="pymaster" data-mod="py">Master ชุดสารเสริม</button></div>`}
       <div class="fld"><span>Lot No. ผลิตชุดสารเสริม</span><input data-bind="py.rv.lot" value="${esc(v.lot)}" maxlength="30" placeholder="เช่น PRE-FIS261118-03-MI" autocomplete="off" style="text-transform:uppercase;font-family:'IBM Plex Mono',monospace;font-size:17px;max-width:460px">
         <span class="smt" style="margin-top:3px">${lotMsg}</span></div>
+      ${v.store === 'PY-PC' || pcl ? `<div class="fld"><span>Lot รับเข้า BFL-PC ${v.store === 'PY-PC' ? '<b style="color:var(--bad)">*</b>' : ''}</span><input data-bind="py.rv.pcl" value="${esc(v.pcl || '')}" maxlength="40" placeholder="Lot ของ BFL-PC (พิมพ์ตามจริง)" autocomplete="off" style="text-transform:uppercase;font-family:'IBM Plex Mono',monospace;font-size:17px;max-width:460px">
+        <span class="smt" style="margin-top:3px">${pclDup ? `<span style="color:var(--bad)">✗ ซ้ำกับ Lot ${esc(pclDup.lot)}</span>` : '<span class="muted">บังคับเมื่อคลัง PY-PC · พิมพ์บนป้าย -04 และ -05 คู่กับ Lot จัดเตรียม</span>'}</span></div>` : ''}
       <div class="grid4">
         <div class="fld"><span>จำนวนชุด</span><input data-bind="py.rv.sets" value="${esc(v.sets)}" inputmode="numeric" placeholder="เช่น 20"></div>
         ${nb > 1 ? `<div class="fld"><span>น้ำหนักต่อชุด (กก.) = รวมทุกถุง</span><b style="font-size:16px">${kgSet > 0 ? fmt(kgSet) : '–'}</b></div>` : `<div class="fld"><span>น้ำหนักต่อชุด (กก.)</span><input data-bind="py.rv.kg" value="${esc(v.kg)}" inputmode="decimal" placeholder="${it && it.kg ? 'ล่าสุด ' + fmt(it.kg) : 'เช่น 13.50'}"></div>`}
@@ -4156,7 +4159,7 @@ const PY_L4_CSS = `.grid{position:absolute;left:.63in;top:.59in;width:7.18in;hei
 .l4 .hd{position:absolute;left:0;right:0;top:.05in;text-align:center;font-size:14pt}.l4 .hd .u{text-decoration:underline}
 .l4 .fno{position:absolute;right:.05in;top:.5in;font-size:10pt}
 .l4 .row{position:absolute;left:.18in;right:.12in;display:flex;align-items:flex-end;gap:.06in;white-space:nowrap}
-.l4 .r1{top:.62in;left:.62in}.l4 .r2{top:.86in}.l4 .r3{top:1.06in}.l4 .r4{top:1.24in;left:.2in}
+.l4 .r1{top:.62in;left:.62in}.l4 .r2{top:.86in}.l4 .r3{top:1.06in}.l4 .r4{top:1.24in;left:.2in}.l4 .r3 .pc{font-size:11pt}.l4 .r3 .ln.pcv{font-size:13pt;font-weight:700}
 .l4 .ln{border-bottom:.75px solid #000;min-height:.19in;padding-left:.05in;white-space:nowrap;overflow:hidden;flex:1;font-size:15pt;font-weight:700}
 .l4 .ln.n{font-size:13pt;font-weight:400}
 .l4 .qty{position:absolute;left:.03in;bottom:.12in;font-size:28pt;display:flex;gap:.25in;align-items:baseline}
@@ -4169,7 +4172,7 @@ async function pyPrintLabels(lot, spec) {
   if (!us.length) { S.toast = 'ไม่มีชุดที่จะพิมพ์ป้าย'; S.toastErr = true; render(); return; }
   const NB = L.bags || 1; const bkg = (k) => Number(NB > 1 && L.bag_kg ? L.bag_kg[k - 1] : L.kg_per_set).toFixed(2);
   const lab = ([u, k]) => `<div class="l4"><img class="logo" src="${LOGO}" alt=""><div class="hd"><div>${esc(pyCo(L.doc_co))}</div><div class="u">ป้ายบ่งชี้ชุดสารเสริม</div></div><div class="fno">F-WI01-PSS01-04 Rev.01</div>
-    <div class="row r1"><span>SETCODE</span><span class="ln">${esc(L.item_code)}</span></div><div class="row r2"><span class="ln n">${esc(L.name || '')}</span></div><div class="row r3"><span class="ln n"></span></div>
+    <div class="row r1"><span>SETCODE</span><span class="ln">${esc(L.item_code)}</span></div><div class="row r2"><span class="ln n">${esc(L.name || '')}</span></div><div class="row r3">${L.pc_lot ? `<span class="pc">Lot รับเข้า BFL-PC</span><span class="ln pcv">${esc(L.pc_lot)}</span>` : '<span class="ln n"></span>'}</div>
     <div class="row r4"><span>Lot No. ผลิตชุดสารเสริม</span><span class="ln">${esc(L.lot_no)}</span></div>
     <div class="qty"><span>จำนวน</span><span>1</span></div><div class="qrw">${qrSvg(NB > 1 ? u.qr + '|' + k : u.qr, 2)}<div style="white-space:nowrap">${u.seq}/${L.sets}${NB > 1 ? ` · <b style="font-size:12pt">ถุง ${k}/${NB}</b>` : ''}</div></div>
     <div class="kg"><div>น้ำหนัก</div><div><u>${bkg(k)}</u> kg.</div></div></div>`;
@@ -4185,7 +4188,7 @@ const PY_L5_CSS = `.l5{position:absolute;left:.55in;top:.13in;width:9.95in;heigh
 .l5 .f{position:absolute;left:1.15in;display:flex;font-size:17pt;align-items:flex-end}
 .l5 .f span:first-child{width:1.95in;white-space:nowrap}
 .l5 .f .v{border-bottom:.75px solid #000;width:3.9in;text-align:center;min-height:.27in;font-weight:700}
-.l5 .f.a{top:1.0in}.l5 .f.b{top:1.62in}.l5 .f.c{top:1.9in}
+.l5 .f.a{top:1.0in}.l5 .f.b{top:1.62in}.l5 .f.c{top:1.9in}.l5 .f.d{top:1.31in}
 .l5 .sp{position:absolute;left:.5in;top:2.25in;font-size:17pt;font-weight:700;text-decoration:underline}
 .l5 table{position:absolute;left:1.8in;top:2.25in;width:6.25in;border-collapse:collapse;font-size:15pt;table-layout:fixed}
 .l5 th,.l5 td{border:.75px solid #000;height:.27in;padding:0 .06in;font-weight:400;white-space:nowrap;overflow:hidden}
@@ -4193,10 +4196,10 @@ const PY_L5_CSS = `.l5{position:absolute;left:.55in;top:.13in;width:9.95in;heigh
 .l5 .sg{position:absolute;right:1.1in;top:5.2in;text-align:center;font-size:16pt;line-height:1.5}`;
 async function pyPrintBag(bag) {
   let r; try { r = await rpc('rm_py_bag_get', { p_token: S.tok, p_bag: bag }); } catch (e) { S.toast = e.message; S.toastErr = true; render(); return; }
-  const B = r.bag; const rows = []; for (let i = 0; i < 10; i++) { const x = r.lines[i]; rows.push(x ? `<tr><td>${esc(x.item)}${x.bags > 1 ? ` (ชุดละ ${x.bags} ถุง)` : ''}</td><td>${esc(x.lot)}</td><td class="c">${x.qty} ชุด</td></tr>` : '<tr><td></td><td></td><td></td></tr>'); }
+  const B = r.bag; const pcls = [...new Set(r.lines.map((x) => x.pcl).filter(Boolean))]; const rows = []; for (let i = 0; i < 10; i++) { const x = r.lines[i]; rows.push(x ? `<tr><td>${esc(x.item)}${x.bags > 1 ? ` (ชุดละ ${x.bags} ถุง)` : ''}</td><td>${esc(x.lot)}</td><td class="c">${x.qty} ชุด</td></tr>` : '<tr><td></td><td></td><td></td></tr>'); }
   const page = `<div class="page land"><div class="l5"><img class="logo" src="${LOGO}" alt=""><div class="hd"><div>${esc(pyCo(r.doc))}</div><div>ป้ายบ่งชี้จำนวนชุดสารเสริม</div></div>
     <div class="fno">F-WI01-PSS01-05 Rev.01</div><div class="qr">${qrSvg(r.qr, 3)}<div>${esc(B.bag_no)}</div></div>
-    <div class="f a"><span>Formula Code</span><span class="v">${esc(B.formula_code || '')}</span></div><div class="f b"><span>Product Name</span><span class="v">${esc(B.product_name || '')}</span></div><div class="f c"><span>ประเภทชุดสารเสริม</span><span class="v">${esc(B.set_type || '')}</span></div>
+    <div class="f a"><span>Formula Code</span><span class="v">${esc(B.formula_code || '')}</span></div>${pcls.length ? `<div class="f d"><span>Lot รับเข้า BFL-PC</span><span class="v">${esc(pcls.join(', '))}</span></div>` : ''}<div class="f b"><span>Product Name</span><span class="v">${esc(B.product_name || '')}</span></div><div class="f c"><span>ประเภทชุดสารเสริม</span><span class="v">${esc(B.set_type || '')}</span></div>
     <div class="sp">ส่วนประกอบ</div><table><tr><th>รหัส/ชื่อชุดจัดเตรียมสารเสริม</th><th>Lot No.ผลิตชุดสารเสริม</th><th>จำนวน</th></tr>${rows.join('')}</table>
     <div class="sg"><div>.........................................................</div><div>(&nbsp;${'&nbsp;'.repeat(40)})</div><div><b>เจ้าหน้าที่หน่วยงานพรีมิกซ์</b></div></div></div></div>`;
   pyOpenLetter('ป้ายบ่งชี้จำนวนชุดสารเสริม ' + B.bag_no, 'landscape', PY_L5_CSS, [page]);
@@ -4279,11 +4282,11 @@ document.addEventListener('click', async (e) => {
     await pyAct('rm_py_cancel', { p_move: h.moves[0], p_reason: rs }, 'ยกเลิกรายการแล้ว', async () => { n++; for (const mv of h.moves.slice(1)) { await rpc('rm_py_cancel', { p_token: S.tok, p_move: mv, p_reason: rs }); n++; } h.void = true; P.cx = { id: '', reason: '' }; });
     if (n) S.toast = 'ยกเลิก ' + n + ' รายการแล้ว'; render(); return; }
   if (a === 'lpopen') { P.lp = { lot: ds.lot, seqs: '' }; P.le = { lot: '' }; P.lc = { lot: '' }; render(); return; }
-  if (a === 'leopen') { const l = ((P.data || {}).lots || []).find((x) => x.lot === ds.lot); P.le = { lot: ds.lot, kg: l ? String(l.kg) : '', reason: '', store: (l && l.store) || 'PY', doc: (l && l.doc) || 'BFL', bkg: l && l.nbags > 1 ? (l.bag_kg || []).map((x) => String(Number(x))) : [] }; P.lp = { lot: '' }; P.lc = { lot: '' }; render(); return; }
+  if (a === 'leopen') { const l = ((P.data || {}).lots || []).find((x) => x.lot === ds.lot); P.le = { lot: ds.lot, kg: l ? String(l.kg) : '', reason: '', store: (l && l.store) || 'PY', doc: (l && l.doc) || 'BFL', pcl: (l && l.pcl) || '', bkg: l && l.nbags > 1 ? (l.bag_kg || []).map((x) => String(Number(x))) : [] }; P.lp = { lot: '' }; P.lc = { lot: '' }; render(); return; }
   if (a === 'lcopen') { P.lc = { lot: ds.lot, reason: '' }; P.lp = { lot: '' }; P.le = { lot: '' }; render(); return; }
   if (a === 'plab') { pyPrintLabels(ds.lot, P.lp.lot === ds.lot ? P.lp.seqs : ''); return; }
   if (a === 'pbag') { pyPrintBag(ds.bag); return; }
-  if (a === 'ledo') { pyAct('rm_py_lot_edit', { p_lot: P.le.lot, p: { kg: P.le.bkg.length ? undefined : num(P.le.kg), bag_kg: P.le.bkg.length ? P.le.bkg.map(num) : undefined, store: P.le.store, doc: P.le.doc, reason: P.le.reason.trim() } }, 'แก้ข้อมูล Lot แล้ว — พิมพ์ป้ายใหม่ถ้าน้ำหนักบนป้ายเปลี่ยน', () => { P.le = { lot: '' }; }); return; }
+  if (a === 'ledo') { pyAct('rm_py_lot_edit', { p_lot: P.le.lot, p: { kg: P.le.bkg.length ? undefined : num(P.le.kg), bag_kg: P.le.bkg.length ? P.le.bkg.map(num) : undefined, store: P.le.store, doc: P.le.doc, pc_lot: String(P.le.pcl || '').trim(), reason: P.le.reason.trim() } }, 'แก้ข้อมูล Lot แล้ว — พิมพ์ป้ายใหม่ถ้าน้ำหนักบนป้ายเปลี่ยน', () => { P.le = { lot: '' }; }); return; }
   if (a === 'lcdo') { pyAct('rm_py_lot_cancel', { p_lot: P.lc.lot, p_reason: P.lc.reason.trim() }, 'ยกเลิก Lot ' + P.lc.lot + ' แล้ว', () => { P.lc = { lot: '' }; }); return; }
   if (a === 'mvopen') { P.mv = { lot: ds.lot || '', bag: ds.bag || '', seqs: '', to: '' }; render(); return; }
   if (a === 'mvdo') { const mv = P.mv; const p = { to: mv.to }; if (mv.bag) p.bag = mv.bag; else { p.lot = mv.lot; const l = ((P.data || {}).lots || []).find((x) => x.lot === mv.lot); const sq = pySeqs(mv.seqs, l ? l.sets : 999); if (sq) p.seqs = sq; }
@@ -4298,10 +4301,10 @@ document.addEventListener('click', async (e) => {
   if (a === 'rvclose') { P.rv.done = null; render(); return; }
   if (a === 'rvlocadd') { P.rv.locs.push({ loc: '', qty: '' }); if (P.rv.locs.length === 2 && !P.rv.locs[0].qty) P.rv.locs[0].qty = P.rv.sets; render(); return; }
   if (a === 'rvlocdel') { P.rv.locs.splice(int(ds.i), 1); if (!P.rv.locs.length) P.rv.locs.push({ loc: '', qty: '' }); render(); return; }
-  if (a === 'recv') { const v = P.rv; const one = v.locs.length === 1; const nb = v.bags || 1; const p = { item: v.item, lot: pyLotNo(), sets: int(v.sets), kg: nb > 1 ? undefined : num(v.kg), bags: nb, bag_kg: nb > 1 ? v.bkg.slice(0, nb).map(num) : undefined, note: v.note.trim() || undefined, store: v.store, doc: v.doc, bag: v.bag ? { formula: v.formula.trim(), product: v.product.trim(), type: 'MIXER' } : undefined,
+  if (a === 'recv') { const v = P.rv; const one = v.locs.length === 1; const nb = v.bags || 1; const p = { item: v.item, lot: pyLotNo(), sets: int(v.sets), kg: nb > 1 ? undefined : num(v.kg), bags: nb, bag_kg: nb > 1 ? v.bkg.slice(0, nb).map(num) : undefined, note: v.note.trim() || undefined, store: v.store, doc: v.doc, pc_lot: String(v.pcl || '').trim() || undefined, bag: v.bag ? { formula: v.formula.trim(), product: v.product.trim(), type: 'MIXER' } : undefined,
       locs: v.locs.map((x) => ({ loc: x.loc, qty: one ? int(v.sets) : int(x.qty) })) };
     pyAct('rm_py_receive', { p }, (r) => 'รับเข้า ' + r.lot + ' แล้ว · ' + r.sets + ' ชุด' + ((r.bags || []).length ? ' · ถุง ' + r.bags.join(', ') : '') + ' — พิมพ์ป้ายได้เลย',
-      (r) => { v.done = { nbags: r.nbags || nb, lot: r.lot, sets: r.sets, bags: r.bags || (r.bag ? [r.bag] : []), store: r.store || v.store, doc: r.doc || v.doc }; v.locs = [{ loc: '', qty: '' }]; v.lot = ''; v.sets = ''; v.note = ''; S.py.master = null; loadPYMaster(); }); return; }
+      (r) => { v.done = { nbags: r.nbags || nb, lot: r.lot, sets: r.sets, bags: r.bags || (r.bag ? [r.bag] : []), store: r.store || v.store, doc: r.doc || v.doc }; v.locs = [{ loc: '', qty: '' }]; v.lot = ''; v.sets = ''; v.note = ''; v.pcl = ''; S.py.master = null; loadPYMaster(); }); return; }
   if (a === 'bgadd') { const bg = P.bg; const l = ((P.data || {}).lots || []).find((x) => x.lot === bg.lot); if (!l) return; bg.lines.push({ lot: l.lot, item: l.item, qty: int(bg.qty) }); bg.lot = ''; bg.qty = ''; bg.open = true; if (!bg.formula) bg.formula = pyFormula(l.item); if (!bg.product) bg.product = pyProd(l.name); render(); return; }
   if (a === 'bgdel') { P.bg.lines.splice(int(ds.i), 1); render(); return; }
   if (a === 'bgdo') { const bg = P.bg; pyAct('rm_py_bag_create', { p: { formula: bg.formula.trim(), product: bg.product.trim(), type: bg.type.trim() || 'MIXER', lines: bg.lines.map((x) => ({ lot: x.lot, qty: x.qty })) } },
