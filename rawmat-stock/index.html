@@ -4301,7 +4301,7 @@ async function pyPrintF04() {
   r.rows.filter((x) => !x.voided && (!F.co || (x.ldoc || 'BFL') === F.co)).forEach((x) => { const k = [x.day, x.type, x.doc, x.item, x.lot].join('|'); if (!g[k]) g[k] = { co: x.ldoc || 'BFL', day: x.day, type: x.type, item: x.item, name: x.name, lot: x.lot, n: 0, seqs: new Set(), kg: Number(x.kgset || x.kg), plot: x.plot, prod: x.prodn || x.prod, oby: x.obyn || x.oby, by: new Set(), at: x.at }; if (!g[k].seqs.has(x.seq)) { g[k].seqs.add(x.seq); g[k].n++; } g[k].by.add(x.byn || x.by); }); // ชุดแยกถุง: นับเป็นชุด (สแกนทีละถุง)
   const rows = Object.values(g).sort((a, b) => (a.day < b.day ? -1 : a.day > b.day ? 1 : a.at < b.at ? -1 : 1));
   if (!rows.length) { S.toast = 'ไม่มีรายการเบิก/คืน' + (F.co ? ' (เอกสาร ' + F.co + ')' : '') + 'ในช่วงวันที่เลือก'; S.toastErr = true; render(); return; }
-  const css = `<style>.f4 th{font-size:11pt}.f4 td{height:6.6mm;font-size:11pt}.f4 td.k{font-size:9.5pt}.f4 td.pn{font-size:8.5pt;line-height:1.05;white-space:normal;word-break:break-word;padding:0 .8mm}.f4b{display:flex;gap:30mm;margin-top:4mm;font-size:14pt}</style>`;
+  const css = `<style>.f4 th{font-size:11pt}.f4 td{height:6.6mm;font-size:11pt}.f4 td.k{font-size:9.5pt}.f4 td.pn{font-size:8.5pt;line-height:1.05;white-space:normal;word-break:break-word;padding:0 .8mm}.f4b{display:flex;gap:30mm;margin-top:4mm;font-size:14pt}.f4r{margin-top:3mm;font-size:14pt}</style>`;
   const days = [...new Set(rows.map((x) => x.day))]; const pages = [];
   const cos = PY_DOCS.filter((c) => rows.some((x) => x.co === c)); // แยกแผ่นตามเอกสารระบบที่เลือกตอนรับเข้า (ผู้ใช้ 21 พ.ย.)
   days.forEach((dy) => cos.forEach((co) => { const rs = rows.filter((x) => x.day === dy && x.co === co); for (let i = 0; i < rs.length; i += 21) { const chunk = rs.slice(i, i + 21); const trs = [];
@@ -4312,6 +4312,7 @@ async function pyPrintF04() {
       <div class="meta"><span><span class="k">วันที่</span> <span class="fill">${dfull(dy)}</span></span><span><span class="k">หน่วยงาน</span> <span class="fill">เทพรีมิกซ์</span></span></div>
       <table class="f4"><colgroup><col style="width:10mm"><col style="width:10mm"><col style="width:50mm"><col style="width:42mm"><col style="width:13mm"><col style="width:14mm"><col style="width:15mm"><col style="width:22mm"><col style="width:32mm"><col style="width:24mm"><col style="width:24mm"><col style="width:19mm"></colgroup>
       <tr><th>เบิก</th><th>คืน</th><th>รหัสสารเสริม/ชื่อชุดจัดเตรียมสารเสริม</th><th>Lot No. สารเสริม/Lot No.<br>ผลิตชุดเสริมเสริม</th><th>จำนวน</th><th>น้ำหนัก<br>ต่อชุด</th><th>รวม (Kg)</th><th>Lot การผลิต</th><th>เบอร์อาหาร</th><th>ผู้สั่งเบิก</th><th>ผู้เบิก</th><th>ผู้จ่าย</th></tr>${trs.join('')}</table>
+      <div class="f4r">หมายเหตุ <span class="fill" style="min-width:250mm"></span></div>
       <div class="f4b"><span>ผู้ตรวจสอบ <span class="fill" style="min-width:45mm"></span></span><span>ผู้ทวนสอบ <span class="fill" style="min-width:45mm"></span></span></div></div>`); } }));
   openForm('F-WI04-PSS01-01 ใบเบิก-คืนชุดสารเสริม ' + (F.co ? F.co + ' ' : '') + F.from + (F.to !== F.from ? '_' + F.to : ''), 'landscape', pages);
 }
