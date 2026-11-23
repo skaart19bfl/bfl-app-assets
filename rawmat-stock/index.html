@@ -4027,7 +4027,7 @@ async function pyPrintXferF04(doc) {
       <div class="meta"><span><span class="k">วันที่</span> <span class="fill">${dce(X.day)}</span></span><span><span class="k">เวลา</span> <span class="fill">${hm(X.created_at)}</span></span><span><span class="k">หน่วยงาน</span> <span class="fill">บลูฟาโล่ เพ็ทแคร์</span></span></div>
       <table class="f4"><colgroup><col style="width:10mm"><col style="width:10mm"><col style="width:46mm"><col style="width:46mm"><col style="width:13mm"><col style="width:14mm"><col style="width:16mm"><col style="width:22mm"><col style="width:42mm"><col style="width:18mm"><col style="width:18mm"><col style="width:18mm"></colgroup>
       <tr><th>เบิก</th><th>คืน</th><th>รหัสสารเสริม/ชื่อชุด<br>จัดเตรียมสารเสริม</th><th>Lot No. สารเสริม/Lot No.<br>ผลิตชุดสารเสริม</th><th>จำนวน</th><th>น้ำหนัก<br>ต่อชุด</th><th>รวม (Kg)</th><th>Lot การผลิต</th><th>เบอร์อาหาร</th><th>ผู้สั่งเบิก</th><th>ผู้เบิก</th><th>ผู้จ่าย</th></tr>${trs.join('')}</table>
-      <div class="f4r">หมายเหตุ <span class="fill" style="min-width:230mm">${esc(X.note || '')}${X.note ? ' · ' : ''}${esc(X.doc_no)}${np > 1 ? ` · แผ่น ${p + 1}/${np}` : ''}${X.status === 'VOID' ? ' · ยกเลิก: ' + esc(X.void_reason || '') : ''}</span></div>
+      <div class="f4r">หมายเหตุ <span class="fill" style="min-width:230mm"></span></div>
       <div class="f4b"><span>ผู้ตรวจสอบ <span class="fill" style="min-width:60mm"></span></span><span>ผู้ทวนสอบ <span class="fill" style="min-width:60mm"></span></span></div></div>`); }
   openForm('F-WI04-PSS01-01 ใบเบิก-คืน BFL-PC ' + X.doc_no, 'landscape', pages);
   if (noOc.length) { S.toast = 'ยังไม่มีรหัส Odoo: ' + noOc.join(', ') + ' — ใส่ที่ Master ชุดสารเสริม แล้วพิมพ์ใหม่'; S.toastErr = true; render(); }
