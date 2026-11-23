@@ -212,7 +212,7 @@ const pcs = (l) => CONT[l.cont] || (l.pack === 'BIGBAG' ? 'ใบ' : 'ถุง'
 const bigName = (l) => l.cont === 'TOTE' ? 'เต๋า' : 'Bigbag';
 const packChipsOf = (o, key) => PACKS.map(([pk, ct, t]) => `<button type="button" class="tg" aria-pressed="${o.pack === pk && (o.cont || '') === ct}" data-pack="${pk}" data-cont="${ct}" data-pt="${key}">${t}</button>`).join('');
 // ค้นหาวัตถุดิบจากรหัสหรือชื่อ (ทุกคำต้องเจอ) · รหัสที่ขึ้นต้นด้วยคำค้นมาก่อน
-const ncpKey = (k) => k === 'bs' || k === 'of'; // of = ใบสั่งเท: สั่ง NCP ได้ (Intake สแกนป้าย Reject · ผู้ใช้ 13 พ.ย.)
+const ncpKey = (k) => k === 'bs' || k === 'of' || k === 'dd'; // dd = เบิกเข้าถัง: เลือก NCP ได้ → เทแบบใส่ กก. (ผู้ใช้ 23 พ.ย.) // of = ใบสั่งเท: สั่ง NCP ได้ (Intake สแกนป้าย Reject · ผู้ใช้ 13 พ.ย.)
 const isNcpIt = (d, code) => ((d.items || {})[code] || {}).category === 'NCP';
 const BIN_KEYS = ['bs', 'of', 'dd']; // ฟอร์มที่เกี่ยวกับถัง: แสดงเฉพาะวัตถุดิบที่เปิดใช้กับถัง Batching (Master)
 const itemPool = (k) => S.snap.items.filter((i) => (ncpKey(k) || i.category !== 'NCP') && (!BIN_KEYS.includes(k) || i.bin || i.code === (S[k] || {}).item) && (k !== 'le' || i.store === S.le.store)); // le = แก้ Lot: เฉพาะคลังเดียวกัน
@@ -1591,7 +1591,9 @@ function ddQty(u) { const v = S.dd.v[u.id]; const isPal = u.kind === 'PALLET' &&
 function viewDirect(d) {
   const head = pdHead('เบิกเข้าถัง (ไม่ต้องสั่งเท)', 'ช่วงแรก: Control บันทึกการเบิกจาก stock WH เข้าถัง / กองได้เลย · ระบบออกเลข DO ให้และปิดใบทันที · ยกเลิกรายการได้จากรายการเบิกวันนี้');
   if (!S.pd.data) return head;
-  const f = S.dd; const bins = pdBins(); const b = bins.find((x) => x.code === f.bin);
+  const f = S.dd; const bins = pdBins(); let b = bins.find((x) => x.code === f.bin);
+  const it0 = d.items[f.item]; const ncpC = it0 && it0.category === 'NCP' ? bins.filter((x) => x.ncp && x.item === it0.code) : [];
+  if (ncpC.length && !(b && b.ncp && b.item === it0.code)) { b = ncpC[0]; f.bin = b.code; f.auto = b.code; } // เลือกวัตถุดิบ NCP → ไปถังที่ตั้งรหัสนั้น
   if (b && b.item && f.auto !== b.code) { f.auto = b.code; if (!f.item) { const i0 = d.items[b.item]; if (i0 && i0.category !== 'NCP') { f.item = i0.code; f.itemText = i0.code + ' · ' + i0.name; } } }
   const it = d.items[f.item]; const pool = it ? fifoUnits(d, it.code, 'KG') : [];
   const sel = pool.filter((u) => f.sel[u.id]); const qs = sel.map((u) => ddQty(u)); const tot = qs.reduce((a, q) => a + (q.kg > 0 ? q.kg : 0), 0); const okQ = qs.every((q) => q.ok !== false);
@@ -1607,6 +1609,8 @@ function viewDirect(d) {
   return `${head}<div class="card" style="display:flex;flex-direction:column;gap:12px">
     <div class="grid2"><label class="fld">ถัง / กองปลายทาง<select data-bind="dd.bin"><option value="">— เลือก —</option>${PD_GRP.map(([g, l]) => { const bs = bins.filter((x) => x.grp === g); return bs.length ? `<optgroup label="${esc(l)}">${bs.map((x) => `<option value="${esc(x.code)}" ${f.bin === x.code ? 'selected' : ''}>${esc(x.code)} · ${esc(x.item ? inm(d, x.item) : 'ว่าง')} · ${fmt(x.bal)} กก.</option>`).join('')}</optgroup>` : ''; }).join('')}</select></label>
       ${b && b.ncp ? `<div class="fld">วัตถุดิบ<b style="font-size:16px">${esc(b.item)} · ${esc(inm(d, b.item))}</b></div>` : itemPicker('dd', 'วัตถุดิบ', f.itemText, it)}</div>
+    ${it0 && it0.category === 'NCP' && !ncpC.length ? `<p class="err smt" style="margin:0">ยังไม่มีถังที่ตั้งเป็น ${esc(it0.code)} · ${esc(it0.name)} — ตั้งวัตถุดิบในถังเป็นรหัสนี้ที่หน้า "ยอดในถัง / นับถัง" ก่อน</p>` : ''}
+    ${!b && !it0 ? `<p class="muted smt" style="margin:0">NCP / Rework scrap (ไม่มีป้าย): เลือกถัง NCP เช่น ${esc(bins.filter((x) => x.ncp).map((x) => x.code).join(', ') || '-')} หรือเลือกวัตถุดิบ NCP → ใส่ กก. ที่เท</p>` : ''}
     ${b && b.ncp ? `<p class="smt" style="margin:0;color:var(--blue)">ถัง ${esc(b.code)} เป็น NCP (${esc(inm(d, b.item))}) — NCP ไม่มีใน stock WH · เบิกขึ้นถังแบบใส่ กก. ด้านล่าง (ไม่เบิกใน NCP System) · ถ้า BB มีป้าย Reject ให้สแกนที่หน้า Intake</p>${ncpForm(b)}</div>${list}` : ''}${b && b.ncp ? '' : `
     ${clash ? `<p class="err smt" style="margin:0">ถัง ${esc(b.code)} มี ${esc(inm(d, b.item))} คงเหลือ ${fmt(b.bal)} กก. — ปรับยอดถังเป็น 0 ที่หน้า "ยอดในถัง" ก่อนเปลี่ยนวัตถุดิบ</p>` : ''}
     ${it ? `<div style="max-height:520px;overflow:auto;border:1px solid var(--line);border-radius:10px;padding:4px 8px"><b class="smt">ของพร้อมใช้ใน WH · ${esc(it.name)} (เรียง Lot เก่าก่อน) — ติ๊กรายการที่เบิก</b>${rows || '<p class="err smt">ไม่มีของพร้อมใช้ของวัตถุดิบนี้ใน WH</p>'}</div>` : '<p class="muted smt" style="margin:0">เลือกถังและวัตถุดิบ</p>'}
