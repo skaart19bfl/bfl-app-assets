@@ -3919,10 +3919,10 @@ function viewPyXfer() {
   const lots = (D0.lots || []).filter((l) => l.store === 'PY-PC' && l.py > 0);
   const gs = pyXferGroups(X.cart); const n = X.cart.length; const kg = X.cart.reduce((a, u) => a + (Number(u.kg) || 0), 0);
   const last = X.last ? `<div class="msg ${X.last.ok ? '' : 'bad'}" style="font-size:17px">${X.last.ok ? '✓' : '✗'} ${esc(X.last.msg)}</div>` : '';
-  const done = X.done ? `<div class="card" style="border-color:var(--ok, #1a7f4b)"><h2 style="margin-top:0">✓ จ่ายออกแล้ว ใบ ${esc(X.done)}</h2><div class="chips"><button type="button" data-py="xfprint" data-doc="${esc(X.done)}">🖨 พิมพ์ใบจ่ายออก</button><button type="button" class="ghost" data-py="xfdoneclose">ปิด</button></div></div>` : '';
+  const done = X.done ? `<div class="card" style="border-color:var(--ok, #1a7f4b)"><h2 style="margin-top:0">✓ จ่ายออกแล้ว ใบ ${esc(X.done)}</h2><div class="chips"><button type="button" data-py="xfprint" data-doc="${esc(X.done)}">🖨 พิมพ์ใบจ่ายออก</button><button type="button" data-py="xff04" data-doc="${esc(X.done)}">🖨 F-WI04 ใบเบิก-คืน (BFL-PC)</button><button type="button" class="ghost" data-py="xfdoneclose">ปิด</button></div></div>` : '';
   const xs = (D0.xfers || []);
   const hist = xs.map((x) => `<div class="lrow" style="flex-wrap:wrap;gap:8px;${x.status === 'VOID' ? 'opacity:.6' : ''}"><span style="flex:1 1 260px"><b class="mono">${esc(x.doc)}</b> ${x.status === 'VOID' ? '<span class="tag bad">ยกเลิก</span>' : ''} · ${x.sets} ชุด · ${fmt(x.kg)} กก. → ${esc(x.dest)}<span class="muted smt" style="display:block">${dtm(x.at)} · ${esc(x.byn || x.by)}${x.note ? ' · ' + esc(x.note) : ''}${x.void_reason ? ' · ยกเลิก: ' + esc(x.void_reason) : ''}</span></span>
-      <span class="chips"><button type="button" class="ghost sm" data-py="xfprint" data-doc="${esc(x.doc)}">🖨 พิมพ์</button>${x.status !== 'VOID' ? (X.cx === x.doc ? `<input data-bind="py.xf.cxr" value="${esc(X.cxr)}" placeholder="เหตุผล" style="width:150px" maxlength="200"><button type="button" class="sm" data-py="xfvoid" data-doc="${esc(x.doc)}" ${X.cxr.trim().length >= 3 && !S.busy ? '' : 'disabled'}>ยืนยันยกเลิกใบ</button><button type="button" class="ghost sm" data-py="xfcx" data-doc="">ปิด</button>` : `<button type="button" class="ghost sm" data-py="xfcx" data-doc="${esc(x.doc)}">ยกเลิกใบ</button>`) : ''}</span></div>`).join('');
+      <span class="chips"><button type="button" class="ghost sm" data-py="xfprint" data-doc="${esc(x.doc)}">🖨 พิมพ์</button><button type="button" class="ghost sm" data-py="xff04" data-doc="${esc(x.doc)}">🖨 F-WI04</button>${x.status !== 'VOID' ? (X.cx === x.doc ? `<input data-bind="py.xf.cxr" value="${esc(X.cxr)}" placeholder="เหตุผล" style="width:150px" maxlength="200"><button type="button" class="sm" data-py="xfvoid" data-doc="${esc(x.doc)}" ${X.cxr.trim().length >= 3 && !S.busy ? '' : 'disabled'}>ยืนยันยกเลิกใบ</button><button type="button" class="ghost sm" data-py="xfcx" data-doc="">ปิด</button>` : `<button type="button" class="ghost sm" data-py="xfcx" data-doc="${esc(x.doc)}">ยกเลิกใบ</button>`) : ''}</span></div>`).join('');
   return pyHead('จ่ายออก PY-PC → BFL-PC', 'จ่ายชุดสารเสริมในคลัง PY-PC ไปโรงงาน BFL-PC · สแกนป้าย -04 / -05 หรือเลือก Lot + ชุดที่ → ยืนยัน → พิมพ์ใบจ่ายออก') + done
     + `<div class="card" style="display:flex;flex-direction:column;gap:10px;border-color:var(--blue)">
       <div class="chips"><input data-bind="py.xf.q" id="pyxq" value="${esc(X.q)}" placeholder="สแกนป้ายชุด (-04) หรือป้ายถุง (-05) ของคลัง PY-PC" autocomplete="off" style="flex:1 1 240px;font-size:18px;padding:10px"><button type="button" data-cam="py">📷 สแกน</button></div>
@@ -3933,7 +3933,7 @@ function viewPyXfer() {
       ${gs.length ? `<div class="tw"><table><thead><tr><th>#</th><th>รหัสชุด</th><th>Lot No.</th><th>ชุดที่</th><th class="num">ชุด</th><th class="num">กก./ชุด</th><th class="num">รวม กก.</th><th></th></tr></thead><tbody>${gs.map((g, i) => `<tr><td>${i + 1}</td><td><b class="mono" style="color:var(--ink)">${esc(pyShort(g.item))}</b><span class="muted smt" style="display:block">${esc(g.name || '')}${g.oc ? ' · Odoo ' + esc(g.oc) : ''}</span></td><td class="mono">${esc(g.lot)}</td><td>${esc(pyRange(g.seqs.join(',')))}</td><td class="num"><b>${g.seqs.length}</b></td><td class="num">${fmt(g.kg)}</td><td class="num">${fmt(g.kg * g.seqs.length)}</td><td><button type="button" class="ghost sm" data-py="xfrm" data-lot="${esc(g.lot)}">ลบ</button></td></tr>`).join('')}</tbody></table></div>
         <div class="chips">หมายเหตุ <input data-bind="py.xf.note" value="${esc(X.note)}" maxlength="200" placeholder="เช่น ทะเบียนรถ / ผู้รับ" style="flex:1 1 260px"></div>
         <div><button type="button" data-py="xfdo" ${n && !S.busy ? '' : 'disabled'}>ยืนยันจ่ายออก ${n} ชุด → BFL-PC</button></div>` : '<p class="muted smt">ยังไม่มีรายการ — สแกนป้าย หรือเลือก Lot ด้านบน</p>'}</div>
-    <div class="card"><div class="fc"><h2 style="margin:0">ใบจ่ายออก (3 วันล่าสุด)</h2><span class="chips"><input data-bind="py.xf.find" value="${esc(X.find)}" placeholder="PYT-YYMMDD-NNN" style="width:170px"><button type="button" class="ghost sm" data-py="xfprint" data-doc="" ${X.find.trim() ? '' : 'disabled'}>🖨 พิมพ์ใบเก่า</button></span></div>${hist || '<p class="muted smt">ยังไม่มีใบจ่ายออก</p>'}</div>`;
+    <div class="card"><div class="fc"><h2 style="margin:0">ใบจ่ายออก (3 วันล่าสุด)</h2><span class="chips"><input data-bind="py.xf.find" value="${esc(X.find)}" placeholder="PYT-YYMMDD-NNN" style="width:170px"><button type="button" class="ghost sm" data-py="xfprint" data-doc="" ${X.find.trim() ? '' : 'disabled'}>🖨 พิมพ์ใบเก่า</button><button type="button" class="ghost sm" data-py="xff04" data-doc="" ${X.find.trim() ? '' : 'disabled'}>🖨 F-WI04</button></span></div>${hist || '<p class="muted smt">ยังไม่มีใบจ่ายออก</p>'}</div>`;
 }
 async function pyXferAdd(p) {
   const X = S.py.xf; if (S.busy) return; S.busy = true; render();
@@ -3945,6 +3945,31 @@ async function pyXferAdd(p) {
   try { if (navigator.vibrate) navigator.vibrate(X.last.ok ? 60 : [90, 60, 90]); } catch (e) { /* ไม่รองรับ */ }
 }
 const pyHdrCo = (co, title, right) => `<div class="fh"><img src="${LOGO}" alt="Bluefalo"><div class="t">${esc(co)}<br>${title}</div><div class="c">${right}</div></div>`;
+// F-WI04-PSS01-01 Rev.01 ใบเบิก-คืน ฉบับ BFL-PC จากใบจ่ายออก PY-PC (ผู้ใช้ 23 พ.ย. · ตามตัวอย่าง Excel ของ BFL-PC)
+// 1 รายการ = 3 แถว: รหัส Odoo + Lot รับเข้า BFL-PC / รหัสชุด + Lot จัดเตรียม / แถวว่าง · เบอร์อาหาร = ชื่อชุด (ตัดท้าย -NA.ROUND - PRM)
+async function pyPrintXferF04(doc) {
+  let r; try { r = await rpc('rm_py_xfer_get', { p_token: S.tok, p_doc: doc }); } catch (e) { S.toast = e.message; S.toastErr = true; render(); return; }
+  const X = r.xfer; const L = r.lines; if (!L.length) { S.toast = 'ใบนี้ไม่มีรายการ'; S.toastErr = true; render(); return; }
+  const docs = [...new Set(L.map((x) => x.doc))]; const co = pyCo(docs.length === 1 ? docs[0] : 'BFL-PC');
+  const noOc = [...new Set(L.filter((x) => !x.oc).map((x) => pyShort(x.item)))];
+  const css = `<style>.f4 th{font-size:11pt}.f4 td{height:6.6mm;font-size:11pt}.f4 td.pn{font-size:10.5pt;line-height:1.1;white-space:normal;text-align:center}.f4b{display:flex;justify-content:space-between;margin-top:4mm;font-size:14pt}.f4r{margin-top:3mm;font-size:14pt}${X.status === 'VOID' ? '.xfv{position:absolute;left:0;right:0;top:40%;text-align:center;font-size:80pt;color:rgba(0,0,0,.18);transform:rotate(-20deg);font-weight:700}' : ''}</style>`;
+  const nm = (x) => String(x.name || '').split(' -')[0].trim(); const k23 = (v) => Number(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 3 });
+  const dce = (d) => { const [y, m, dd] = String(d || '').slice(0, 10).split('-'); return y ? `${dd}/${m}/${y}` : ''; }; // ตามตัวอย่าง BFL-PC ใช้ปี ค.ศ.
+  const per = 7; const np = Math.ceil(L.length / per); const pages = []; const e12 = '<td></td>'.repeat(12);
+  for (let p = 0; p < np; p++) { const trs = [];
+    for (let j = 0; j < per; j++) { const x = L[p * per + j];
+      if (!x) { trs.push(`<tr>${e12}</tr><tr>${e12}</tr><tr>${e12}</tr>`); continue; }
+      const kg = Number(x.kg); trs.push(`<tr><td class="c">/</td><td></td><td class="c">${esc(x.oc || '')}</td><td class="s">${esc(x.pcl || '')}</td><td class="n">${x.n}</td><td class="n">${k23(kg)}</td><td class="n">${k23(Math.round(kg * x.n * 1000) / 1000)}</td><td></td><td class="pn" rowspan="2">${esc(nm(x))}</td><td></td><td></td><td></td></tr>`
+        + `<tr><td></td><td></td><td class="c">${esc(x.item)}</td><td class="s">${esc(x.lot)}</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr>${e12}</tr>`); }
+    pages.push(`<div class="pg landscape" style="position:relative">${css}${X.status === 'VOID' ? '<div class="xfv">ยกเลิก</div>' : ''}${pyHdrCo(co, 'ใบเบิก-คืนสารเสริม/ชุดสารเสริม', 'F-WI04-PSS01-01 Rev.01')}
+      <div class="meta"><span><span class="k">วันที่</span> <span class="fill">${dce(X.day)}</span></span><span><span class="k">เวลา</span> <span class="fill">${hm(X.created_at)}</span></span><span><span class="k">หน่วยงาน</span> <span class="fill">บลูฟาโล่ เพ็ทแคร์</span></span></div>
+      <table class="f4"><colgroup><col style="width:10mm"><col style="width:10mm"><col style="width:46mm"><col style="width:46mm"><col style="width:13mm"><col style="width:14mm"><col style="width:16mm"><col style="width:22mm"><col style="width:42mm"><col style="width:18mm"><col style="width:18mm"><col style="width:18mm"></colgroup>
+      <tr><th>เบิก</th><th>คืน</th><th>รหัสสารเสริม/ชื่อชุด<br>จัดเตรียมสารเสริม</th><th>Lot No. สารเสริม/Lot No.<br>ผลิตชุดสารเสริม</th><th>จำนวน</th><th>น้ำหนัก<br>ต่อชุด</th><th>รวม (Kg)</th><th>Lot การผลิต</th><th>เบอร์อาหาร</th><th>ผู้สั่งเบิก</th><th>ผู้เบิก</th><th>ผู้จ่าย</th></tr>${trs.join('')}</table>
+      <div class="f4r">หมายเหตุ <span class="fill" style="min-width:230mm">${esc(X.note || '')}${X.note ? ' · ' : ''}${esc(X.doc_no)}${np > 1 ? ` · แผ่น ${p + 1}/${np}` : ''}${X.status === 'VOID' ? ' · ยกเลิก: ' + esc(X.void_reason || '') : ''}</span></div>
+      <div class="f4b"><span>ผู้ตรวจสอบ <span class="fill" style="min-width:60mm"></span></span><span>ผู้ทวนสอบ <span class="fill" style="min-width:60mm"></span></span></div></div>`); }
+  openForm('F-WI04-PSS01-01 ใบเบิก-คืน BFL-PC ' + X.doc_no, 'landscape', pages);
+  if (noOc.length) { S.toast = 'ยังไม่มีรหัส Odoo: ' + noOc.join(', ') + ' — ใส่ที่ Master ชุดสารเสริม แล้วพิมพ์ใหม่'; S.toastErr = true; render(); }
+}
 async function pyPrintXfer(doc) {
   let r; try { r = await rpc('rm_py_xfer_get', { p_token: S.tok, p_doc: doc }); } catch (e) { S.toast = e.message; S.toastErr = true; render(); return; }
   const X = r.xfer; const L = r.lines; const docs = [...new Set(L.map((x) => x.doc))]; const co = pyCo(docs.length === 1 ? docs[0] : 'BFL');
@@ -4346,6 +4371,7 @@ document.addEventListener('click', async (e) => {
   if (a === 'xfdoneclose') { P.xf.done = ''; render(); return; }
   if (a === 'xfdo') { const X = P.xf; pyAct('rm_py_xfer_create', { p: { units: X.cart.map((u) => u.unit), note: X.note.trim() || undefined } }, (r) => `จ่ายออก ${r.sets} ชุด · ${fmt(r.kg)} กก. → BFL-PC แล้ว · ใบ ${r.doc}`,
       (r) => { X.done = r.doc; X.cart = []; X.note = ''; X.last = null; S.py.master = null; }); return; }
+  if (a === 'xff04') { const d = ds.doc || P.xf.find.trim().toUpperCase(); if (d) pyPrintXferF04(d); return; }
   if (a === 'xfprint') { const d = ds.doc || P.xf.find.trim().toUpperCase(); if (d) pyPrintXfer(d); return; }
   if (a === 'xfcx') { P.xf.cx = ds.doc || ''; P.xf.cxr = ''; render(); return; }
   if (a === 'xfvoid') { const d = ds.doc; pyAct('rm_py_xfer_void', { p_doc: d, p_reason: P.xf.cxr.trim() }, (r) => `ยกเลิกใบ ${d} แล้ว · ${r.sets} ชุดกลับเข้าคลัง PY-PC`, () => { P.xf.cx = ''; P.xf.cxr = ''; if (P.xf.done === d) P.xf.done = ''; }); return; }
