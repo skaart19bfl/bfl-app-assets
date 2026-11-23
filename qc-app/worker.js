@@ -7,6 +7,7 @@ var SB_URL = 'https://kdytxuufvigwjccebrki.supabase.co';
 var SB_KEY = 'sb_publishable_IYCMIaN7tJleWINprA42CQ_dX10sXFF';
 var GAS_URL = 'https://script.google.com/macros/s/AKfycbzTFCZ2HvBtOWIf6hHpz-CsMdcdbz-o8ABNn-XJBwQQhXuNobMFlSOecoYo8cHHDsenyg/exec';
 var CUR = { token: '', user: null, offset: 0 };
+var QC_AV = 'bfl/qc/2026112301';   // V1 (23 Nov 2026): the version this worker belongs to (Supabase blocks old pages)
 
 /* ---------------- ตัวจำลองบริการ Apps Script ---------------- */
 function xhr_(url, o) {
@@ -14,6 +15,7 @@ function xhr_(url, o) {
   x.open((o && o.method || 'GET').toUpperCase(), url, false);
   var h = (o && o.headers) || {};
   Object.keys(h).forEach(function (k) { x.setRequestHeader(k, h[k]); });
+  if (String(url).indexOf(SB_URL + '/rest/v1/') === 0) x.setRequestHeader('x-client-info', QC_AV);
   if (o && o.contentType) x.setRequestHeader('Content-Type', o.contentType);
   try { x.send(o && o.payload !== undefined ? o.payload : null); }
   catch (e) { throw new Error('เชื่อมต่อไม่ได้ — ตรวจสอบอินเทอร์เน็ต'); }

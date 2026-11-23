@@ -1,7 +1,64 @@
 <!doctype html>
 <html lang="th" data-theme="light">
 <head>
-<meta charset="utf-8"><script>(function () { /* 22 พ.ย. 2026 (ผู้ใช้ "ทำ 1 และ 2"): Supabase แผนฟรี (disk IO) — คำถาม "มีอะไรใหม่" (*_stamp) ไปถึง Supabase ไม่เกินทุก 30 วิ · ไม่มีคนแตะ/กดปุ่ม 10 นาที = ทุก 5 นาที · แตะหรือกลับมาที่แท็บ = ถามใหม่ทันที */
+<meta charset="utf-8"><script>(function bflGuard(APP, BUILD, OPT) { /* BFL version guard — 23 พ.ย. 2026 (ผู้ใช้ "A, B และให้บังคับ อัพเวอร์ชั่น ไม่งั้นเข้าไม่ได้")
+ * ทุกคำขอไป Supabase ติด x-client-info: bfl/<app>/<build> · ทุกคำขอไป Apps Script ติด av · ทุก 10 นาที (และเมื่อกลับมาที่แท็บ) ถาม app_ver_min
+ * เวอร์ชันนี้ต่ำกว่าที่กำหนด / Supabase หรือ Apps Script ตอบ APP_UPDATE / (แอปที่โหลดผ่าน boot.js) หน้าใน Apps Script เปลี่ยน
+ * → ขึ้นหน้าบังคับโหลดใหม่ และหยุดส่งคำขอทั้งหมด */
+  var W = window; if (W.__bflAv) return;
+  var SB = 'https://kdytxuufvigwjccebrki.supabase.co', KEY = 'sb_publishable_IYCMIaN7tJleWINprA42CQ_dX10sXFF', TAG = 'bfl/' + APP + '/' + BUILD, f0 = W.fetch;
+  var G = W.__bflAv = { app: APP, build: BUILD, tag: TAG, blocked: false, last: 0, block: block, check: check };
+  // only the REST API (the Edge Function prod-calc does not allow extra headers in its CORS)
+  function kind(u) { return u.indexOf('.supabase.co/rest/v1/') >= 0 ? 'sb' : (u.indexOf('script.google.com/macros/') >= 0 ? 'gas' : ''); }
+  W.fetch = function (u, o) {
+    var url = typeof u === 'string' ? u : (u && u.url) || '', k = kind(url);
+    if (!k) return f0.apply(W, arguments);
+    if (G.blocked) { show(); return Promise.reject(new Error('APP_UPDATE: แอปเวอร์ชันเก่า — กด "โหลดแอปใหม่"')); }
+    o = o ? Object.assign({}, o) : {};
+    if (k === 'sb') { var h = new Headers(o.headers || (typeof u !== 'string' && u.headers) || {}); h.set('x-client-info', TAG); o.headers = h; }
+    else if (typeof o.body === 'string' && o.body.charAt(0) === '{') {
+      try { var b = JSON.parse(o.body); if (b && typeof b === 'object' && !Array.isArray(b)) { b.av = TAG; o.body = JSON.stringify(b); } } catch (e) { /* not JSON */ }
+    }
+    var p = f0.call(W, u, o);
+    p.then(function (r) {
+      if (k === 'gas' || r.status >= 400) r.clone().text().then(function (t) { if (t.indexOf('APP_UPDATE') >= 0 && (k === 'sb' || t.indexOf('"ok":false') >= 0)) block(); }, function () {});
+    }, function () {});
+    return p;
+  };
+  function check() {
+    if (G.blocked) return; G.last = Date.now();
+    f0.call(W, SB + '/rest/v1/rpc/app_ver_min', { method: 'POST', cache: 'no-store', headers: { apikey: KEY, Authorization: 'Bearer ' + KEY, 'Content-Type': 'application/json', 'x-client-info': TAG }, body: JSON.stringify({ p_app: APP }) })
+      .then(function (r) { return r.ok ? r.text() : ''; }).then(function (t) { if (Number(t) > BUILD) block(); }, function () {});
+    if (OPT && OPT.exec && OPT.hash) {   // page kept by gas/boot.js: a newer page in Apps Script → keep it for the reload, then reload
+      f0.call(W, OPT.exec, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ fn: '__page', hash: OPT.hash, av: TAG }), cache: 'no-store' })
+        .then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
+          var v = j && j.ok && j.v; if (!v || v.same || !v.html || !v.hash) return;
+          try { localStorage.setItem(OPT.lsk, JSON.stringify({ hash: v.hash, html: v.html, at: Date.now() })); } catch (e) { /* full */ }
+          block();
+        }, function () {});
+    }
+  }
+  function block() { G.blocked = true; show(); }
+  function show() {
+    if (document.getElementById('bfl-av')) return;
+    if (!document.body) { setTimeout(show, 100); return; }
+    var d = document.createElement('div'); d.id = 'bfl-av'; d.setAttribute('role', 'alertdialog');
+    d.setAttribute('style', 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:2147483647;background:rgba(15,27,45,.92);display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;font-family:system-ui,sans-serif');
+    d.innerHTML = '<div style="background:#fff;color:#1B2A3D;border-radius:16px;max-width:420px;width:100%;padding:24px;box-sizing:border-box;text-align:center;box-shadow:0 10px 40px rgba(0,0,0,.4)">'
+      + '<div style="font-size:21px;font-weight:700;margin-bottom:8px">มีแอปเวอร์ชันใหม่</div>'
+      + '<div style="font-size:16px;line-height:1.55;margin-bottom:18px">ต้องโหลดแอปใหม่ก่อน จึงจะใช้งานต่อได้<br>ข้อมูลที่ยังไม่ได้กดบันทึก ต้องกรอกใหม่หลังโหลด</div>'
+      + '<button type="button" style="border:0;border-radius:12px;padding:14px 24px;font:600 17px system-ui,sans-serif;background:#1F3A5F;color:#fff;width:100%">โหลดแอปใหม่</button></div>';
+    d.querySelector('button').onclick = function () {
+      this.disabled = true; this.textContent = 'กำลังโหลด…';
+      if (!(OPT && OPT.exec)) try { Object.keys(localStorage).forEach(function (k) { if (/^gasp-page-/.test(k)) localStorage.removeItem(k); }); } catch (e) { /* none */ }
+      location.reload();
+    };
+    document.body.appendChild(d);
+  }
+  setTimeout(check, 4000);
+  setInterval(function () { if (!document.hidden) check(); }, 10 * 60e3);
+  document.addEventListener('visibilitychange', function () { if (!document.hidden && Date.now() - G.last > 60e3) check(); });
+})('rawmat', 2026112301);</script><script>(function () { /* 22 พ.ย. 2026 (ผู้ใช้ "ทำ 1 และ 2"): Supabase แผนฟรี (disk IO) — คำถาม "มีอะไรใหม่" (*_stamp) ไปถึง Supabase ไม่เกินทุก 30 วิ · ไม่มีคนแตะ/กดปุ่ม 10 นาที = ทุก 5 นาที · แตะหรือกลับมาที่แท็บ = ถามใหม่ทันที */
   var W = window, g = W.__stampGuard;
   if (!g) {
     g = W.__stampGuard = { every: 30e3, idle: 10 * 60e3, slow: 5 * 60e3, touch: Date.now(), last: {}, memo: {}, f0: W.fetch };
