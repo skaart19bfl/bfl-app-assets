@@ -1606,13 +1606,14 @@ function viewDirect(d) {
       ${x.void ? '<span class="tag bad">ยกเลิก</span>' : cx.id === x.id ? `<span class="chips"><input data-bind="ik.cx.reason" value="${esc(cx.reason)}" placeholder="เหตุผล" maxlength="120" style="width:150px"><button type="button" class="sm" data-ikcxdo="${x.id}" ${cx.reason.trim().length >= 3 && !S.busy ? '' : 'disabled'}>ยืนยันยกเลิก</button><button type="button" class="ghost sm" data-ikcx="">ปิด</button></span>` : `<button type="button" class="ghost sm" data-ikcx="${x.id}">ยกเลิก</button>`}</div>`).join('')}</div>` : '';
   return `${head}<div class="card" style="display:flex;flex-direction:column;gap:12px">
     <div class="grid2"><label class="fld">ถัง / กองปลายทาง<select data-bind="dd.bin"><option value="">— เลือก —</option>${PD_GRP.map(([g, l]) => { const bs = bins.filter((x) => x.grp === g); return bs.length ? `<optgroup label="${esc(l)}">${bs.map((x) => `<option value="${esc(x.code)}" ${f.bin === x.code ? 'selected' : ''}>${esc(x.code)} · ${esc(x.item ? inm(d, x.item) : 'ว่าง')} · ${fmt(x.bal)} กก.</option>`).join('')}</optgroup>` : ''; }).join('')}</select></label>
-      ${itemPicker('dd', 'วัตถุดิบ', f.itemText, it)}</div>
+      ${b && b.ncp ? `<div class="fld">วัตถุดิบ<b style="font-size:16px">${esc(b.item)} · ${esc(inm(d, b.item))}</b></div>` : itemPicker('dd', 'วัตถุดิบ', f.itemText, it)}</div>
+    ${b && b.ncp ? `<p class="smt" style="margin:0;color:var(--blue)">ถัง ${esc(b.code)} เป็น NCP (${esc(inm(d, b.item))}) — NCP ไม่มีใน stock WH · เบิกขึ้นถังแบบใส่ กก. ด้านล่าง (ไม่เบิกใน NCP System) · ถ้า BB มีป้าย Reject ให้สแกนที่หน้า Intake</p>${ncpForm(b)}</div>${list}` : ''}${b && b.ncp ? '' : `
     ${clash ? `<p class="err smt" style="margin:0">ถัง ${esc(b.code)} มี ${esc(inm(d, b.item))} คงเหลือ ${fmt(b.bal)} กก. — ปรับยอดถังเป็น 0 ที่หน้า "ยอดในถัง" ก่อนเปลี่ยนวัตถุดิบ</p>` : ''}
     ${it ? `<div style="max-height:520px;overflow:auto;border:1px solid var(--line);border-radius:10px;padding:4px 8px"><b class="smt">ของพร้อมใช้ใน WH · ${esc(it.name)} (เรียง Lot เก่าก่อน) — ติ๊กรายการที่เบิก</b>${rows || '<p class="err smt">ไม่มีของพร้อมใช้ของวัตถุดิบนี้ใน WH</p>'}</div>` : '<p class="muted smt" style="margin:0">เลือกถังและวัตถุดิบ</p>'}
     <div class="grid2"><label class="fld">หมายเหตุ (เช่น Job / Lot ผลิต)<input data-bind="dd.note" value="${esc(f.note)}" maxlength="150"></label>
       <div class="fld">รวมที่เบิก<b style="font-size:18px;color:var(--ink)">${sel.length} รายการ · ${fmt(tot)} กก.</b></div></div>
     <div><button type="button" data-dddo="1" ${ok ? '' : 'disabled'}>บันทึกเบิก${b ? ' → ' + esc(b.code) : ''}</button>${!isCtl() ? ' <span class="muted smt">บันทึกได้เฉพาะ Control</span>' : ''}</div></div>
-    ${list}`;
+    ${list}`}`;
 }
 function orderRow(d, o, live) {
   const ctl = isCtl(); const x = S.ox; const open = x.doc === o.doc;
@@ -1848,9 +1849,9 @@ function viewStockRep(d) {
 }
 // ===== ใบบันทึกการเทวัตถุดิบ (ผู้ใช้ 20 พ.ย. 2026) · ทุกรายการเทเข้าถังจาก rm_bin_move ผ่าน rm_dump_log =====
 // รวม BB NCP (เดิมรายงานประจำวันไม่มียอด NCP) · แสดงรายการที่ยกเลิก (ไม่นับยอด) · พิมพ์ A4 + Excel · ใช้ทั้งเมนูนี้และแท็บ "เทเข้าถัง (PD)" ของรายงานประจำวัน
-const DL_SRC_P = { scan: 'สแกน', pick: 'เลือก stock', direct: 'เบิกตรง', ncp: 'BB NCP', ncpman: 'Manual NCP' }; // ย่อสำหรับพิมพ์
-const DL_SRC = { scan: 'สแกนพาเลท', pick: 'เลือกจาก stock', direct: 'เบิกเข้าถัง (ไม่ผ่านใบสั่ง)', ncp: 'สแกน BB NCP', ncpman: 'Rework เบิก manual (ระบบ NCP)' }; // ncpman = Control เบิกในระบบ NCP เอง ไม่สแกนเข้าถัง (rm_dump_log v4)
-const dlIsNcp = (r) => r.src === 'ncp' || r.src === 'ncpman';
+const DL_SRC_P = { scan: 'สแกน', pick: 'เลือก stock', direct: 'เบิกตรง', ncp: 'BB NCP', ncpman: 'Manual NCP', ncpkg: 'NCP ใส่ กก.' }; // ย่อสำหรับพิมพ์
+const DL_SRC = { scan: 'สแกนพาเลท', pick: 'เลือกจาก stock', direct: 'เบิกเข้าถัง (ไม่ผ่านใบสั่ง)', ncp: 'สแกน BB NCP', ncpman: 'Rework เบิก manual (ระบบ NCP)', ncpkg: 'NCP ใส่ กก. (Manual · ไม่เบิกใน NCP System)' }; // ncpman = Control เบิกในระบบ NCP เอง ไม่สแกนเข้าถัง (rm_dump_log v4)
+const dlIsNcp = (r) => r.src === 'ncp' || r.src === 'ncpman' || r.src === 'ncpkg';
 const DL_GRP = [['B1', 'ถัง B1 (B001–B024)'], ['B2', 'ถัง B2'], ['HAND', 'เทมือ BIA'], ['PILE', 'กอง IN1'], ['LOADOUT', 'Load out']];
 const dlRange = () => { const L = S.dl; const t = L.to || L.from || S.snap.biz_day; const f = L.from || t; return f <= t ? [f, t] : [t, f]; };
 async function loadDL() {
@@ -1926,9 +1927,9 @@ const dlUser = (u) => u || '';
 // หมายเหตุที่ผู้ใช้พิมพ์ตอนออกใบสั่งเท / เบิกเข้าถัง (rm_dump_order.note) · ตัดข้อความระบบ "เบิกตรง (ไม่ผ่านใบสั่ง)" ออก
 const dlComment = (r) => String(r.onote || '').replace(/^เบิกตรง \(ไม่ผ่านใบสั่ง\)\s*(·\s*)?/, '').trim();
 // ผู้ใช้ 20 พ.ย.: (1) ผู้จ่าย = Intake (บัญชีที่สแกน · ถ้า Control เบิกเองไม่สแกน ใช้ชื่อจุด Intake) (2) Manual เบิก (เลือกจาก stock ไม่สแกน) ให้แสดงในหมายเหตุ
-const dlManual = (r) => r.src === 'pick' || r.src === 'direct' || r.src === 'ncpman';
+const dlManual = (r) => r.src === 'pick' || r.src === 'direct' || r.src === 'ncpman' || r.src === 'ncpkg';
 const dlPayer = (r) => r.src === 'scan' || r.src === 'ncp' ? (r.by || '') : (IKNAME[r.point] || r.point || '');
-const dlFormNote = (r) => [r.src === 'ncpman' ? 'Manual เบิก (ระบบ NCP · ไม่ระบุถัง)' : dlManual(r) ? 'Manual เบิก (ไม่สแกน)' : '', dlComment(r)].filter(Boolean).join(' · '); // ใช้ชื่อบัญชี (สั้น พอดีช่อง)
+const dlFormNote = (r) => [r.src === 'ncpman' ? 'Manual เบิก (ระบบ NCP · ไม่ระบุถัง)' : r.src === 'ncpkg' ? 'Manual เบิก NCP ใส่ กก. (ไม่เบิกใน NCP System)' : dlManual(r) ? 'Manual เบิก (ไม่สแกน)' : '', dlComment(r)].filter(Boolean).join(' · '); // ใช้ชื่อบัญชี (สั้น พอดีช่อง)
 function dlFormRow(d, r, kind) {
   const isBag = r.kind === 'PALLET' && Number(r.bags) > 0; const isBB = r.kind === 'BIGBAG' || r.src === 'ncp'; const isTr = r.kind === 'TRUCK';
   const cnt = isBag ? Number(r.bags) : isBB || isTr ? 1 : 0; const kg = Number(r.kg) || 0;
