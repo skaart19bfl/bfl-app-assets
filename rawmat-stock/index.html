@@ -4188,8 +4188,10 @@ const PY_L4_CSS = `.grid{position:absolute;left:.63in;top:.59in;width:7.18in;hei
 .l4 .ln{border-bottom:.75px solid #000;min-height:.19in;padding-left:.05in;white-space:nowrap;overflow:hidden;flex:1;font-size:15pt;font-weight:700}
 .l4 .ln.n{font-size:13pt;font-weight:400}
 .l4 .qty{position:absolute;left:.03in;bottom:.12in;font-size:28pt;display:flex;gap:.25in;align-items:baseline}
-.l4 .qrw{position:absolute;left:1.5in;bottom:.04in;text-align:center;font-size:9pt;line-height:1}
-.l4 .qrw svg{width:.52in;height:.52in;display:block}
+.l4 .qrw{position:absolute;left:1.5in;bottom:.03in;text-align:center;font-size:9pt;line-height:1}
+.l4 .qrw .sq{font-size:15pt;font-weight:700;white-space:nowrap;line-height:1}
+.l4 .bgn{position:absolute;right:.04in;bottom:.6in;font-size:13pt;font-weight:700;white-space:nowrap;line-height:1}
+.l4 .qrw svg{width:.48in;height:.48in;display:block;margin:0 auto}
 .l4 .kg{position:absolute;right:.02in;bottom:.03in;width:1.1in;height:.55in;border:.75px solid #000;text-align:center;font-size:14pt;padding-top:.03in;line-height:1.2}`;
 async function pyPrintLabels(lot, spec) {
   let r; try { r = await rpc('rm_py_lot_get', { p_token: S.tok, p_lot: lot }); } catch (e) { S.toast = e.message; S.toastErr = true; render(); return; }
@@ -4199,7 +4201,7 @@ async function pyPrintLabels(lot, spec) {
   const lab = ([u, k]) => `<div class="l4"><img class="logo" src="${LOGO}" alt=""><div class="hd"><div>${esc(pyCo(L.doc_co))}</div><div class="u">ป้ายบ่งชี้ชุดสารเสริม</div></div><div class="fno">F-WI01-PSS01-04 Rev.01</div>
     <div class="row r1"><span>SETCODE</span><span class="ln">${esc(L.item_code)}</span></div><div class="row r2"><span class="ln n">${esc(L.name || '')}</span></div><div class="row r3">${L.pc_lot ? `<span class="pc">Lot รับเข้า BFL-PC</span><span class="ln pcv">${esc(L.pc_lot)}</span>` : '<span class="ln n"></span>'}</div>
     <div class="row r4"><span>Lot No. ผลิตชุดสารเสริม</span><span class="ln">${esc(L.lot_no)}</span></div>
-    <div class="qty"><span>จำนวน</span><span>1</span></div><div class="qrw">${qrSvg(NB > 1 ? u.qr + '|' + k : u.qr, 2)}<div style="white-space:nowrap">${u.seq}/${L.sets}${NB > 1 ? ` · <b style="font-size:12pt">ถุง ${k}/${NB}</b>` : ''}</div></div>
+    <div class="qty"><span>จำนวน</span><span>1</span></div><div class="qrw">${qrSvg(NB > 1 ? u.qr + '|' + k : u.qr, 2)}<div class="sq">${u.seq}/${L.sets}</div></div>${NB > 1 ? `<div class="bgn">ถุง ${k}/${NB}</div>` : ''}
     <div class="kg"><div>น้ำหนัก</div><div><u>${bkg(k)}</u> kg.</div></div></div>`;
   const items = []; us.forEach((u) => { for (let k = 1; k <= NB; k++) items.push([u, k]); });
   const pages = []; for (let i = 0; i < items.length; i += 8) { const g = items.slice(i, i + 8).map(lab); while (g.length < 8) g.push('<div class="l4" style="border-color:transparent"></div>'); pages.push(`<div class="page"><div class="grid">${g.join('')}</div></div>`); }
