@@ -24,7 +24,7 @@
  * something changed (ncp_stamp) — or 5 minutes passed — so the Edge Function is asked only when there is something new. */
 (function () {
   var SB = 'https://kdytxuufvigwjccebrki.supabase.co', KEY = 'sb_publishable_IYCMIaN7tJleWINprA42CQ_dX10sXFF';
-  var FN = SB + '/functions/v1/ncp-srv', LSK = 'ncpsa-page', TITLE = 'BFL NCP System', BUILD = 2026112401;
+  var FN = SB + '/functions/v1/ncp-srv', LSK = 'ncpsa-page', TITLE = 'BFL NCP System', BUILD = 2026112402;
 
   function lsGet() { try { return JSON.parse(localStorage.getItem(LSK) || 'null'); } catch (e) { return null; } }
   function lsSet(v) { try { localStorage.setItem(LSK, JSON.stringify(v)); } catch (e) { try { localStorage.removeItem(LSK); } catch (e2) {} } }
@@ -81,7 +81,9 @@
     window.__NCPRT = RT;
     function call(name, args) {
       if (name === 'getSnapshot') return snap(args);
-      return post({ fn: name, args: args }).then(function (v) { RT.dirty = true; return v; });   // after any action: ask for real next time
+      // after an action: ask for real next time (not after syncStale / reads — Realtime says when they changed something; a failing
+      // syncStale must not turn the 5-s poll into a loop of real calls)
+      return post({ fn: name, args: args }).then(function (v) { if (name !== 'syncStale' && !READ.test(name)) RT.dirty = true; return v; });
     }
     function runner(ok, bad, uo) {
       return new Proxy({}, { get: function (_, name) {
