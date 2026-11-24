@@ -67,8 +67,8 @@
     document.body.appendChild(d);
   }
   setTimeout(check, 4000);
-  setInterval(function () { if (!document.hidden) check(); }, 10 * 60e3);
-  document.addEventListener('visibilitychange', function () { if (!document.hidden && Date.now() - G.last > 60e3) check(); });
+  setInterval(function () { if (!document.hidden) check(); }, 60 * 60e3);   // F1: hourly (every gated call is checked anyway)
+  document.addEventListener('visibilitychange', function () { if (!document.hidden && Date.now() - G.last > 30 * 60e3) check(); });
 })('stock', 2026112401);</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">

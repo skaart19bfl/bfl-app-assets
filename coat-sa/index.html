@@ -66,8 +66,8 @@
     document.body.appendChild(d);
   }
   setTimeout(check, 4000);
-  setInterval(function () { if (!document.hidden) check(); }, 10 * 60e3);
-  document.addEventListener('visibilitychange', function () { if (!document.hidden && Date.now() - G.last > 60e3) check(); });
+  setInterval(function () { if (!document.hidden) check(); }, 60 * 60e3);   // F1: hourly (every gated call is checked anyway)
+  document.addEventListener('visibilitychange', function () { if (!document.hidden && Date.now() - G.last > 30 * 60e3) check(); });
 })('coat-sa', 2026112401);</script><script>(function () { /* 22 พ.ย. 2026 (ผู้ใช้ "ทำ 1 และ 2"): Supabase แผนฟรี (disk IO) — คำถาม "มีอะไรใหม่" (*_stamp) ไปถึง Supabase ไม่เกินทุก 30 วิ · ไม่มีคนแตะ/กดปุ่ม 10 นาที = ทุก 5 นาที · แตะหรือกลับมาที่แท็บ = ถามใหม่ทันที */
   var W = window, g = W.__stampGuard;
   if (!g) {
