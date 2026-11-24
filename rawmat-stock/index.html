@@ -4064,16 +4064,16 @@ async function pyPrintXfer(doc) {
   const pages = [];
   for (let p = 0; p < np; p++) { const part = L.slice(p * per, p * per + per); const rows = part.map((x, i) => `<tr><td class="c">${p * per + i + 1}</td><td class="nm"><b>${esc(pyShort(x.item))}</b><div>${esc(x.name || '')}</div></td><td>${esc(x.oc || '')}</td><td>${esc(x.lot)}</td><td>${esc(pyRange(x.seqs))}</td><td class="c">${x.n}</td><td class="r">${fmt(x.kg)}</td><td class="r">${fmt(x.n * Number(x.kg))}</td></tr>`);
     while (rows.length < per) rows.push('<tr>' + '<td></td>'.repeat(8) + '</tr>');
-    pages.push(`<div class="pg portrait" style="position:relative">${css}${X.status === 'VOID' ? '<div class="xfv">ยกเลิก</div>' : ''}${pyHdrCo(co, X.dest === 'BFL' ? 'ใบเบิกกลิ่นผง (PF) → BFL Mix Coater' : 'ใบจ่ายออกชุดสารเสริม (PY-PC → BFL-PC)', `เลขที่ ${esc(X.doc_no)}<br>แผ่น ${p + 1}/${np}`)}
-      <div class="hd"><div>วันที่ <span class="fill">${dfull(X.day)}</span></div><div>เวลา <span class="fill">${hm(X.created_at)}</span></div><div>จาก <span class="fill">${X.dest === 'BFL' ? 'คลัง PY' : 'คลัง PY-PC'} (หน่วยงานจัดเตรียมพรีมิกซ์)</span></div><div>ถึง <span class="fill">${X.dest === 'BFL' ? 'BFL · Mix Coater' + (X.prod_lot ? ' · Lot การผลิต ' + esc(X.prod_lot) : '') : esc(X.dest)}</span></div><div class="w">หมายเหตุ <span class="fill">${esc(X.note || '')}${X.status === 'VOID' ? ' · ยกเลิก: ' + esc(X.void_reason || '') : ''}</span></div></div>
+    pages.push(`<div class="pg portrait" style="position:relative">${css}${X.status === 'VOID' ? '<div class="xfv">ยกเลิก</div>' : ''}${pyHdrCo(co, X.dest === 'BFL' ? 'ใบเบิกกลิ่นผง (PF) → BFL โค้ทติ้ง' : 'ใบจ่ายออกชุดสารเสริม (PY-PC → BFL-PC)', `เลขที่ ${esc(X.doc_no)}<br>แผ่น ${p + 1}/${np}`)}
+      <div class="hd"><div>วันที่ <span class="fill">${dfull(X.day)}</span></div><div>เวลา <span class="fill">${hm(X.created_at)}</span></div><div>จาก <span class="fill">${X.dest === 'BFL' ? 'คลัง PY' : 'คลัง PY-PC'} (หน่วยงานจัดเตรียมพรีมิกซ์)</span></div><div>ถึง <span class="fill">${X.dest === 'BFL' ? 'BFL · หน่วยงานโค้ทติ้ง' + (X.prod_lot ? ' · Lot การผลิต ' + esc(X.prod_lot) : '') : esc(X.dest)}</span></div><div class="w">หมายเหตุ <span class="fill">${esc(X.note || '')}${X.status === 'VOID' ? ' · ยกเลิก: ' + esc(X.void_reason || '') : ''}</span></div></div>
       <table class="xf"><colgroup><col style="width:9mm"><col><col style="width:30mm"><col style="width:37mm"><col style="width:22mm"><col style="width:13mm"><col style="width:15mm"><col style="width:18mm"></colgroup>
       <tr><th>ลำดับ</th><th>รหัส / ชื่อชุดสารเสริม</th><th>รหัส Odoo</th><th>Lot No.</th><th>ชุดที่</th><th>จำนวน (ชุด)</th><th>กก./ชุด</th><th>รวม (กก.)</th></tr>${rows.join('')}
       ${p === np - 1 ? `<tr class="tot"><td></td><td>รวม</td><td></td><td></td><td></td><td class="c">${fmt(sn)}</td><td></td><td class="r">${fmt(skg)}</td></tr>` : ''}</table>
-      <div class="xfsg"><div><div>________________________</div><div>( ${esc(X.byn || X.created_by)} )</div><div>${X.dest === 'BFL' ? 'ผู้สั่งเบิก · Control' : 'ผู้จ่าย · หน่วยงานจัดเตรียมพรีมิกซ์'}</div></div><div><div>________________________</div><div>(${'&nbsp;'.repeat(36)})</div><div>${X.dest === 'BFL' ? 'ผู้รับ · Mix Coater' : 'ผู้รับ · BFL-PC'}</div></div><div><div>________________________</div><div>(${'&nbsp;'.repeat(36)})</div><div>ผู้ตรวจสอบ</div></div></div></div>`); }
+      <div class="xfsg"><div><div>________________________</div><div>( ${esc(X.byn || X.created_by)} )</div><div>${X.dest === 'BFL' ? 'ผู้สั่งเบิก · Control' : 'ผู้จ่าย · หน่วยงานจัดเตรียมพรีมิกซ์'}</div></div><div><div>________________________</div><div>(${'&nbsp;'.repeat(36)})</div><div>${X.dest === 'BFL' ? 'ผู้รับ · โค้ทติ้ง' : 'ผู้รับ · BFL-PC'}</div></div><div><div>________________________</div><div>(${'&nbsp;'.repeat(36)})</div><div>ผู้ตรวจสอบ</div></div></div></div>`); }
   openForm((X.dest === 'BFL' ? 'ใบเบิกกลิ่นผง ' : 'ใบจ่ายออก ') + X.doc_no, 'portrait', pages);
 }
 
-// ===== หน้า: เบิกกลิ่นผง PF → BFL Mix Coater (Control manual · ผู้ใช้ 24 พ.ย.) =====
+// ===== หน้า: เบิกกลิ่นผง PF → BFL โค้ทติ้ง (Control manual · ผู้ใช้ 24 พ.ย.) =====
 // คลัง PY เท่านั้น · ใบ PFO-YYMMDD-NNN · ชุดออกจากคลัง (สถานะ จ่ายออก) · BFL-PC ใช้ จ่ายออก PY-PC เหมือนชุดพรีมิกซ์ · สแกนเบิก/เท ทำภายหลัง
 function viewPyPf() {
   const F = S.py.pf; const D0 = S.py.data; if (!D0) return pyHead('เบิกกลิ่นผง PF → BFL') + pyLoading();
@@ -4085,7 +4085,7 @@ function viewPyPf() {
   const xs = (D0.xfers || []).filter((x) => x.dest === 'BFL');
   const hist = xs.map((x) => `<div class="lrow" style="flex-wrap:wrap;gap:8px;${x.status === 'VOID' ? 'opacity:.6' : ''}"><span style="flex:1 1 260px"><b class="mono">${esc(x.doc)}</b> ${x.status === 'VOID' ? '<span class="tag bad">ยกเลิก</span>' : ''} · ${x.sets} ชุด · ${fmt(x.kg)} กก.${x.plot ? ' · Lot การผลิต ' + esc(x.plot) : ''}<span class="muted smt" style="display:block">${dtm(x.at)} · ${esc(x.byn || x.by)}${x.note ? ' · ' + esc(x.note) : ''}${x.void_reason ? ' · ยกเลิก: ' + esc(x.void_reason) : ''}</span></span>
       <span class="chips"><button type="button" class="ghost sm" data-py="pff04" data-doc="${esc(x.doc)}">🖨 F-WI04</button><button type="button" class="ghost sm" data-py="pfprint" data-doc="${esc(x.doc)}">🖨 ใบเบิก</button>${x.status !== 'VOID' ? (F.cx === x.doc ? `<input data-bind="py.pf.cxr" value="${esc(F.cxr)}" placeholder="เหตุผล" style="width:150px" maxlength="200"><button type="button" class="sm" data-py="pfvoid" data-doc="${esc(x.doc)}" ${F.cxr.trim().length >= 3 && !S.busy ? '' : 'disabled'}>ยืนยันยกเลิกใบ</button><button type="button" class="ghost sm" data-py="pfcx" data-doc="">ปิด</button>` : `<button type="button" class="ghost sm" data-py="pfcx" data-doc="${esc(x.doc)}">ยกเลิกใบ</button>`) : ''}</span></div>`).join('');
-  return pyHead('เบิกกลิ่นผง PF → BFL Mix Coater', 'Control เบิกกลิ่นผง coater จากคลัง PY เข้าโรงงาน BFL · สแกนป้าย -04 / -05 หรือเลือก Lot + ชุดที่ → ยืนยัน → พิมพ์ F-WI04 · กลิ่นผงคลัง PY-PC ใช้เมนู จ่ายออก PY-PC (จัดเตรียมพรีมิกซ์)') + done
+  return pyHead('เบิกกลิ่นผง PF → BFL โค้ทติ้ง', 'Control เบิกกลิ่นผง coater จากคลัง PY เข้าโรงงาน BFL · สแกนป้าย -04 / -05 หรือเลือก Lot + ชุดที่ → ยืนยัน → พิมพ์ F-WI04 · กลิ่นผงคลัง PY-PC ใช้เมนู จ่ายออก PY-PC (จัดเตรียมพรีมิกซ์)') + done
     + `<div class="card" style="display:flex;flex-direction:column;gap:10px;border-color:var(--blue)">
       <div class="chips"><input data-bind="py.pf.q" id="pyfq" value="${esc(F.q)}" placeholder="สแกนป้ายชุด (-04) หรือป้ายถุง (-05) กลิ่นผง คลัง PY" autocomplete="off" style="flex:1 1 240px;font-size:18px;padding:10px"><button type="button" data-cam="py">📷 สแกน</button></div>
       <div class="chips"><select data-bind="py.pf.lot" style="flex:2 1 280px;min-width:0"><option value="">— หรือเลือก Lot กลิ่นผงในคลัง PY (เก่าก่อน) —</option>${lots.map((l) => `<option value="${esc(l.lot)}" ${F.lot === l.lot ? 'selected' : ''}>${esc(l.lot)} · ${esc(pyShort(l.item))} · ${l.py} ชุด</option>`).join('')}</select>
@@ -4097,7 +4097,7 @@ function viewPyPf() {
           <datalist id="pypfl">${plots.slice(0, 200).map((x) => `<option value="${esc(x.lot)}">${esc(x.prod || '')}</option>`).join('')}</datalist>
           <span class="smt" style="margin-top:3px">${pl ? (plHit ? `<span style="color:var(--ok, #1a7f4b)">✓ ${esc(plHit.prod || '')}</span>` : '<span class="muted">ไม่อยู่ในรายการ 30 วัน — ระบบตรวจกับ production_lot ตอนยืนยัน</span>') : '<span class="muted">ใส่แล้ว F-WI04 แสดง Lot การผลิต + เบอร์อาหาร</span>'}</span></div>
           <div class="fld"><span>หมายเหตุ</span><input data-bind="py.pf.note" value="${esc(F.note)}" maxlength="200" placeholder="เช่น เครื่อง coater / ผู้รับ"></div></div>
-        <div><button type="button" data-py="pfdo" ${n && !S.busy ? '' : 'disabled'}>ยืนยันเบิก ${n} ชุด → BFL Mix Coater</button></div>` : '<p class="muted smt">ยังไม่มีรายการ — สแกนป้าย หรือเลือก Lot ด้านบน</p>'}</div>
+        <div><button type="button" data-py="pfdo" ${n && !S.busy ? '' : 'disabled'}>ยืนยันเบิก ${n} ชุด → BFL โค้ทติ้ง</button></div>` : '<p class="muted smt">ยังไม่มีรายการ — สแกนป้าย หรือเลือก Lot ด้านบน</p>'}</div>
     <div class="card"><div class="fc"><h2 style="margin:0">ใบเบิกกลิ่นผง (3 วันล่าสุด)</h2><span class="chips"><input data-bind="py.pf.find" value="${esc(F.find)}" placeholder="PFO-YYMMDD-NNN" style="width:170px"><button type="button" class="ghost sm" data-py="pff04" data-doc="" ${F.find.trim() ? '' : 'disabled'}>🖨 F-WI04 ใบเก่า</button></span></div>${hist || '<p class="muted smt">ยังไม่มีใบเบิกกลิ่นผง</p>'}</div>`;
 }
 async function pyPfAdd(p) {
@@ -4109,7 +4109,7 @@ async function pyPfAdd(p) {
   F.q = ''; S.busy = false; render(); pyFocus();
   try { if (navigator.vibrate) navigator.vibrate(F.last.ok ? 60 : [90, 60, 90]); } catch (e) { /* ไม่รองรับ */ }
 }
-// F-WI04-PSS01-01 ใบเบิก-คืน ฉบับ BFL จากใบเบิกกลิ่นผง PFO · 1 แถว = รหัส + Lot · หน่วยงาน Mix Coater · เบอร์อาหาร = ชื่อสูตรเต็มจาก Lot การผลิต · ผู้สั่งเบิก/ผู้เบิก/ผู้จ่าย เว้นว่างให้เซ็น
+// F-WI04-PSS01-01 ใบเบิก-คืน ฉบับ BFL จากใบเบิกกลิ่นผง PFO · 1 แถว = รหัส + Lot · หน่วยงาน โค้ทติ้ง · เบอร์อาหาร = ชื่อสูตรเต็มจาก Lot การผลิต · ผู้สั่งเบิก/ผู้เบิก/ผู้จ่าย เว้นว่างให้เซ็น
 async function pyPrintPfF04(doc) {
   let r; try { r = await rpc('rm_py_xfer_get', { p_token: S.tok, p_doc: doc }); } catch (e) { S.toast = e.message; S.toastErr = true; render(); return; }
   const X = r.xfer; const L = r.lines; if (!L.length) { S.toast = 'ใบนี้ไม่มีรายการ'; S.toastErr = true; render(); return; }
@@ -4121,7 +4121,7 @@ async function pyPrintPfF04(doc) {
       trs.push(x ? `<tr><td class="c">✓</td><td></td><td class="s">${esc(x.item)}</td><td class="s">${esc(x.lot)}</td><td class="c">${x.n}</td><td class="n">${fkg(kg)}</td><td class="n">${fkg(Math.round(kg * x.n * 1000) / 1000)}</td><td class="c">${esc(X.prod_lot || '')}</td><td class="k pn">${esc(X.prodn || X.product_id || '')}</td><td></td><td></td><td></td></tr>`
         : '<tr>' + '<td></td>'.repeat(12) + '</tr>'); }
     pages.push(`<div class="pg landscape" style="position:relative">${css}${X.status === 'VOID' ? '<div class="xfv">ยกเลิก</div>' : ''}${pyHdrCo(pyCo('BFL'), 'ใบเบิก-คืนสารเสริม/ชุดสารเสริม', 'F-WI04-PSS01-01 Rev.00')}
-      <div class="meta"><span><span class="k">วันที่</span> <span class="fill">${dfull(X.day)}</span></span><span><span class="k">หน่วยงาน</span> <span class="fill">Mix Coater</span></span></div>
+      <div class="meta"><span><span class="k">วันที่</span> <span class="fill">${dfull(X.day)}</span></span><span><span class="k">หน่วยงาน</span> <span class="fill">โค้ทติ้ง</span></span></div>
       <table class="f4"><colgroup><col style="width:10mm"><col style="width:10mm"><col style="width:50mm"><col style="width:42mm"><col style="width:13mm"><col style="width:14mm"><col style="width:15mm"><col style="width:22mm"><col style="width:32mm"><col style="width:24mm"><col style="width:24mm"><col style="width:19mm"></colgroup>
       <tr><th>เบิก</th><th>คืน</th><th>รหัสสารเสริม/ชื่อชุดจัดเตรียมสารเสริม</th><th>Lot No. สารเสริม/Lot No.<br>ผลิตชุดเสริมเสริม</th><th>จำนวน</th><th>น้ำหนัก<br>ต่อชุด</th><th>รวม (Kg)</th><th>Lot การผลิต</th><th>เบอร์อาหาร</th><th>ผู้สั่งเบิก</th><th>ผู้เบิก</th><th>ผู้จ่าย</th></tr>${trs.join('')}</table>
       <div class="f4r">หมายเหตุ <span class="fill" style="min-width:250mm"></span></div>
