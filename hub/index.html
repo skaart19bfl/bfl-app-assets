@@ -69,7 +69,7 @@
   setTimeout(check, 4000);
   setInterval(function () { if (!document.hidden) check(); }, 60 * 60e3);   // F1: hourly (every gated call is checked anyway)
   document.addEventListener('visibilitychange', function () { if (!document.hidden && Date.now() - G.last > 30 * 60e3) check(); });
-})('hub', 2026112401);</script>
+})('hub', 2026112501);</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>BFL Production Hub</title>
 <link rel="icon" type="image/png" sizes="64x64" href="favicon-64.png">
@@ -137,6 +137,17 @@
   .toast.e { background:var(--bad); color:#fff; }
   .chips { display:flex; gap:6px; flex-wrap:wrap; } .chips button { min-height:40px; font-size:14px; } .chips button.on { background:var(--blue); border-color:var(--blue); color:#fff; }
   .md td.k { font-family:'IBM Plex Mono',monospace; font-size:13px; white-space:nowrap; } .md tr.off td { opacity:.45; } .md td small { color:var(--muted); display:block; }
+  /* สรุปรายวัน (25 พ.ย. 2026) — หน้าแรก Hub: chart Extruder runtime 2 สาย + ตารางประจำเดือน Coater / Packing */
+  .sum { margin-top:18px; } .sum .hd { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:8px; } .sum .hd h2 { margin:0; flex:1; min-width:150px; font-size:18px; }
+  .sum .hd button { min-height:38px; padding:4px 12px; } .sum .hd button:disabled { opacity:.35; cursor:default; } .sum .mo { font-weight:700; min-width:96px; text-align:center; }
+  .sum .lg { display:flex; gap:14px; flex-wrap:wrap; font-size:13px; margin:2px 0 6px; } .sum .lg i { display:inline-block; width:12px; height:12px; border-radius:3px; margin-right:5px; vertical-align:-1px; }
+  .sum .lg b { font-family:'IBM Plex Mono',monospace; font-weight:600; }
+  .sum svg { width:100%; height:auto; display:block; } .sum svg text { fill:var(--muted); font-size:12px; font-family:'IBM Plex Mono',monospace; }
+  .sum .c1 { fill:var(--blue); } .sum .c2 { fill:var(--amber); } .sum .gl { stroke:var(--line); stroke-width:1; } .sum .td { fill:var(--blue-weak); }
+  .sum .tw { overflow:auto; max-height:70vh; margin-top:10px; border:1px solid var(--line); border-radius:12px; }
+  .sum table { font-variant-numeric:tabular-nums; } .sum th { position:sticky; top:0; background:var(--card); z-index:1; white-space:nowrap; } .sum td.n, .sum th.n { text-align:right; font-family:'IBM Plex Mono',monospace; }
+  .sum tr.td td { background:var(--blue-weak); } .sum tr.off td { color:var(--muted); } .sum tfoot td { font-weight:700; border-top:2px solid var(--line2); background:var(--card); position:sticky; bottom:0; }
+  .sum tfoot tr.av td { font-weight:400; color:var(--muted); position:static; border-top:0; } .sum .note { font-size:12px; color:var(--muted); margin-top:6px; }
   @media (max-width:520px) { .top .hide-sm { display:none; } }
 </style>
 </head>
@@ -153,7 +164,7 @@ const LS = { get(k, d) { try { const v = localStorage.getItem(k); return v == nu
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const S = { view: 'loading', theme: LS.get('hub-theme', 'light'), shared: LS.get('hub-shared', false), session: LS.get('hub-session', null),
   names: [], pick: null, pin: '', pin1: '', oldPin: '', err: '', apps: [], open: {}, tab: 'home', admin: null, edit: null, busy: false,
-  md: { list: null, tab: '', data: null, edit: null } };
+  md: { list: null, tab: '', data: null, edit: null }, sum: { month: '', cache: {}, busy: false, err: '' } };
 const PAGES = ['home', 'admin', 'md'];   // Hub pages (not apps)
 document.documentElement.dataset.theme = S.theme;
 
@@ -214,10 +225,11 @@ V.app = () => {
     + '<div class="stage" id="stage"></div></div>';
 };
 function homeHtml() {
-  return '<div class="page"><div class="wrap" style="max-width:720px">'
+  return '<div class="page"><div class="wrap" style="max-width:860px">'
     + (S.apps.length ? '<div class="tiles">' + S.apps.map((a) => '<button class="tile card" data-act="tab" data-arg="' + a.key + '">' + esc(a.name)
       + '<small>' + (a.url ? (a.frame === false ? 'เปิดเป็นแท็บใหม่' : a.sso ? 'เข้าอัตโนมัติ' : 'login ในแอป') : 'ยังไม่ได้ตั้ง URL') + '</small></button>').join('') + '</div>'
       : '<div class="card muted">ยังไม่ได้รับสิทธิ์ใช้แอปใด — แจ้ง Admin</div>')
+    + sumHtml()
     + '<p class="muted small" style="margin-top:18px">แตะแอปเพื่อเปิด · สลับแอปได้จากแถบด้านบนโดยไม่ต้องโหลดใหม่ · ทุกแอปยังเปิดจากลิงก์เดิมได้เหมือนเดิม</p></div></div>';
 }
 function adminHtml() {
@@ -353,7 +365,7 @@ function render() {
   if (tabApp) st.insertAdjacentHTML('beforeend', '<div class="page"><div class="wrap col" style="max-width:460px;text-align:center;padding-top:48px">'
     + '<h2>' + esc(tabApp.name) + '</h2><span class="muted small">แอปนี้ต้อง login บัญชี Google จึงเปิดในหน้า Hub ไม่ได้ — เปิดเป็นแท็บใหม่' + (tabApp.sso ? ' และเข้าให้อัตโนมัติ' : '') + '</span>'
     + '<button class="primary" data-act="popout" style="min-height:56px;font-size:18px">เปิด ' + esc(tabApp.name) + ' ↗</button></div></div>');
-  if (S.tab === 'home') st.insertAdjacentHTML('beforeend', homeHtml());
+  if (S.tab === 'home') { st.insertAdjacentHTML('beforeend', homeHtml()); loadSum(); }
   else if (S.tab === 'admin') st.insertAdjacentHTML('beforeend', adminHtml());
   else if (S.tab === 'md') st.insertAdjacentHTML('beforeend', mdHtml());
 }
@@ -377,10 +389,71 @@ async function openApp(key, force) {
   st.appendChild(f); render();
 }
 function expired() { toast('หมดเวลาเข้าใช้งาน — login ใหม่', true); clearSession(); start(); }
-function clearSession() { S.session = null; LS.set('hub-session', null); S.apps = []; S.tab = 'home'; S.admin = null; S.edit = null; S.md = { list: null, tab: '', data: null, edit: null }; const r = document.getElementById('root'); if (r) r.innerHTML = ''; }
+function clearSession() { S.session = null; LS.set('hub-session', null); S.apps = []; S.tab = 'home'; S.admin = null; S.edit = null; S.md = { list: null, tab: '', data: null, edit: null }; S.sum = { month: '', cache: {}, busy: false, err: '' }; const r = document.getElementById('root'); if (r) r.innerHTML = ''; }
+
+
+/* ---------- สรุปรายวัน (หน้าแรก · เฉพาะ Admin) · 25 พ.ย. 2026 ----------
+ * RPC hub_daily_summary(p_token, p_month) อ่านอย่างเดียว คำนวณฝั่ง Supabase: Extruder = ชั่วโมงเดินเครื่อง (RuntimeType 'Runtime') ต่อสาย ตัดตามวันผลิต 08:00–07:59
+ * Coater = ผลต่าง Total_Weight สะสมต่อ lot+สาย · Packing = Output_Kg ไม่ยกเลิก ไม่รวม WIP (WIP แยกบรรทัดหมายเหตุ)
+ * อ่านเฉพาะช่วงที่ใช้ (Extruder เฉพาะภายในเดือน · Coater/Packing เฉพาะ 2 เดือน ผ่านดัชนี seq) · เฉพาะเดือนปัจจุบัน + ก่อนหน้า 1 เดือน
+ * ไม่ poll: โหลดเมื่อเปิดหน้าแรก (เก็บในเครื่อง 5 นาที) หรือกด ↻ เพื่อลดการอ่าน Supabase */
+const TH_M = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+const nf = (v, d) => v == null ? '–' : Number(v).toLocaleString('en-US', { minimumFractionDigits: d || 0, maximumFractionDigits: d || 0 });
+const monthLbl = (m) => { const [y, mo] = m.split('-'); return TH_M[+mo - 1] + ' ' + (+y + 543); };
+const monthShift = (m, k) => { const [y, mo] = m.split('-').map(Number); const d = new Date(Date.UTC(y, mo - 1 + k, 1)); return d.getUTCFullYear() + '-' + String(d.getUTCMonth() + 1).padStart(2, '0'); };
+function sumChart(days) {
+  const W = Math.max(300, Math.min(800, (document.documentElement.clientWidth || 720) - 64)), H = W < 500 ? 230 : 250, L = 28, R = 8, T = 10, B = 26, pw = W - L - R, ph = H - T - B, n = Math.max(days.length, 1), step = pw / n, bw = Math.max(2, Math.min(14, step * 0.38)), Y = (h) => T + ph - (h / 24) * ph;
+  let g = '';
+  [0, 6, 12, 18, 24].forEach((h) => { g += '<line class="gl" x1="' + L + '" x2="' + (W - R) + '" y1="' + Y(h) + '" y2="' + Y(h) + '"/><text x="' + (L - 5) + '" y="' + (Y(h) + 4) + '" text-anchor="end">' + h + '</text>'; });
+  days.forEach((r, i) => {
+    const x = L + i * step + step / 2, dd = +r.d.slice(8), lbl = dd + '/' + (+r.d.slice(5, 7));
+    if (r.d === S.sumToday) g += '<rect class="td" x="' + (x - step / 2) + '" y="' + T + '" width="' + step + '" height="' + ph + '" rx="3"/>';
+    [['e1', 'c1', -bw - 0.5, 'EXT-1'], ['e2', 'c2', 0.5, 'EXT-2']].forEach(([k, c, off, nm]) => {
+      const v = r[k]; if (v == null || v <= 0.005) return; const h = (v / 24) * ph;
+      g += '<rect class="' + c + '" x="' + (x + off) + '" y="' + (T + ph - h) + '" width="' + bw + '" height="' + h + '" rx="2"><title>' + nm + ' · ' + lbl + ' · ' + nf(v, 1) + ' ชม.</title></rect>';
+    });
+    if (n <= 16 || dd % 2 === 1 || dd === n) g += '<text x="' + x + '" y="' + (H - 8) + '" text-anchor="middle">' + dd + '</text>';
+  });
+  return '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="ชั่วโมงเดินเครื่อง Extruder รายวัน">' + g + '</svg>';
+}
+const sumOk = () => !!(S.session && S.session.me && S.session.me.is_admin);   // สรุปรายวัน: เฉพาะ Hub Admin เห็น
+function sumHtml() {
+  if (!sumOk()) return '';
+  const M = S.sum, m = M.month || (S.sumNow || ''), D = M.cache[m];
+  const head = '<div class="hd"><h2>สรุปรายวัน</h2><button data-act="sumMo" data-arg="-1"' + (m && S.sumNow && m <= monthShift(S.sumNow, -1) ? ' disabled' : '') + ' title="เดือนก่อน">◀</button><span class="mo">' + (m ? monthLbl(m) : '…') + '</span>'
+    + '<button data-act="sumMo" data-arg="1"' + (m && m >= (S.sumNow || m) ? ' disabled' : '') + ' title="เดือนถัดไป">▶</button><button data-act="sumReload" title="โหลดใหม่">↻</button></div>';
+  if (!D) return '<div class="card sum">' + head + (M.err ? '<div class="err">' + esc(M.err) + '</div>' : '<div class="muted">กำลังโหลด…</div>') + '</div>';
+  const days = D.days, tot = (k) => days.reduce((a, r) => a + (+r[k] || 0), 0), cnt = (k) => days.filter((r) => +r[k] > 0).length, avg = (k) => cnt(k) ? tot(k) / cnt(k) : null;
+  const wip = tot('wip');
+  const lg = '<div class="lg"><span><i class="c1" style="background:var(--blue)"></i>EXT-1 รวม <b>' + nf(tot('e1'), 1) + '</b> ชม. · เฉลี่ย <b>' + nf(avg('e1'), 1) + '</b>/วันเดิน (' + cnt('e1') + ' วัน)</span>'
+    + '<span><i style="background:var(--amber)"></i>EXT-2 รวม <b>' + nf(tot('e2'), 1) + '</b> ชม. · เฉลี่ย <b>' + nf(avg('e2'), 1) + '</b>/วันเดิน (' + cnt('e2') + ' วัน)</span></div>';
+  const rows = days.map((r) => '<tr class="' + (r.d === D.today ? 'td' : (r.coat == null && r.pack == null ? 'off' : '')) + '"><td>' + (+r.d.slice(8)) + '/' + (+r.d.slice(5, 7)) + (r.d === D.today ? ' <span class="tag">วันนี้</span>' : '') + '</td>'
+    + '<td class="n">' + nf(r.coat) + '</td><td class="n">' + nf(r.pack) + '</td></tr>').join('');
+  return '<div class="card sum">' + head + '<div class="muted small">ชั่วโมงเดินเครื่อง Extruder รายวัน (วันผลิต 08:00–07:59)</div>' + lg + sumChart(days)
+    + '<h3>ยอดรายวัน · Coater / Packing (kg)</h3><div class="tw"><table><thead><tr><th>วันที่</th><th class="n">Coater</th><th class="n">Packing</th></tr></thead><tbody>' + rows + '</tbody>'
+    + '<tfoot><tr><td>รวม</td><td class="n">' + nf(tot('coat')) + '</td><td class="n">' + nf(tot('pack')) + '</td></tr>'
+    + '<tr class="av"><td>เฉลี่ย/วันที่มียอด</td><td class="n">' + nf(avg('coat')) + '</td><td class="n">' + nf(avg('pack')) + '</td></tr></tfoot></table></div>'
+    + '<div class="note">Coater = น้ำหนักที่ลงเครื่อง (ผลต่างตาชั่งสะสมต่อ lot) · Packing = Output ไม่ยกเลิก ไม่รวม WIP' + (wip > 0 ? ' (WIP เดือนนี้ ' + nf(wip) + ' kg แยกไว้)' : '') + ' · วันผลิต 08:00–07:59 · อัปเดต '
+    + new Date(D.at).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) + '</div></div>';
+}
+async function loadSum(force) {
+  const M = S.sum; if (M.busy || !sumOk()) return;
+  const m = M.month || '', c = M.cache[m || S.sumNow || ''];
+  if (c && !force && Date.now() - c.got < 5 * 60e3) return;
+  if (M.err && !force && !c) return;   // ล้มเหลวแล้ว: ไม่ลองซ้ำเองทุกครั้งที่วาดหน้า รอกด ↻ หรือเปลี่ยนเดือน
+  M.busy = true; M.err = '';
+  try {
+    const r = await rpc('hub_daily_summary', { p_token: tok(), p_month: m || null });
+    if (!r.ok) { if (r.error === 'AUTH') return expired(); throw new Error(r.error === 'ADMIN' ? 'เฉพาะ Admin' : (r.error || 'โหลดสรุปไม่สำเร็จ')); }
+    r.got = Date.now(); S.sumNow = S.sumNow || r.month; S.sumToday = r.today; if (!M.month) M.month = r.month; M.cache[r.month] = r;
+  } catch (e) { M.err = e.message; } finally { M.busy = false; if (S.tab === 'home') render(); }
+}
 
 /* ---------- actions ---------- */
 const ACT = {
+  sumMo(k) { const M = S.sum; if (!S.sumNow) return; M.err = ''; M.month = monthShift(M.month || S.sumNow, +k); const lo = monthShift(S.sumNow, -1);   // เฉพาะเดือนปัจจุบัน + เดือนก่อนหน้า 1 เดือน
+    if (M.month > S.sumNow) M.month = S.sumNow; if (M.month < lo) M.month = lo; render(); loadSum(); },
+  sumReload() { loadSum(true); },
   theme() { S.theme = S.theme === 'dark' ? 'light' : 'dark'; LS.set('hub-theme', S.theme); document.documentElement.dataset.theme = S.theme; render(); },
   shared(el) { S.shared = el.checked; LS.set('hub-shared', S.shared); },
   pick(id) { S.pick = S.names.find((u) => u.id === id); S.pin = ''; go('pin'); },
