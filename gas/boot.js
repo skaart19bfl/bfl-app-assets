@@ -5,7 +5,7 @@
  * Usage: <script src="../gas/boot.js" data-key="coat" data-exec="https://script.google.com/macros/s/…/exec" data-title="…"></script> */
 (function () {
   var me = document.currentScript, cfg = me.dataset;
-  var EXEC = cfg.exec, LSK = 'gasp-page-' + cfg.key, TITLE = cfg.title || document.title, BUILD = 2026112301;
+  var EXEC = cfg.exec, LSK = 'gasp-page-' + cfg.key, TITLE = cfg.title || document.title, BUILD = 2026112401;
 
   function lsGet() { try { return JSON.parse(localStorage.getItem(LSK) || 'null'); } catch (e) { return null; } }
   function lsSet(v) { try { localStorage.setItem(LSK, JSON.stringify(v)); } catch (e) { try { localStorage.removeItem(LSK); } catch (e2) {} } }
@@ -75,7 +75,17 @@
  * → ขึ้นหน้าบังคับโหลดใหม่ และหยุดส่งคำขอทั้งหมด */
   var W = window; if (W.__bflAv) return;
   var SB = 'https://kdytxuufvigwjccebrki.supabase.co', KEY = 'sb_publishable_IYCMIaN7tJleWINprA42CQ_dX10sXFF', TAG = 'bfl/' + APP + '/' + BUILD, f0 = W.fetch;
-  var G = W.__bflAv = { app: APP, build: BUILD, tag: TAG, blocked: false, last: 0, block: block, check: check };
+  var G = W.__bflAv = { app: APP, build: BUILD, tag: TAG, blocked: false, last: 0, block: block, check: check, act: Date.now(), runs: {}, slow: slow };
+  // E14 (24 Nov 2026): nobody touching the screen → the app's "anything new?" loops ask less often (G.slow(key, base) = true → skip this tick)
+  //   idle > 5 min: loops every ≤ 30 s → 30 s, longer loops → 5 min · idle > 30 min: → 60 s / 15 min · a touch or key → back to normal at once
+  ['pointerdown', 'keydown', 'touchstart', 'wheel'].forEach(function (e) { W.addEventListener(e, function () { G.act = Date.now(); }, { passive: true, capture: true }); });
+  function slow(key, base) {
+    var now = Date.now(), idle = now - G.act, every = base;
+    if (idle > 30 * 60e3) every = base < 30e3 ? 60e3 : 15 * 60e3;
+    else if (idle > 5 * 60e3) every = base < 30e3 ? 30e3 : 5 * 60e3;
+    if (now - (G.runs[key] || 0) < every - 400) return true;
+    G.runs[key] = now; return false;
+  }
   // only the REST API (the Edge Function prod-calc does not allow extra headers in its CORS)
   function kind(u) { return u.indexOf('.supabase.co/rest/v1/') >= 0 ? 'sb' : (u.indexOf('script.google.com/macros/') >= 0 ? 'gas' : ''); }
   W.fetch = function (u, o) {

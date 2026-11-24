@@ -8,7 +8,17 @@
  * → ขึ้นหน้าบังคับโหลดใหม่ และหยุดส่งคำขอทั้งหมด */
   var W = window; if (W.__bflAv) return;
   var SB = 'https://kdytxuufvigwjccebrki.supabase.co', KEY = 'sb_publishable_IYCMIaN7tJleWINprA42CQ_dX10sXFF', TAG = 'bfl/' + APP + '/' + BUILD, f0 = W.fetch;
-  var G = W.__bflAv = { app: APP, build: BUILD, tag: TAG, blocked: false, last: 0, block: block, check: check };
+  var G = W.__bflAv = { app: APP, build: BUILD, tag: TAG, blocked: false, last: 0, block: block, check: check, act: Date.now(), runs: {}, slow: slow };
+  // E14 (24 Nov 2026): nobody touching the screen → the app's "anything new?" loops ask less often (G.slow(key, base) = true → skip this tick)
+  //   idle > 5 min: loops every ≤ 30 s → 30 s, longer loops → 5 min · idle > 30 min: → 60 s / 15 min · a touch or key → back to normal at once
+  ['pointerdown', 'keydown', 'touchstart', 'wheel'].forEach(function (e) { W.addEventListener(e, function () { G.act = Date.now(); }, { passive: true, capture: true }); });
+  function slow(key, base) {
+    var now = Date.now(), idle = now - G.act, every = base;
+    if (idle > 30 * 60e3) every = base < 30e3 ? 60e3 : 15 * 60e3;
+    else if (idle > 5 * 60e3) every = base < 30e3 ? 30e3 : 5 * 60e3;
+    if (now - (G.runs[key] || 0) < every - 400) return true;
+    G.runs[key] = now; return false;
+  }
   // only the REST API (the Edge Function prod-calc does not allow extra headers in its CORS)
   function kind(u) { return u.indexOf('.supabase.co/rest/v1/') >= 0 ? 'sb' : (u.indexOf('script.google.com/macros/') >= 0 ? 'gas' : ''); }
   W.fetch = function (u, o) {
@@ -59,7 +69,7 @@
   setTimeout(check, 4000);
   setInterval(function () { if (!document.hidden) check(); }, 10 * 60e3);
   document.addEventListener('visibilitychange', function () { if (!document.hidden && Date.now() - G.last > 60e3) check(); });
-})('qc', 2026112301);</script>
+})('qc', 2026112401);</script>
 <title>BFL QC App</title>
 <style>
 :root{--blue:#268AFA;--navy:#162C9A;--ink:#2E2E2E;--mute:#7A8597;--line:#E3E9F2;--bg:#F6F8FB;--card:#fff;--soft:#F3F7FD;--soft2:#EAF2FF;--amber:#FAAA20;--green:#1FA971;--red:#E5484D;--inbg:#fff}
@@ -274,7 +284,7 @@ let loadN=0;
 function loading(on){loadN+=on?1:-1;if(loadN<0)loadN=0;$('#loader').classList.toggle('show',loadN>0)}
 function toast(m,err){const t=$('#toast');t.textContent=m;t.className=err?'err':'';t.style.display='block';clearTimeout(t._h);t._h=setTimeout(()=>t.style.display='none',err?6000:2800)}
 /* เวอร์ชันเว็บ: ตรรกะเดิมรันใน Web Worker (worker.js) แล้วคุยกับ Supabase ตรง — ไม่ผ่าน Apps Script */
-const W=new Worker('worker.js?v=202611231400');let _wid=0;const _wp={};
+const W=new Worker('worker.js?v=202611241000');let _wid=0;const _wp={};
 W.onmessage=e=>{const m=e.data,p=_wp[m.id];if(p){delete _wp[m.id];p(m)}};
 W.onerror=e=>{toast('โหลดตัวประมวลผลไม่สำเร็จ — กดรีเฟรช',1)};
 function call(fn,...args){
@@ -344,7 +354,7 @@ function callQuiet(fn,...args){return new Promise((res,rej)=>{const id=++_wid;_w
 async function sheetNow(){const b=document.getElementById('sheetBtn');if(!b||b.disabled)return;b.disabled=true;const t=b.innerHTML;b.innerHTML='กำลังส่งลง Sheet…';
   try{const r=await call('api_flushNow',S.token);toast('ส่งลง Sheet แล้ว · แท็บหลัก '+r.main+' รายการ · แท็บ QC '+r.qc+' แถว'+(r.err&&r.err.length?' · ผิดพลาด '+r.err.length+' (ดูใน Log)':''),r.err&&r.err.length?1:0)}
   catch(e){toast(e.message,1)}finally{b.disabled=false;b.innerHTML=t;sheetCount()}}
-setInterval(()=>{if(!document.hidden)sheetCount()},60000);
+setInterval(()=>{if(!document.hidden&&!(window.__bflAv && window.__bflAv.slow('sc', 60e3)))sheetCount()},60000);
 async function startApp(){
   $('#login').style.display='none';$('#app').style.display='flex';
   $('#meName').textContent=S.user.name;$('#meRole').textContent=S.user.role;$('#meAv').textContent=S.user.name.slice(0,2).toUpperCase();

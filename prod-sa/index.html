@@ -4,7 +4,17 @@
  * → ขึ้นหน้าบังคับโหลดใหม่ และหยุดส่งคำขอทั้งหมด */
   var W = window; if (W.__bflAv) return;
   var SB = 'https://kdytxuufvigwjccebrki.supabase.co', KEY = 'sb_publishable_IYCMIaN7tJleWINprA42CQ_dX10sXFF', TAG = 'bfl/' + APP + '/' + BUILD, f0 = W.fetch;
-  var G = W.__bflAv = { app: APP, build: BUILD, tag: TAG, blocked: false, last: 0, block: block, check: check };
+  var G = W.__bflAv = { app: APP, build: BUILD, tag: TAG, blocked: false, last: 0, block: block, check: check, act: Date.now(), runs: {}, slow: slow };
+  // E14 (24 Nov 2026): nobody touching the screen → the app's "anything new?" loops ask less often (G.slow(key, base) = true → skip this tick)
+  //   idle > 5 min: loops every ≤ 30 s → 30 s, longer loops → 5 min · idle > 30 min: → 60 s / 15 min · a touch or key → back to normal at once
+  ['pointerdown', 'keydown', 'touchstart', 'wheel'].forEach(function (e) { W.addEventListener(e, function () { G.act = Date.now(); }, { passive: true, capture: true }); });
+  function slow(key, base) {
+    var now = Date.now(), idle = now - G.act, every = base;
+    if (idle > 30 * 60e3) every = base < 30e3 ? 60e3 : 15 * 60e3;
+    else if (idle > 5 * 60e3) every = base < 30e3 ? 30e3 : 5 * 60e3;
+    if (now - (G.runs[key] || 0) < every - 400) return true;
+    G.runs[key] = now; return false;
+  }
   // only the REST API (the Edge Function prod-calc does not allow extra headers in its CORS)
   function kind(u) { return u.indexOf('.supabase.co/rest/v1/') >= 0 ? 'sb' : (u.indexOf('script.google.com/macros/') >= 0 ? 'gas' : ''); }
   W.fetch = function (u, o) {
@@ -55,7 +65,7 @@
   setTimeout(check, 4000);
   setInterval(function () { if (!document.hidden) check(); }, 10 * 60e3);
   document.addEventListener('visibilitychange', function () { if (!document.hidden && Date.now() - G.last > 60e3) check(); });
-})('prod-sa', 2026112301);</script><script>(function () { /* 22 พ.ย. 2026 (ผู้ใช้ "ทำ 1 และ 2"): Supabase แผนฟรี (disk IO) — คำถาม "มีอะไรใหม่" (*_stamp) ไปถึง Supabase ไม่เกินทุก 30 วิ · ไม่มีคนแตะ/กดปุ่ม 10 นาที = ทุก 5 นาที · แตะหรือกลับมาที่แท็บ = ถามใหม่ทันที */
+})('prod-sa', 2026112401);</script><script>(function () { /* 22 พ.ย. 2026 (ผู้ใช้ "ทำ 1 และ 2"): Supabase แผนฟรี (disk IO) — คำถาม "มีอะไรใหม่" (*_stamp) ไปถึง Supabase ไม่เกินทุก 30 วิ · ไม่มีคนแตะ/กดปุ่ม 10 นาที = ทุก 5 นาที · แตะหรือกลับมาที่แท็บ = ถามใหม่ทันที */
   var W = window, g = W.__stampGuard;
   if (!g) {
     g = W.__stampGuard = { every: 30e3, idle: 10 * 60e3, slow: 5 * 60e3, touch: Date.now(), last: {}, memo: {}, f0: W.fetch };
@@ -628,12 +638,14 @@ function pdbOpen() {
   return PDB.ready;
 }
 function pdbPut(k, v) { try { if (PDB.db) PDB.db.transaction('rc', 'readwrite').objectStore('rc').put(v, k); } catch (e) { /* no space: memory only */ } }
+function lrTrim(C) { if (C.size <= 40) return; for (const k of Array.from(C.keys())) { if (C.size <= 40) break; let q; try { q = JSON.parse(k); } catch (e) { q = []; } if (!(q[1] == null && q[3] == null)) C.delete(k); } }
 const pdMark = (rows) => { let n = 0, t = BigInt(0); rows.forEach((r) => { n++; t += BigInt(r._v || 0); }); return n + '#' + t.toString(); };
 async function lrStore(ticket, reqs) {
   await pdbOpen();
   const C = LRS.cache, ks = reqs.map((q) => JSON.stringify([q.tab, q.col, q.vals, q.tail]));
   const full = (q) => q.col == null && q.tail == null;
-  const keep = (i, e) => { C.delete(ks[i]); C.set(ks[i], e); if (full(reqs[i]) && e.m) pdbPut(ks[i], e); while (C.size > 40) C.delete(C.keys().next().value); };
+  // E14: whole tabs stay in memory — only the other reads (by column / tail) are pushed out past 40 entries
+  const keep = (i, e) => { C.delete(ks[i]); C.set(ks[i], e); if (full(reqs[i]) && e.m) pdbPut(ks[i], e); lrTrim(C); };
   const send = reqs.map((q, i) => {
     const c = C.get(ks[i]); if (!c) return q;
     const o = Object.assign({}, q, { have: c.a });
@@ -2537,7 +2549,7 @@ const ACT = {
       catch (e) { throw new Error('ไม่มีสัญญาณ — ลองอีกครั้ง'); }
       const e = j && j.e, bad = e && (e.results || []).find((x) => x && x.error);
       if (!j || !j.ok || !e || !e.saved || bad) throw new Error('คำนวณไม่สำเร็จ: ' + ((j && j.error) || (bad && bad.error) || (e && e.why) || 'ไม่มีผลลัพธ์'));
-      await new Promise((r) => setTimeout(r, 800)); if (LRS.cache) LRS.cache.clear(); S.lots = null; await loadLot();
+      await new Promise((r) => setTimeout(r, 800)); S.lots = null; await loadLot();   // E14: no cache wipe — have/since already return the recalculated rows
       const after = S.sum.kpi.Yield; toast(after === before ? 'คำนวณใหม่แล้ว · Yield ' + pc(after) + ' (ค่าเดิม)' : 'คำนวณใหม่แล้ว · Yield ' + pc(before) + ' → ' + pc(after));
     } catch (e) { fail(e); } finally { S.recalcing = false; }
   },
@@ -2828,14 +2840,14 @@ function lrStampGas(t) {
   return Promise.all([srv, sbRpc('pdr_stamp', { p_ticket: t }).catch(() => '')]).then((a) => a[0] + '|' + a[1]);
 }
 setInterval(() => {
-  if (S.view !== 'app' || S.drawer || S.busy || document.hidden || liveBusy || !S.session || liveTyping()) return;
+  if (S.view !== 'app' || S.drawer || S.busy || document.hidden || liveBusy || !S.session || liveTyping() || (window.__bflAv && window.__bflAv.slow('st', 5e3))) return;   // E14: slower while idle
   liveBusy = true;
   lrStamp().then((st) => {
     const changed = liveV && st !== liveV; liveV = st;
     if (changed && !S.drawer && !S.busy && !liveTyping()) return liveReload();
   }).catch(() => { }).finally(() => { liveBusy = false; });
 }, 5000);
-setInterval(() => { if (S.view === 'app' && !S.drawer && !S.busy && (S.page === 'board' || S.page === 'coater') && !document.hidden) { if (S.page === 'coater') api('coaterBoard', S.cDay).then((d) => { if (!S.drawer) { S.coat = d; render(); } }).catch(fail); else refresh(); } }, 60000);
+setInterval(() => { if (S.view === 'app' && !S.drawer && !S.busy && (S.page === 'board' || S.page === 'coater') && !document.hidden && !(window.__bflAv && window.__bflAv.slow('bd', 60e3))) { if (S.page === 'coater') api('coaterBoard', S.cDay).then((d) => { if (!S.drawer) { S.coat = d; render(); } }).catch(fail); else refresh(); } }, 60000);
 // BFL Hub (user 9 Nov 2026): opened from the Hub with ?hub=<one-time ticket> → sign in as the account the Hub names. Opened directly → as before.
 function hubBoot() {
   return new Promise((ok) => {

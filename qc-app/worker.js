@@ -7,7 +7,7 @@ var SB_URL = 'https://kdytxuufvigwjccebrki.supabase.co';
 var SB_KEY = 'sb_publishable_IYCMIaN7tJleWINprA42CQ_dX10sXFF';
 var GAS_URL = 'https://script.google.com/macros/s/AKfycbzTFCZ2HvBtOWIf6hHpz-CsMdcdbz-o8ABNn-XJBwQQhXuNobMFlSOecoYo8cHHDsenyg/exec';
 var CUR = { token: '', user: null, offset: 0 };
-var QC_AV = 'bfl/qc/2026112301';   // V1 (23 Nov 2026): the version this worker belongs to (Supabase blocks old pages)
+var QC_AV = 'bfl/qc/2026112401';   // V1 (23 Nov 2026): the version this worker belongs to (Supabase blocks old pages)
 
 /* ---------------- ตัวจำลองบริการ Apps Script ---------------- */
 function xhr_(url, o) {
