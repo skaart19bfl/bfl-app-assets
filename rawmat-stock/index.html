@@ -366,7 +366,7 @@ const MENU = [
   { id: 'pd', g: 'PD ฝ่ายผลิต', ic: '⚙️', desc: 'สแกนเทเข้าถัง · ยอดในถัง · NCP', roles: ['intake', 'control', 'wh'], items: [['intake', 'Intake สแกนเท'], ['bins', 'ยอดในถัง'], ['binrep', 'ยอดในถัง ณ เวลา'], ['dumplog', 'ใบบันทึกการเท'], ['ncp', 'เบิก / ใช้ผลิต NCP']] },
   { id: 'ctl', g: 'Control', ic: '🎛️', desc: 'สั่งเท · นับถัง · density · Plan batch', roles: ['control'], items: [['direct', 'เบิกเข้าถัง (ไม่ต้องสั่งเท)'], ['dumpctl', 'ใบสั่งเท'], ['dumplog', 'ใบบันทึกการเท'], ['bins', 'ยอดในถัง / นับถัง'], ['binrep', 'ยอดในถัง ณ เวลา'], ['useimp', 'Import ยอดใช้ (SCADA)'], ['dip', 'ดิ่งถัง 08:00 / 20:00'], ['master', 'Master วัตถุดิบ / NCP'], ['ncp', 'บอร์ด NCP'], ['soon', 'Plan batch', 'เฟส 3']] },
   { id: 'rep', g: 'รายงาน', ic: '📊', desc: 'รายงานประจำวัน · คงเหลือ · ยอดในถัง', roles: ['wh', 'view', 'control', 'intake'], items: [['reports', 'รายงานประจำวัน'], ['dumplog', 'ใบบันทึกการเทวัตถุดิบ'], ['stockrep', 'คงเหลือรายวัน / รายเดือน'], ['binrep', 'ยอดในถัง ณ เวลา'], ['ncptrend', 'Trend รับ NCP'], ['ncp', 'รายงาน NCP / LINE']] },
-  { id: 'py', g: 'PY ชุดสารเสริม', ic: '🧪', desc: 'รับเข้า PY · ใบสั่งเบิก · เบิก / เท / คืน', roles: ['premix', 'pour', 'control', 'wh', 'view'], items: [['pyhome', 'ยอด PY / ภาพรวม'], ['pyrecv', 'รับเข้า PY + ป้าย', '', ['premix']], ['pyret', 'รับคืน', '', ['premix']], ['pyxfer', 'จ่ายออก PY-PC', '', ['premix']], ['pyorder', 'ใบสั่งเบิก PY', '', ['control']], ['pyscan', 'เบิก / เท / คืน (สแกน)', '', ['pour', 'control']], ['pyforms', 'ฟอร์ม F-WI04 / F-WI07', '', ['premix', 'control', 'pour', 'wh', 'view']], ['pymaster', 'Master ชุดสารเสริม', '', ['premix', 'control', 'wh', 'view']], ['pyhelp', '📖 คู่มือ']] }, // PY Phase 1 (20 พ.ย. 2026)
+  { id: 'py', g: 'PY ชุดสารเสริม', ic: '🧪', desc: 'รับเข้า PY · ใบสั่งเบิก · เบิก / เท / คืน · กลิ่นผง PF', roles: ['premix', 'pour', 'control', 'wh', 'view'], items: [['pyhome', 'ยอด PY / ภาพรวม'], ['pyrecv', 'รับเข้า PY + ป้าย', '', ['premix']], ['pyret', 'รับคืน', '', ['premix']], ['pyxfer', 'จ่ายออก PY-PC', '', ['premix']], ['pyorder', 'ใบสั่งเบิก PY', '', ['control']], ['pypf', 'เบิกกลิ่นผง PF', '', ['control']], ['pyscan', 'เบิก / เท / คืน (สแกน)', '', ['pour', 'control']], ['pyforms', 'ฟอร์ม F-WI04 / F-WI07', '', ['premix', 'control', 'pour', 'wh', 'view']], ['pymaster', 'Master ชุดสารเสริม', '', ['premix', 'control', 'wh', 'view']], ['pyhelp', '📖 คู่มือ']] }, // PY Phase 1 (20 พ.ย. 2026)
   { id: 'sys', g: 'ระบบ', ic: '🛠️', desc: 'Master · ผู้ใช้ · ยอดยกมา', roles: ['wh', 'view'], items: [['master', 'Master วัตถุดิบ / NCP'], ['admin', 'ผู้ใช้ · ยอดยกมา · ฐานข้อมูล']] }
 ];
 const myMods = () => { const r = S.snap.me.role; return MENU.filter((g) => r === 'admin' || g.roles.includes(r)).map((g) => Object.assign({}, g, { items: g.items.filter(([id, , , rs]) => (id !== 'admin' || r === 'admin') && (!rs || r === 'admin' || rs.includes(r))) })); };
@@ -1184,7 +1184,7 @@ async function camStart(mode) {
       if (det) { const r = await det.detect(v); if (r.length) text = r[0].rawValue; }
       else if (v.videoWidth) { cv.width = v.videoWidth; cv.height = v.videoHeight; cx.drawImage(v, 0, 0); const img = cx.getImageData(0, 0, cv.width, cv.height); const r = window.jsQR(img.data, img.width, img.height); if (r) text = r.data; }
     } catch (e) { /* ข้ามเฟรม */ }
-    if (camMode === 'py' && text) { camStop(); if (S.screen === 'pyret') pyRetGo(text.trim()); else if (S.screen === 'pyxfer') pyXferAdd({ code: text.trim() }); else { S.py.q = text.trim(); pyScanGo(); } return; } // PY ชุดสารเสริม
+    if (camMode === 'py' && text) { camStop(); if (S.screen === 'pyret') pyRetGo(text.trim()); else if (S.screen === 'pyxfer') pyXferAdd({ code: text.trim() }); else if (S.screen === 'pypf') pyPfAdd({ code: text.trim() }); else { S.py.q = text.trim(); pyScanGo(); } return; } // PY ชุดสารเสริม
     const nc = text && /^BFLNCP\|/i.test(text.trim()) && scanNcp(text);
     if (nc && camMode !== 'ncp' && S.screen === 'intake') { camStop(); S.ik.q = text; S.ik.unit = ''; S.ik.bags = ''; ncpFromIk(text, true); render(); return; }
     if (nc && (camMode === 'ncp' || S.screen === 'bins')) { camStop(); ncpSet(text); return; }
@@ -3637,7 +3637,9 @@ setInterval(async () => {
 // เทยา (role pour): สแกน เบิก / เท / คืน · 1 ชุด = 1 batch · ป้าย 1 ใบต่อชุด
 // =====================================================================
 const PY_LOT_RE = /^PRE-[A-Z]{3}\d{6}-\d{2}-MI$/;
-const PY_ST = { PY: 'อยู่คลัง', ISSUED: 'เบิกแล้ว', POURED: 'เทแล้ว', RETURNING: 'รอรับคืน', VOID: 'ยกเลิก', OUT: 'จ่ายออก BFL-PC' };
+// กลิ่นผง coater (PF · ผู้ใช้ 24 พ.ย.): รหัส -PF / -PF-PRM · Lot PRE-TTTYYMMDD-NN-CO (BFL) / -CO-PC (BFL-PC) · นับเป็นชุดเหมือน -41
+const PY_PF_RE = /^PRE-[A-Z]{3}\d{6}-\d{2}-CO(-PC)?$/;
+const PY_ST = { PY: 'อยู่คลัง', ISSUED: 'เบิกแล้ว', POURED: 'เทแล้ว', RETURNING: 'รอรับคืน', VOID: 'ยกเลิก', OUT: 'จ่ายออก / เบิกออกแล้ว' };
 // คลัง PY / PY-PC และเอกสาร BFL / BFL-PC (ผู้ใช้ 21 พ.ย.) · เอกสาร BFL-PC ต่างแค่ชื่อบริษัทบนหัวฟอร์ม
 const PY_STORES = ['PY', 'PY-PC']; const PY_DOCS = ['BFL', 'BFL-PC'];
 const PY_CO = { BFL: 'บริษัท บลูฟาโล่ จำกัด', 'BFL-PC': 'บริษัท บลูฟาโล่ เพ็ทแคร์ จำกัด' };
@@ -3651,9 +3653,9 @@ function pyWaitTxt(o) { // ชุดที่ถุงยังไม่คร�
 }
 const pyStoreTag = (l) => `<span class="tag" style="${l.store === 'PY-PC' ? 'background:#fdeee3;color:#c2410c' : ''}">${esc(l.store || 'PY')}</span>${l.doc && l.doc !== 'BFL' ? ` <span class="tag" title="เอกสาร">📄 ${esc(l.doc)}</span>` : ''}`;
 const PY_OST = { OPEN: 'เปิด', DONE: 'เทครบ', CLOSED: 'ปิดแล้ว', VOID: 'ยกเลิก' };
-const PY_MT = { RECEIVE: 'รับเข้า', BAG: 'ใส่ถุงรวม', UNBAG: 'ออกจากถุง', ISSUE: 'เบิก', POUR: 'เท', RETURN: 'ส่งคืน', RETURN_RECV: 'รับคืน', SCRAP: 'ไม่รับคืน', LOT_VOID: 'ยกเลิก Lot', VOID: 'ยกเลิกรายการ', XFER: 'จ่ายออก BFL-PC' };
+const PY_MT = { RECEIVE: 'รับเข้า', BAG: 'ใส่ถุงรวม', UNBAG: 'ออกจากถุง', ISSUE: 'เบิก', POUR: 'เท', RETURN: 'ส่งคืน', RETURN_RECV: 'รับคืน', SCRAP: 'ไม่รับคืน', LOT_VOID: 'ยกเลิก Lot', VOID: 'ยกเลิกรายการ', XFER: 'จ่ายออก / เบิก PF' };
 const PY_MODE = [['issue', 'เบิก'], ['pour', 'เท'], ['return', 'คืน']];
-const PY_IDS = ['pyhome', 'pyrecv', 'pyret', 'pyxfer', 'pyorder', 'pyscan', 'pyforms', 'pymaster', 'pyhelp'];
+const PY_IDS = ['pyhome', 'pyrecv', 'pyret', 'pyxfer', 'pyorder', 'pypf', 'pyscan', 'pyforms', 'pymaster', 'pyhelp'];
 const PY_HELP_SEC = { pyhome: 'stock', pyrecv: 'recv', pyret: 'ret', pyorder: 'order', pyscan: 'scan', pyforms: 'forms', pymaster: 'master', pyxfer: 'xfer' }; // หน้าจอ → หัวข้อในคู่มือ
 const PY_HELP_V = '20261121c';
 const pyScreen = (sc) => PY_IDS.includes(sc);
@@ -3662,7 +3664,10 @@ const pyCan = (...rs) => pyRole() === 'admin' || rs.includes(pyRole());
 const pyShort = (c) => String(c || '').replace(/^97-/, '');
 const pyYmd6 = (ymd) => String(ymd || '').replace(/-/g, '').slice(2, 8);
 const pyProd = (name) => String(name || '').split(' -')[0].trim().toUpperCase(); // "Fish26% Merry 882 ML -NA.ROUND - PRM" → "FISH26% MERRY 882 ML"
-const pyFormula = (code) => '98-' + String(code || '').replace(/^97-/, '').replace(/-41(-[A-Z0-9]+)?$/, '');
+const pyFormula = (code) => '98-' + String(code || '').replace(/^97-/, '').replace(/(-41(-[A-Z0-9]+)?|-PF(-PRM)?)$/, '');
+const PY_PF_TAG = ' <span class="tag" style="background:#e6f4ea;color:#1b5e20">กลิ่นผง PF</span>';
+const pyKindTag = (k) => k === 'PF' ? PY_PF_TAG : k === 'PX' ? ' <span class="tag">PX</span>' : '';
+const pyIsPF = (code) => (pyItem(code) || {}).k === 'PF';
 
 S.py = {
   data: null, loading: false, err: '', master: null, mLoading: false, init: false,
@@ -3675,6 +3680,7 @@ S.py = {
   rr: { q: '', last: null, scrap: '', reason: '', log: null, cx: '', cxr: '', loc: null, ul: {} }, hq: '',
   ms: { q: '', only: '', f: null },
   lp: { lot: '', seqs: '' }, mv: { lot: '', bag: '', seqs: '', to: '' }, le: { lot: '', kg: '', reason: '', store: '', doc: '', bkg: [] }, lc: { lot: '', reason: '' }, bv: { bag: '', reason: '' },
+  pf: { q: '', lot: '', seqs: '', cart: [], note: '', plot: '', last: null, done: '', cx: '', cxr: '', find: '', plots: null }, hk: '',
   fm: { from: '', to: '', doc: '', doc2: '', co: '' }, help: { html: '', loading: false, err: '', sec: '' }
 };
 
@@ -3693,19 +3699,21 @@ async function loadPYOrders() { // Lot การผลิต 30 วันล่�
   try { const r = await rpc('rm_py_prod_lots', { p_token: S.tok, p: { q: o.q.trim(), days: 30 } }); o.lots = r.lots; } catch (e) { S.toast = e.message; S.toastErr = true; }
   o.lotsLoading = false; render();
 }
+async function loadPYPfLots() { try { const r = await rpc('rm_py_prod_lots', { p_token: S.tok, p: { q: '', days: 30 } }); S.py.pf.plots = (r.lots || []).filter((l) => String(l.state || '').toLowerCase() !== 'finished'); } catch (e) { S.py.pf.plots = []; } render(); }
 async function loadPYRetLog() { try { const r = await rpc('rm_py_log', { p_token: S.tok, p: { types: ['RETURN_RECV', 'SCRAP'] } }); S.py.rr.log = r.rows; } catch (e) { S.toast = e.message; S.toastErr = true; } render(); }
 function pyOnScreen(sc) { // เปิดหน้าจอ PY: โหลดข้อมูลที่หน้านั้นใช้
   loadPY(); if (['pyrecv', 'pyorder', 'pymaster'].includes(sc)) loadPYMaster();
   if (sc === 'pyorder' && !S.py.od.lots) loadPYOrders();
   if (sc === 'pyret') loadPYRetLog();
-  if (sc === 'pyscan' || sc === 'pyret' || sc === 'pyxfer') setTimeout(pyFocus, 50);
+  if (sc === 'pypf' && !S.py.pf.plots) loadPYPfLots();
+  if (sc === 'pyscan' || sc === 'pyret' || sc === 'pyxfer' || sc === 'pypf') setTimeout(pyFocus, 50);
 }
 function pyInit() { // premix / pour เข้าหน้าของตัวเองครั้งแรก
   if (!S.snap || S.py.init === S.snap.me.username) return; S.py.init = S.snap.me.username; S.py.hist = []; S.py.last = null; const r = pyRole(); // ต่อผู้ใช้ (ออกแล้วเข้าบัญชีอื่น)
   if (r === 'pour' && !pyScreen(S.screen)) { S.screen = 'pyscan'; S.mod = 'py'; pyOnScreen('pyscan'); }
   else if (r === 'premix' && !pyScreen(S.screen)) { S.screen = 'pyhome'; S.mod = 'py'; pyOnScreen('pyhome'); }
 }
-const pyFocus = () => { const n = document.getElementById(S.screen === 'pyret' ? 'pyrq' : S.screen === 'pyxfer' ? 'pyxq' : 'pyq'); if (n) n.focus(); };
+const pyFocus = () => { const n = document.getElementById(S.screen === 'pyret' ? 'pyrq' : S.screen === 'pyxfer' ? 'pyxq' : S.screen === 'pypf' ? 'pyfq' : 'pyq'); if (n) n.focus(); };
 async function pyAct(fn, args, okMsg, after) {
   if (S.busy) return null; S.busy = true; render(); let r = null;
   try { r = await rpc(fn, Object.assign({ p_token: S.tok }, args)); S.toast = typeof okMsg === 'function' ? okMsg(r) : okMsg; S.toastErr = false; if (after) await after(r); await loadPY(true); }
@@ -3747,12 +3755,12 @@ function pyCbPlace() {
 function pyCbShow(el, all) {
   if (!el || !el.isConnected) return; const d = pyCbBox(); PYCB.el = el; PYCB.bind = el.dataset.bind;
   const ws = all ? [] : String(el.value || '').toUpperCase().split(' · ')[0].split(/\s+/).filter(Boolean);
-  const items = pyItems().filter((i) => i.a);
+  const items = pyItems().filter((i) => i.a && !(PYCB.bind === 'py.od.iq' && i.k === 'PF')); // ใบสั่งเบิก mixer ไม่มีกลิ่นผง PF
   PYCB.hits = items.filter((i) => !ws.length || ws.every((w) => (i.c + ' ' + i.n + ' ' + (i.oc || '') + ' ' + (i.on || '')).toUpperCase().includes(w)));
   if (PYCB.act >= PYCB.hits.length) PYCB.act = PYCB.hits.length - 1;
   const sel = PYCB.bind === 'py.rv.iq' ? S.py.rv.item : '';
   d.innerHTML = `<div style="position:sticky;top:0;background:var(--card2, #f3f5f9);padding:6px 12px;font-size:13px;color:var(--muted, #667);border-bottom:1px solid var(--line, #dde)">${S.py.mLoading && !items.length ? 'กำลังโหลด Master…' : `${PYCB.hits.length} / ${items.length} รหัส${ws.length ? ' ที่ตรงกับ “' + esc(ws.join(' ')) + '”' : ''} · เลื่อนดูได้`}</div>`
-    + (PYCB.hits.length ? PYCB.hits.map((i, k) => `<div data-cbi="${k}" role="option" aria-selected="${k === PYCB.act}" style="padding:7px 12px;cursor:pointer;border-bottom:1px solid var(--line, #eef);${k === PYCB.act ? 'background:var(--blue-weak, #e3edfb);' : ''}${i.c === sel ? 'font-weight:700;' : ''}"><b class="mono" style="color:var(--ink, #111)">${esc(pyShort(i.c))}</b>${i.k === 'PX' ? ' <span class="tag">PX</span>' : ''}${i.py ? ` <span class="tag">PY ${i.py}</span>` : ''}${i.pc ? ` <span class="tag" style="background:#fdeee3;color:#c2410c">PY-PC ${i.pc}</span>` : ''}${pyBagTag(i.bg)}<span class="muted smt" style="display:block">${esc(i.n || '')}${i.oc ? ' · Odoo ' + esc(i.oc) : ''}</span></div>`).join('')
+    + (PYCB.hits.length ? PYCB.hits.map((i, k) => `<div data-cbi="${k}" role="option" aria-selected="${k === PYCB.act}" style="padding:7px 12px;cursor:pointer;border-bottom:1px solid var(--line, #eef);${k === PYCB.act ? 'background:var(--blue-weak, #e3edfb);' : ''}${i.c === sel ? 'font-weight:700;' : ''}"><b class="mono" style="color:var(--ink, #111)">${esc(pyShort(i.c))}</b>${pyKindTag(i.k)}${i.py ? ` <span class="tag">PY ${i.py}</span>` : ''}${i.pc ? ` <span class="tag" style="background:#fdeee3;color:#c2410c">PY-PC ${i.pc}</span>` : ''}${pyBagTag(i.bg)}<span class="muted smt" style="display:block">${esc(i.n || '')}${i.oc ? ' · Odoo ' + esc(i.oc) : ''}</span></div>`).join('')
       : '<div style="padding:10px 12px" class="muted">ไม่พบรหัส — เพิ่มได้ที่ Master ชุดสารเสริม</div>');
   d.style.display = 'block'; el.setAttribute('aria-expanded', 'true'); pyCbPlace();
   if (PYCB.act >= 0) { const o = d.querySelector(`[data-cbi="${PYCB.act}"]`); if (o) o.scrollIntoView({ block: 'nearest' }); }
@@ -3807,11 +3815,13 @@ async function pyHistLoad() { const H = S.py.hl; if (!H.from) return; H.loading 
   H.loading = false; render(); }
 function pyStockFilter(lots) {
   if (S.py.hs) lots = lots.filter((l) => (l.store || 'PY') === S.py.hs);
+  if (S.py.hk) lots = lots.filter((l) => (S.py.hk === 'PF') === (l.knd === 'PF')); // ประเภท: ชุด -41 / กลิ่นผง PF
   lots = lots.slice().sort(pyHoCmp(S.py.ho));
   try { if (localStorage.getItem('py.ho') !== S.py.ho) localStorage.setItem('py.ho', S.py.ho); } catch (e) { /* จำค่าไม่ได้ก็ไม่เป็นไร */ }
   const ws = String(S.py.hq || '').toUpperCase().split(/\s+/).filter(Boolean); if (!ws.length) return lots;
   return lots.filter((l) => { const t = [l.lot, l.item, l.name, l.oc, l.on, l.store, l.doc, ...(l.bags || []), ...(l.locs || []).map((x) => (x.loc || '') + ' ' + pyLocName(x.loc))].join(' ').toUpperCase(); return ws.every((w) => t.includes(w)); });
 }
+const pyHkTxt = () => S.py.hk === 'PF' ? ' · กลิ่นผง PF' : S.py.hk === 'SET' ? ' · ชุด -41' : '';
 function pyRange(seqs) { // "1,2,3,5" → "1-3,5"
   const a = String(seqs || '').split(',').map(Number).filter((n) => n > 0).sort((x, y) => x - y); const out = [];
   for (let i = 0; i < a.length; i++) { let j = i; while (j + 1 < a.length && a[j + 1] === a[j] + 1) j++; out.push(j > i ? a[i] + '-' + a[j] : String(a[i])); i = j; }
@@ -3840,7 +3850,7 @@ async function pyStockXls() {
     const sheet = (name, list, by) => { const ws = wb.addWorksheet(name, { views: [{ state: 'frozen', ySplit: 3 }], pageSetup: { paperSize: 9, orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0, margins: { left: 0.3, right: 0.3, top: 0.4, bottom: 0.4, header: 0.2, footer: 0.2 }, printTitlesRow: '3:3' } });
       ws.columns = cols.map((c) => ({ width: c[1] }));
       ws.mergeCells(1, 1, 1, cols.length); const t = ws.getCell(1, 1); t.value = `ยอดคงคลังชุดสารเสริม (PY) ${by}`; t.font = { ...F, size: 18, bold: true };
-      ws.mergeCells(2, 1, 2, cols.length); ws.getCell(2, 1).value = `ณ ${dmy(st.ymd)} ${st.hm} น.${S.py.hs ? ' · คลัง ' + S.py.hs : ' · คลัง PY + PY-PC'}${S.py.hq.trim() ? ' · ค้นหา: ' + S.py.hq.trim() : ''} · รวม ${list.reduce((a, r) => a + (r.n || 0), 0)} ชุด · ${fmt(list.reduce((a, r) => a + r.tkg, 0))} กก.`; ws.getCell(2, 1).font = F;
+      ws.mergeCells(2, 1, 2, cols.length); ws.getCell(2, 1).value = `ณ ${dmy(st.ymd)} ${st.hm} น.${S.py.hs ? ' · คลัง ' + S.py.hs : ' · คลัง PY + PY-PC'}${pyHkTxt()}${S.py.hq.trim() ? ' · ค้นหา: ' + S.py.hq.trim() : ''} · รวม ${list.reduce((a, r) => a + (r.n || 0), 0)} ชุด · ${fmt(list.reduce((a, r) => a + r.tkg, 0))} กก.`; ws.getCell(2, 1).font = F;
       const h = ws.getRow(3); cols.forEach((c, i) => { const x = h.getCell(i + 1); x.value = c[0]; x.font = { ...F, bold: true }; x.border = bd; x.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true }; x.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE7ECF3' } }; }); h.height = 34;
       list.forEach((r, i) => { const row = ws.addRow([i + 1, r.store, r.item, r.name, r.oc, r.on, r.grp, r.ttt, r.doc, r.lot, r.mfg ? new Date(r.mfg + 'T00:00:00') : '', r.locName, r.n || 0, r.kg, r.tkg, r.seqs, r.bags, r.is || '', r.rt || '', r.nb > 1 ? r.nb : 1]);
         row.eachCell({ includeEmpty: true }, (x, c) => { x.font = F; x.border = bd; x.alignment = { vertical: 'middle', horizontal: [1, 2, 8, 9, 11, 12, 13, 18, 19].includes(c) ? 'center' : c === 14 || c === 15 ? 'right' : 'left' }; });
@@ -3863,7 +3873,7 @@ function pyStockPdf() { // ไม่รอโหลดอะไรก่อน w
   const sumN = rows.reduce((a, r) => a + (r.n || 0), 0); const sumKg = rows.reduce((a, r) => a + r.tkg, 0); const np = Math.max(1, Math.ceil(rows.length / per));
   for (let p = 0; p < np; p++) { const part = rows.slice(p * per, p * per + per);
     pages.push(`<div class="pg landscape">${css}${fHead('ยอดคงคลังชุดสารเสริม (PY)', `แผ่น ${p + 1}/${np}`)}
-      <div class="stkm"><span>ณ วันที่ ${dmy(st.ymd)} เวลา ${st.hm} น.${S.py.hs ? ' · คลัง ' + S.py.hs : ''} · เรียง${esc((PY_HO.find((x) => x[0] === S.py.ho) || PY_HO[0])[1])}${S.py.hq.trim() ? ' · ค้นหา: ' + esc(S.py.hq.trim()) : ''}</span><span>รวม ${fmt(sumN)} ชุด · ${fmt(sumKg)} กก. · ${new Set(rows.map((r) => r.lot)).size} Lot</span></div>
+      <div class="stkm"><span>ณ วันที่ ${dmy(st.ymd)} เวลา ${st.hm} น.${S.py.hs ? ' · คลัง ' + S.py.hs : ''}${pyHkTxt()} · เรียง${esc((PY_HO.find((x) => x[0] === S.py.ho) || PY_HO[0])[1])}${S.py.hq.trim() ? ' · ค้นหา: ' + esc(S.py.hq.trim()) : ''}</span><span>รวม ${fmt(sumN)} ชุด · ${fmt(sumKg)} กก. · ${new Set(rows.map((r) => r.lot)).size} Lot</span></div>
       <table class="stk"><colgroup><col style="width:9mm"><col style="width:13mm"><col style="width:36mm"><col><col style="width:38mm"><col style="width:18mm"><col style="width:20mm"><col style="width:12mm"><col style="width:15mm"><col style="width:18mm"><col style="width:24mm"><col style="width:28mm"><col style="width:12mm"><col style="width:12mm"></colgroup>
       <tr><th>#</th><th>คลัง</th><th>รหัสชุดสารเสริม</th><th>ชื่อ</th><th>Lot No.</th><th>วันผลิต</th><th>ที่จัดเก็บ</th><th>ชุด</th><th>กก./ชุด</th><th>รวม กก.</th><th>ชุดที่</th><th>ถุงรวม</th><th>เบิกค้าง</th><th>รอคืน</th></tr>
       ${part.map((r, i) => `<tr><td class="c">${p * per + i + 1}</td><td class="c">${esc(r.store)}</td><td>${esc(r.item)}${r.oc ? `<span style="font-size:9pt"> · ${esc(r.oc)}</span>` : ''}</td><td>${esc(r.name)}</td><td>${esc(r.lot)}</td><td class="c">${dmy(r.mfg)}</td><td class="c">${esc(r.locName)}</td><td class="c">${r.n || 0}</td><td class="r">${fmt(r.kg)}</td><td class="r">${fmt(r.tkg)}</td><td>${esc(r.seqs)}</td><td>${esc(r.bags)}</td><td class="c">${r.is || ''}</td><td class="c">${r.rt || ''}</td></tr>`).join('')}
@@ -3875,7 +3885,7 @@ function pyStockPdf() { // ไม่รอโหลดอะไรก่อน w
 function viewPyHome() {
   const P = S.py; const D0 = P.data; if (!D0) return pyHead('PY ชุดสารเสริม') + pyLoading();
   const pm = pyCan('premix'); const lots = D0.lots || []; const src = pyLotsSrc(); const fl = pyStockFilter(src); const H = P.hl; const hid = lots.length - lots.filter((l) => Number(l.py) > 0 || Number(l.rt) > 0).length;
-  const tot = (k, st) => lots.filter((l) => !st || (l.store || 'PY') === st).reduce((a, l) => a + Number(l[k] || 0), 0);
+  const tot = (k, st, kd) => lots.filter((l) => (!st || (l.store || 'PY') === st) && (!kd || (kd === 'PF') === (l.knd === 'PF'))).reduce((a, l) => a + Number(l[k] || 0), 0); const hasPf = lots.some((l) => l.knd === 'PF');
   const kpi = (l, v, s, c) => `<div class="kpi" style="border-left-color:${c}"><span class="l">${l}</span><span class="v">${v}</span>${s ? `<span class="s">${s}</span>` : ''}</div>`;
   const lp = P.lp, le = P.le, lc = P.lc;
   const lotRows = fl.map((l) => {
@@ -3887,11 +3897,11 @@ function viewPyHome() {
         <button type="button" class="sm" data-py="mvdo" ${mv.to && !S.busy ? '' : 'disabled'}>ย้าย</button><button type="button" class="ghost sm" data-py="mvopen" data-lot="">ปิด</button></div></td></tr>`
       : lp.lot === l.lot ? `<tr><td colspan="8"><div class="chips">ชุดที่ <input data-bind="py.lp.seqs" value="${esc(lp.seqs)}" placeholder="ว่าง = ทุกชุด · เช่น 1-10 หรือ 3,5" style="width:220px">
         <button type="button" class="sm" data-py="plab" data-lot="${esc(l.lot)}">พิมพ์ป้าย F-WI01-PSS01-04</button><button type="button" class="ghost sm" data-py="lpopen" data-lot="">ปิด</button></div></td></tr>`
-      : le.lot === l.lot ? `<tr><td colspan="8"><div class="chips">${(l.nbags || 1) > 1 ? le.bkg.map((x, i) => `ถุง ${i + 1} <input data-bind="py.le.bkg.${i}" value="${esc(x)}" inputmode="decimal" style="width:76px">`).join(' ') + ' กก.' : `กก./ชุด <input data-bind="py.le.kg" value="${esc(le.kg)}" inputmode="decimal" style="width:90px">`} คลัง <select data-bind="py.le.store" style="width:100px">${PY_STORES.map((x) => `<option ${le.store === x ? 'selected' : ''}>${x}</option>`).join('')}</select> เอกสาร <select data-bind="py.le.doc" style="width:110px">${PY_DOCS.map((x) => `<option ${le.doc === x ? 'selected' : ''}>${x}</option>`).join('')}</select>${le.store === 'PY-PC' || le.pcl ? ` Lot รับเข้า BFL-PC${le.store === 'PY-PC' ? '*' : ''} <input data-bind="py.le.pcl" value="${esc(le.pcl || '')}" maxlength="40" style="width:150px;text-transform:uppercase">` : ''} เหตุผล <input data-bind="py.le.reason" value="${esc(le.reason)}" style="width:200px" maxlength="200">
+      : le.lot === l.lot ? `<tr><td colspan="8"><div class="chips">${(l.nbags || 1) > 1 ? le.bkg.map((x, i) => `ถุง ${i + 1} <input data-bind="py.le.bkg.${i}" value="${esc(x)}" inputmode="decimal" style="width:76px">`).join(' ') + ' กก.' : `กก./ชุด <input data-bind="py.le.kg" value="${esc(le.kg)}" inputmode="decimal" style="width:90px">`} คลัง <select data-bind="py.le.store" style="width:100px">${PY_STORES.map((x) => `<option ${le.store === x ? 'selected' : ''}>${x}</option>`).join('')}</select> เอกสาร <select data-bind="py.le.doc" style="width:110px">${PY_DOCS.map((x) => `<option ${le.doc === x ? 'selected' : ''}>${x}</option>`).join('')}</select>${(le.store === 'PY-PC' && l.knd !== 'PF') || le.pcl ? ` Lot รับเข้า BFL-PC${le.store === 'PY-PC' && l.knd !== 'PF' ? '*' : ''} <input data-bind="py.le.pcl" value="${esc(le.pcl || '')}" maxlength="40" style="width:150px;text-transform:uppercase">` : ''} เหตุผล <input data-bind="py.le.reason" value="${esc(le.reason)}" style="width:200px" maxlength="200">
         <button type="button" class="sm" data-py="ledo" ${(le.bkg.length ? le.bkg.every((x) => num(x) > 0) : num(le.kg) > 0) && le.reason.trim().length >= 3 && !S.busy ? '' : 'disabled'}>บันทึก</button><button type="button" class="ghost sm" data-py="leopen" data-lot="">ปิด</button></div></td></tr>`
       : lc.lot === l.lot ? `<tr><td colspan="8"><div class="chips">ยกเลิกทั้ง Lot · เหตุผล <input data-bind="py.lc.reason" value="${esc(lc.reason)}" style="width:220px" maxlength="200">
         <button type="button" class="sm" data-py="lcdo" ${lc.reason.trim().length >= 3 && !S.busy ? '' : 'disabled'}>ยืนยันยกเลิก</button><button type="button" class="ghost sm" data-py="lcopen" data-lot="">ปิด</button></div></td></tr>` : '';
-    return `<tr><td class="mono" style="color:var(--ink)">${esc(l.lot)}</td><td><b class="mono" style="color:var(--ink)">${esc(pyShort(l.item))}</b> ${pyStoreTag(l)}${pyBagTag(l.nbags)}<span class="muted smt" style="display:block">${esc(l.name)}${l.oc ? ' · Odoo ' + esc(l.oc) : ''}</span>${l.locs && l.locs.length ? `<span style="display:block;margin-top:2px">${pyLocsTxt(l.locs)}</span>` : ''}</td><td>${dmy(l.mfg)}</td><td class="num">${fmt(l.kg)}</td>
+    return `<tr><td class="mono" style="color:var(--ink)">${esc(l.lot)}</td><td><b class="mono" style="color:var(--ink)">${esc(pyShort(l.item))}</b> ${pyStoreTag(l)}${l.knd === 'PF' ? PY_PF_TAG : ''}${pyBagTag(l.nbags)}<span class="muted smt" style="display:block">${esc(l.name)}${l.oc ? ' · Odoo ' + esc(l.oc) : ''}</span>${l.locs && l.locs.length ? `<span style="display:block;margin-top:2px">${pyLocsTxt(l.locs)}</span>` : ''}</td><td>${dmy(l.mfg)}</td><td class="num">${fmt(l.kg)}</td>
       <td class="num"><b>${l.py}</b> / ${l.sets}${l.out ? `<span class="muted smt" style="display:block">จ่ายออก ${l.out}</span>` : ''}</td><td class="num">${l.is || ''}</td><td class="num">${l.rt || ''}</td><td>${act}</td></tr>${form}`; }).join('');
   const bv = P.bv;
   const bags = (D0.bags || []).map((b) => `<div class="lrow" style="flex-wrap:wrap;gap:8px"><span style="flex:1 1 260px"><b class="mono">${esc(b.bag)}</b> · ${esc(b.formula || '')} · ${esc(b.product || '')} · ${esc(b.type)}
@@ -3899,12 +3909,12 @@ function viewPyHome() {
       <span class="chips"><button type="button" class="ghost sm" data-py="pbag" data-bag="${esc(b.bag)}">พิมพ์ป้าย -05</button>${pm && b.py ? (P.mv.bag === b.bag ? `<select data-bind="py.mv.to" style="width:190px">${pyLocOpts(P.mv.to, '— ย้ายทั้งถุงไปที่ —')}</select><button type="button" class="sm" data-py="mvdo" ${P.mv.to && !S.busy ? '' : 'disabled'}>ย้ายถุง</button><button type="button" class="ghost sm" data-py="mvopen" data-bag="">ปิด</button>` : `<button type="button" class="ghost sm" data-py="mvopen" data-bag="${esc(b.bag)}">ย้ายทั้งถุง</button>`) : ''}${pm ? (bv.bag === b.bag ? `<input data-bind="py.bv.reason" value="${esc(bv.reason)}" placeholder="เหตุผล" style="width:160px"><button type="button" class="sm" data-py="bvdo" ${bv.reason.trim().length >= 3 && !S.busy ? '' : 'disabled'}>ยืนยันยกเลิกถุง</button><button type="button" class="ghost sm" data-py="bvopen" data-bag="">ปิด</button>` : `<button type="button" class="ghost sm" data-py="bvopen" data-bag="${esc(b.bag)}">ยกเลิกถุง</button>`) : ''}</span></div>`).join('');
   const ords = pyOrders();
   return pyHead('PY ชุดสารเสริม', 'ยอดชุดสารเสริมในคลัง PY · 1 ชุด = 1 batch · ป้าย 1 ใบต่อชุด')
-    + `<div class="grid4" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr))">${kpi('ชุดใน PY', fmt(tot('py', 'PY')), lots.filter((l) => (l.store || 'PY') === 'PY').length + ' Lot', 'var(--blue)')}${tot('py', 'PY-PC') || lots.some((l) => l.store === 'PY-PC') ? kpi('ชุดใน PY-PC', fmt(tot('py', 'PY-PC')), 'รอจ่ายออก BFL-PC', '#c2410c') : ''}${kpi('เบิกแล้วยังไม่เท', fmt(tot('is')), 'ค้างที่ฝ่ายผลิต', '#c77700')}${kpi('รอพรีมิกซ์รับคืน', fmt((D0.returning || []).length), 'ชุด', '#b3261e')}${kpi('ใบสั่งเบิกเปิด', fmt(ords.filter((o) => o.status === 'OPEN').length), 'ใบ', '#1a7f4b')}</div>
+    + `<div class="grid4" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr))">${kpi(hasPf ? 'ชุด -41 ใน PY' : 'ชุดใน PY', fmt(tot('py', 'PY', hasPf ? 'SET' : '')), lots.filter((l) => (l.store || 'PY') === 'PY' && (!hasPf || l.knd !== 'PF')).length + ' Lot', 'var(--blue)')}${hasPf ? kpi('กลิ่นผง PF ใน PY', fmt(tot('py', 'PY', 'PF')), 'ชุด · Control เบิกเข้า BFL', '#1b5e20') : ''}${tot('py', 'PY-PC') || lots.some((l) => l.store === 'PY-PC') ? kpi('ชุดใน PY-PC', fmt(tot('py', 'PY-PC')), 'รอจ่ายออก BFL-PC', '#c2410c') : ''}${kpi('เบิกแล้วยังไม่เท', fmt(tot('is')), 'ค้างที่ฝ่ายผลิต', '#c77700')}${kpi('รอพรีมิกซ์รับคืน', fmt((D0.returning || []).length), 'ชุด', '#b3261e')}${kpi('ใบสั่งเบิกเปิด', fmt(ords.filter((o) => o.status === 'OPEN').length), 'ใบ', '#1a7f4b')}</div>
     <div class="card"><div class="fc"><h2 style="margin:0">Lot ชุดสารเสริม</h2><span class="chips"><button type="button" class="ghost sm" data-py="stxls" ${fl.length && !S.busy ? '' : 'disabled'}>⬇ Excel</button><button type="button" class="ghost sm" data-py="stpdf" ${fl.length ? '' : 'disabled'}>🖨 PDF</button>${pm ? '<button type="button" class="sm" data-go="pyrecv" data-mod="py">+ รับเข้า PY</button>' : ''}</span></div>
       <div class="chips" style="margin:8px 0 0"><span class="muted smt">แสดง</span><button type="button" class="tg" aria-pressed="${P.hv !== 'hist'}" data-py="hv" data-val="stock">มีของในคลัง / รอคืน</button><button type="button" class="tg" aria-pressed="${P.hv === 'hist'}" data-py="hv" data-val="hist">ย้อนหลังตามวันที่เตรียม</button>
         ${P.hv === 'hist' ? `<input type="date" data-bind="py.hl.from" value="${esc(H.from)}"> ถึง <input type="date" data-bind="py.hl.to" value="${esc(H.to)}"><button type="button" class="sm" data-py="hlload" ${H.from && !H.loading ? '' : 'disabled'}>${H.loading ? 'กำลังโหลด…' : 'ดู'}</button>${H.err ? `<span style="color:var(--bad)">${esc(H.err)}</span>` : ''}<span class="muted smt">รวม Lot ที่เบิก/เทหมดแล้ว</span>`
           : hid ? `<span class="muted smt">ซ่อน ${hid} Lot ที่ไม่มีของในคลังแล้ว (เบิก/เท/จ่ายออกหมด)</span>` : ''}</div>
-      <div class="chips" style="margin:8px 0"><input data-bind="py.hq" value="${esc(P.hq)}" placeholder="🔍 ค้นหา รหัสชุด / ชื่อ / รหัส Odoo / Lot / ที่จัดเก็บ เช่น FH26 หรือ A-C1 หรือ จุดรับคืน" autocomplete="off" style="flex:1 1 260px">${[['', 'ทุกคลัง'], ['PY', 'PY'], ['PY-PC', 'PY-PC']].map(([id, l2]) => `<button type="button" class="tg" aria-pressed="${P.hs === id}" data-py="hs" data-val="${id}">${l2}</button>`).join('')}<label class="chips" style="gap:4px"><span class="muted smt">เรียง</span><select data-bind="py.ho" style="width:auto">${PY_HO.map(([v, t]) => `<option value="${v}" ${P.ho === v ? 'selected' : ''}>${t}</option>`).join('')}</select></label>${P.hq.trim() || P.hs ? `<span class="muted smt">พบ ${fl.length} / ${src.length} Lot · ส่งออกตามที่ค้นหา</span><button type="button" class="ghost sm" data-py="hqclr">ล้าง</button>` : ''}</div>
+      <div class="chips" style="margin:8px 0"><input data-bind="py.hq" value="${esc(P.hq)}" placeholder="🔍 ค้นหา รหัสชุด / ชื่อ / รหัส Odoo / Lot / ที่จัดเก็บ เช่น FH26 หรือ A-C1 หรือ จุดรับคืน" autocomplete="off" style="flex:1 1 260px">${[['', 'ทุกคลัง'], ['PY', 'PY'], ['PY-PC', 'PY-PC']].map(([id, l2]) => `<button type="button" class="tg" aria-pressed="${P.hs === id}" data-py="hs" data-val="${id}">${l2}</button>`).join('')}<span class="muted smt">·</span>${[['', 'ทุกประเภท'], ['SET', 'ชุด -41'], ['PF', 'กลิ่นผง PF']].map(([id, l2]) => `<button type="button" class="tg" aria-pressed="${P.hk === id}" data-py="hk" data-val="${id}">${l2}</button>`).join('')}<label class="chips" style="gap:4px"><span class="muted smt">เรียง</span><select data-bind="py.ho" style="width:auto">${PY_HO.map(([v, t]) => `<option value="${v}" ${P.ho === v ? 'selected' : ''}>${t}</option>`).join('')}</select></label>${P.hq.trim() || P.hs || P.hk ? `<span class="muted smt">พบ ${fl.length} / ${src.length} Lot · ส่งออกตามที่ค้นหา</span><button type="button" class="ghost sm" data-py="hqclr">ล้าง</button>` : ''}</div>
       <div class="tw"><table><thead><tr><th>Lot No.</th><th>รหัสชุด</th><th>ผลิต</th><th class="num">กก./ชุด</th><th class="num">ในคลัง / ทั้งหมด</th><th class="num">เบิกค้าง</th><th class="num">รอคืน</th><th></th></tr></thead><tbody>${lotRows || `<tr><td colspan="8" class="muted">${P.hv === 'hist' ? (H.lots ? (H.lots.length ? 'ไม่พบตามที่ค้นหา' : 'ไม่มี Lot ที่เตรียมในช่วงวันที่นี้') : 'เลือกช่วงวันที่เตรียม แล้วกด ดู') : src.length ? 'ไม่พบตามที่ค้นหา' : 'ไม่มีของในคลัง PY'}</td></tr>`}</tbody></table></div></div>
     <details class="card" ${P.gridOpen ? 'open' : ''} data-pygrid="1"><summary><b>ผังที่จัดเก็บ PY</b> <span class="muted smt">Zone A = A1–F4 · Zone B = C1–G4 · ตัวเลข = จำนวนชุดที่อยู่ PY</span></summary><div style="margin-top:10px">${pyLocGrid()}</div></details>
     <div class="card"><h2 style="margin-top:0">ถุงรวม (F-WI01-PSS01-05)</h2>${bags || '<p class="muted smt">ไม่มีถุงรวมที่ยังมีชุดเหลือ</p>'}</div>
@@ -3915,29 +3925,32 @@ function viewPyHome() {
 function pyLotNo() { return String(S.py.rv.lot || '').toUpperCase().replace(/\s+/g, ''); } // Lot ผลิตชุดสารเสริม = ช่องเดียว พิมพ์ทั้งเลข (ผู้ใช้ 20 พ.ย.)
 function viewPyRecv() {
   const v = S.py.rv; const it = pyItem(v.item);
-  const lot = pyLotNo(); const lotOk = PY_LOT_RE.test(lot); const lotT = lotOk ? lot.slice(4, 7) : '';
-  const lotMsg = !lot ? '<span class="muted">รูปแบบ PRE-TTTYYMMDD-NN-MI · TTT = ประเภทอาหาร 3 ตัว · YYMMDD = วันที่ · NN = ลำดับ 2 หลัก</span>'
+  const pf = !!it && it.k === 'PF'; const sfx = pf ? (v.doc === 'BFL-PC' ? '-CO-PC' : '-CO') : '-MI'; // กลิ่นผง PF: ท้าย Lot ตามเอกสาร (ผู้ใช้ 24 พ.ย.)
+  const lot = pyLotNo(); const lotFmt = pf ? PY_PF_RE.test(lot) : PY_LOT_RE.test(lot); const sfxOk = !pf || (v.doc === 'BFL-PC') === lot.endsWith('-PC'); const lotOk = lotFmt && sfxOk; const lotT = lotFmt ? lot.slice(4, 7) : '';
+  const ex = pf ? `PRE-${(it && it.t) || 'CAT'}${pyYmd6((S.snap || {}).biz_day) || '261124'}-01${sfx}` : 'PRE-FIS261118-03-MI';
+  const lotMsg = !lot ? `<span class="muted">รูปแบบ PRE-TTTYYMMDD-NN${sfx} · TTT = ประเภทอาหาร 3 ตัว · YYMMDD = วันที่ · NN = ลำดับ 2 หลัก${pf ? ' · กลิ่นผง: เอกสาร BFL ลงท้าย -CO · BFL-PC ลงท้าย -CO-PC' : ''}</span>`
+    : lotFmt && !sfxOk ? `<span style="color:var(--bad)">✗ เอกสาร ${esc(v.doc)} ต้องใช้ Lot ลงท้าย ${sfx} เช่น ${ex}</span>`
     : lotOk ? `<span style="color:var(--ok, #1a7f4b)">✓ ถูกรูปแบบ · ประเภท ${esc(lotT)} · วันที่ ${esc(lot.slice(11, 13))}/${esc(lot.slice(9, 11))}/${esc(lot.slice(7, 9))}</span>${it && it.t && it.t !== lotT ? ` <span class="tag warn">รหัสนี้ปกติใช้ ${esc(it.t)}</span>` : ''}`
-    : '<span style="color:var(--bad)">✗ ต้องเป็น PRE-TTTYYMMDD-NN-MI เช่น PRE-FIS261118-03-MI</span>';
+    : `<span style="color:var(--bad)">✗ ต้องเป็น PRE-TTTYYMMDD-NN${sfx} เช่น ${ex}</span>`;
   const nb = v.bags || 1; while (v.bkg.length < nb) v.bkg.push(''); const bOk = nb === 1 || v.bkg.slice(0, nb).every((x) => num(x) > 0); const kgSet = nb > 1 ? (bOk ? v.bkg.slice(0, nb).reduce((a, x) => a + num(x), 0) : 0) : num(v.kg);
   const nSets = int(v.sets); const one = v.locs.length === 1; const lsum = one ? nSets : v.locs.reduce((a, x) => a + int(x.qty), 0);
   const locOk = v.locs.every((x) => x.loc) && (one || (v.locs.every((x) => int(x.qty) > 0) && lsum === nSets)) && new Set(v.locs.map((x) => x.loc)).size === v.locs.length;
   const pcl = String(v.pcl || '').replace(/\s+/g, '').toUpperCase(); const pclDup = pcl && ((S.py.data || {}).lots || []).find((l) => l.pcl === pcl);
-  const miss = [!it && 'เลือกรหัสชุด', !lotOk && 'Lot No.', v.store === 'PY-PC' && !pcl && 'Lot รับเข้า BFL-PC', pclDup && 'Lot รับเข้า BFL-PC ซ้ำ', !(nSets > 0) && 'จำนวนชุด', !(kgSet > 0) && (nb > 1 ? 'น้ำหนักทุกถุง' : 'น้ำหนักต่อชุด'), !locOk && 'ที่จัดเก็บ', v.bag && !v.product.trim() && 'Product Name'].filter(Boolean);
+  const miss = [!it && 'เลือกรหัสชุด', !lotOk && 'Lot No.', v.store === 'PY-PC' && !pf && !pcl && 'Lot รับเข้า BFL-PC', pclDup && 'Lot รับเข้า BFL-PC ซ้ำ', !(nSets > 0) && 'จำนวนชุด', !(kgSet > 0) && (nb > 1 ? 'น้ำหนักทุกถุง' : 'น้ำหนักต่อชุด'), !locOk && 'ที่จัดเก็บ', v.bag && !v.product.trim() && 'Product Name'].filter(Boolean);
   const ok = !miss.length && !S.busy;
   const done = v.done ? `<div class="card" style="border-color:var(--ok, #1a7f4b)"><h2 style="margin-top:0">✓ รับเข้า ${esc(v.done.lot)} แล้ว · ${v.done.sets} ชุด · คลัง ${esc(v.done.store || 'PY')} · เอกสาร ${esc(v.done.doc || 'BFL')}</h2>
       <div class="chips"><button type="button" data-py="plab" data-lot="${esc(v.done.lot)}">🖨 พิมพ์ป้าย F-WI01-PSS01-04 (${v.done.sets * (v.done.nbags || 1)} ใบ${(v.done.nbags || 1) > 1 ? ' · ชุดละ ' + v.done.nbags + ' ถุง' : ''})</button>${(v.done.bags || []).map((b) => `<button type="button" data-py="pbag" data-bag="${esc(b)}">🖨 พิมพ์ป้ายถุง F-WI01-PSS01-05 · ${esc(b)}</button>`).join('')}<button type="button" class="ghost" data-py="rvclose">ปิด</button></div></div>` : '';
   const bg = S.py.bg; const bgs = bg.lines.length ? (((S.py.data || {}).lots || []).find((x) => x.lot === bg.lines[0].lot) || {}) : null;
   const free = ((S.py.data || {}).lots || []).filter((l) => l.py > 0 && (!bgs || (l.store === bgs.store && l.doc === bgs.doc)));
-  return pyHead('รับเข้า PY', 'หน่วยงานจัดเตรียมพรีมิกซ์ · Lot No. รูปแบบ PRE-TTTYYMMDD-NN-MI · ทุกชุดได้ป้าย QR 1 ใบ') + done
+  return pyHead('รับเข้า PY', 'หน่วยงานจัดเตรียมพรีมิกซ์ · ชุด -41 Lot PRE-TTTYYMMDD-NN-MI · กลิ่นผง PF Lot …-CO (BFL) / …-CO-PC (BFL-PC) · ทุกชุดได้ป้าย QR 1 ใบ') + done
     + `<div class="card" style="display:flex;flex-direction:column;gap:12px">
       <div class="grid2"><div class="fld"><span>คลังที่รับเข้า</span><div class="chips">${PY_STORES.map((x) => `<button type="button" class="tg" aria-pressed="${v.store === x}" data-py="rvstore" data-val="${x}">${x === v.store ? '✓ ' : ''}${x}</button>`).join('')}</div><span class="smt muted" style="margin-top:3px">${v.store === 'PY-PC' ? 'PY-PC = จ่ายออกไป BFL-PC (เมนู จ่ายออก PY-PC) · ใบสั่งเบิกเข้าการผลิตใช้ไม่ได้' : 'PY = ใช้กับใบสั่งเบิก / เท ของฝ่ายผลิต'}</span></div>
         <div class="fld"><span>เอกสารระบบ (หัวป้าย -04 / -05)</span><div class="chips">${PY_DOCS.map((x) => `<button type="button" class="tg" aria-pressed="${v.doc === x}" data-py="rvdoc" data-val="${x}">${x === v.doc ? '✓ ' : ''}${x}</button>`).join('')}</div><span class="smt muted" style="margin-top:3px">${esc(pyCo(v.doc))}</span></div></div>
       ${pyPick1('py.rv.iq', v.item, 'รหัสชุดสารเสริม', 'พิมพ์หรือเลือก เช่น FH26MR882ML')}
-      ${it ? `<div class="smt muted">กลุ่ม ${esc(it.g || '–')} · TTT ${esc(it.t || '–')} · กก./ชุดล่าสุด ${it.kg ? fmt(it.kg) : '–'} · ใน PY ${it.py || 0} · PY-PC ${it.pc || 0} ชุด${it.oc ? ' · Odoo ' + esc(it.oc) : ''}</div>` : `<div class="smt muted">ไม่พบรหัส? เพิ่มได้ที่ <button type="button" class="ghost sm" data-go="pymaster" data-mod="py">Master ชุดสารเสริม</button></div>`}
-      <div class="fld"><span>Lot No. ผลิตชุดสารเสริม</span><input data-bind="py.rv.lot" value="${esc(v.lot)}" maxlength="30" placeholder="เช่น PRE-FIS261118-03-MI" autocomplete="off" style="text-transform:uppercase;font-family:'IBM Plex Mono',monospace;font-size:17px;max-width:460px">
+      ${it ? `<div class="smt muted">${pf ? '<b style="color:#1b5e20">กลิ่นผง coater (PF)</b> · ' : ''}กลุ่ม ${esc(it.g || '–')} · TTT ${esc(it.t || '–')} · กก./ชุดล่าสุด ${it.kg ? fmt(it.kg) : '–'} · ใน PY ${it.py || 0} · PY-PC ${it.pc || 0} ชุด${it.oc ? ' · Odoo ' + esc(it.oc) : ''}</div>` : `<div class="smt muted">ไม่พบรหัส? เพิ่มได้ที่ <button type="button" class="ghost sm" data-go="pymaster" data-mod="py">Master ชุดสารเสริม</button></div>`}
+      <div class="fld"><span>Lot No. ผลิตชุดสารเสริม</span><input data-bind="py.rv.lot" value="${esc(v.lot)}" maxlength="30" placeholder="เช่น ${ex}" autocomplete="off" style="text-transform:uppercase;font-family:'IBM Plex Mono',monospace;font-size:17px;max-width:460px">
         <span class="smt" style="margin-top:3px">${lotMsg}</span></div>
-      ${v.store === 'PY-PC' || pcl ? `<div class="fld"><span>Lot รับเข้า BFL-PC ${v.store === 'PY-PC' ? '<b style="color:var(--bad)">*</b>' : ''}</span><input data-bind="py.rv.pcl" value="${esc(v.pcl || '')}" maxlength="40" placeholder="Lot ของ BFL-PC (พิมพ์ตามจริง)" autocomplete="off" style="text-transform:uppercase;font-family:'IBM Plex Mono',monospace;font-size:17px;max-width:460px">
+      ${(v.store === 'PY-PC' && !pf) || pcl ? `<div class="fld"><span>Lot รับเข้า BFL-PC ${v.store === 'PY-PC' && !pf ? '<b style="color:var(--bad)">*</b>' : ''}</span><input data-bind="py.rv.pcl" value="${esc(v.pcl || '')}" maxlength="40" placeholder="Lot ของ BFL-PC (พิมพ์ตามจริง)" autocomplete="off" style="text-transform:uppercase;font-family:'IBM Plex Mono',monospace;font-size:17px;max-width:460px">
         <span class="smt" style="margin-top:3px">${pclDup ? `<span style="color:var(--bad)">✗ ซ้ำกับ Lot ${esc(pclDup.lot)}</span>` : '<span class="muted">บังคับเมื่อคลัง PY-PC · พิมพ์บนป้าย -04 และ -05 คู่กับ Lot จัดเตรียม</span>'}</span></div>` : ''}
       <div class="grid4">
         <div class="fld"><span>จำนวนชุด</span><input data-bind="py.rv.sets" value="${esc(v.sets)}" inputmode="numeric" placeholder="เช่น 20"></div>
@@ -3951,7 +3964,7 @@ function viewPyRecv() {
         ${v.locs.map((x, i) => `<div class="chips" style="margin-bottom:4px"><select data-bind="py.rv.locs.${i}.loc" style="width:220px">${pyLocOpts(x.loc)}</select>${one ? `<span>ทั้ง Lot ${nSets > 0 ? nSets + ' ชุด' : ''}</span>` : `จำนวน <input data-bind="py.rv.locs.${i}.qty" value="${esc(x.qty)}" inputmode="numeric" style="width:70px"> ชุด <button type="button" class="ghost sm" data-py="rvlocdel" data-i="${i}">ลบ</button>`}</div>`).join('')}
         <div class="chips"><button type="button" class="ghost sm" data-py="rvlocadd" ${v.locs.length < 10 ? '' : 'disabled'}>+ เก็บอีกที่</button>${!one ? `<span style="color:${lsum === nSets ? 'var(--ok, #1a7f4b)' : 'var(--bad)'}">รวม ${lsum} / ${nSets || 0} ชุด</span>` : ''}${!one && v.bag ? '<span>· ถุงรวมแยกตามที่จัดเก็บ (ที่ละ 1 ถุง)</span>' : ''}</div></div>
       <div class="chips"><button type="button" class="tg" aria-pressed="${!!v.bag}" data-py="rvbag">${v.bag ? '✓ ' : ''}ใส่ถุงรวมทั้ง Lot (ป้าย -05)</button></div>
-      ${v.bag ? `<div class="grid3"><div class="fld"><span>Formula Code</span><input data-bind="py.rv.formula" value="${esc(v.formula)}" maxlength="40"></div><div class="fld"><span>Product Name</span><input data-bind="py.rv.product" value="${esc(v.product)}" maxlength="120"></div><div class="fld"><span>ประเภทชุดสารเสริม</span><b>MIXER</b></div></div>` : ''}
+      ${v.bag ? `<div class="grid3"><div class="fld"><span>Formula Code</span><input data-bind="py.rv.formula" value="${esc(v.formula)}" maxlength="40"></div><div class="fld"><span>Product Name</span><input data-bind="py.rv.product" value="${esc(v.product)}" maxlength="120"></div><div class="fld"><span>ประเภทชุดสารเสริม</span><b>${pf ? 'COATER' : 'MIXER'}</b></div></div>` : ''}
       <div class="chips"><button type="button" data-py="recv" ${ok ? '' : 'disabled'}>รับเข้า PY</button>${miss.length ? `<span>ยังขาด: ${miss.join(' · ')}</span>` : ''}</div></div>
     <details class="card" ${bg.open ? 'open' : ''} data-pybgopen="1"><summary><b>จัดถุงรวมหลายรายการ (ป้าย -05)</b> <span class="muted smt">ใช้กรณีถุงเดียวมีหลายรหัส เช่น ชุดหลัก + พรีมิกซ์</span></summary>
       <div style="display:flex;flex-direction:column;gap:10px;margin-top:10px">
@@ -3992,13 +4005,13 @@ function viewPyXfer() {
   const gs = pyXferGroups(X.cart); const n = X.cart.length; const kg = X.cart.reduce((a, u) => a + (Number(u.kg) || 0), 0);
   const last = X.last ? `<div class="msg ${X.last.ok ? '' : 'bad'}" style="font-size:17px">${X.last.ok ? '✓' : '✗'} ${esc(X.last.msg)}</div>` : '';
   const done = X.done ? `<div class="card" style="border-color:var(--ok, #1a7f4b)"><h2 style="margin-top:0">✓ จ่ายออกแล้ว ใบ ${esc(X.done)}</h2><div class="chips"><button type="button" data-py="xfprint" data-doc="${esc(X.done)}">🖨 พิมพ์ใบจ่ายออก</button><button type="button" data-py="xff04" data-doc="${esc(X.done)}">🖨 F-WI04 ใบเบิก-คืน (BFL-PC)</button><button type="button" class="ghost" data-py="xfdoneclose">ปิด</button></div></div>` : '';
-  const xs = (D0.xfers || []);
+  const xs = (D0.xfers || []).filter((x) => x.dest !== 'BFL'); // ใบเบิกกลิ่นผง PF (PFO → BFL) อยู่หน้า เบิกกลิ่นผง PF
   const hist = xs.map((x) => `<div class="lrow" style="flex-wrap:wrap;gap:8px;${x.status === 'VOID' ? 'opacity:.6' : ''}"><span style="flex:1 1 260px"><b class="mono">${esc(x.doc)}</b> ${x.status === 'VOID' ? '<span class="tag bad">ยกเลิก</span>' : ''} · ${x.sets} ชุด · ${fmt(x.kg)} กก. → ${esc(x.dest)}<span class="muted smt" style="display:block">${dtm(x.at)} · ${esc(x.byn || x.by)}${x.note ? ' · ' + esc(x.note) : ''}${x.void_reason ? ' · ยกเลิก: ' + esc(x.void_reason) : ''}</span></span>
       <span class="chips"><button type="button" class="ghost sm" data-py="xfprint" data-doc="${esc(x.doc)}">🖨 พิมพ์</button><button type="button" class="ghost sm" data-py="xff04" data-doc="${esc(x.doc)}">🖨 F-WI04</button>${x.status !== 'VOID' ? (X.cx === x.doc ? `<input data-bind="py.xf.cxr" value="${esc(X.cxr)}" placeholder="เหตุผล" style="width:150px" maxlength="200"><button type="button" class="sm" data-py="xfvoid" data-doc="${esc(x.doc)}" ${X.cxr.trim().length >= 3 && !S.busy ? '' : 'disabled'}>ยืนยันยกเลิกใบ</button><button type="button" class="ghost sm" data-py="xfcx" data-doc="">ปิด</button>` : `<button type="button" class="ghost sm" data-py="xfcx" data-doc="${esc(x.doc)}">ยกเลิกใบ</button>`) : ''}</span></div>`).join('');
   return pyHead('จ่ายออก PY-PC → BFL-PC', 'จ่ายชุดสารเสริมในคลัง PY-PC ไปโรงงาน BFL-PC · สแกนป้าย -04 / -05 หรือเลือก Lot + ชุดที่ → ยืนยัน → พิมพ์ใบจ่ายออก') + done
     + `<div class="card" style="display:flex;flex-direction:column;gap:10px;border-color:var(--blue)">
       <div class="chips"><input data-bind="py.xf.q" id="pyxq" value="${esc(X.q)}" placeholder="สแกนป้ายชุด (-04) หรือป้ายถุง (-05) ของคลัง PY-PC" autocomplete="off" style="flex:1 1 240px;font-size:18px;padding:10px"><button type="button" data-cam="py">📷 สแกน</button></div>
-      <div class="chips"><select data-bind="py.xf.lot" style="flex:2 1 280px;min-width:0"><option value="">— หรือเลือก Lot ในคลัง PY-PC —</option>${lots.map((l) => `<option value="${esc(l.lot)}" ${X.lot === l.lot ? 'selected' : ''}>${esc(l.lot)} · ${esc(pyShort(l.item))} · ${l.py} ชุด</option>`).join('')}</select>
+      <div class="chips"><select data-bind="py.xf.lot" style="flex:2 1 280px;min-width:0"><option value="">— หรือเลือก Lot ในคลัง PY-PC —</option>${lots.map((l) => `<option value="${esc(l.lot)}" ${X.lot === l.lot ? 'selected' : ''}>${esc(l.lot)} · ${esc(pyShort(l.item))}${l.knd === 'PF' ? ' (กลิ่นผง)' : ''} · ${l.py} ชุด</option>`).join('')}</select>
         ชุดที่ <input data-bind="py.xf.seqs" value="${esc(X.seqs)}" placeholder="ว่าง = ทุกชุด · เช่น 1-10" style="width:170px"><button type="button" class="sm" data-py="xfadd" ${X.lot && !S.busy ? '' : 'disabled'}>+ เพิ่ม</button></div>
       ${lots.length ? '' : '<span class="muted smt">ยังไม่มีชุดในคลัง PY-PC — รับเข้าโดยเลือกคลัง PY-PC ที่หน้า รับเข้า PY</span>'}${last}</div>
     <div class="card" style="display:flex;flex-direction:column;gap:10px"><div class="fc"><h2 style="margin:0">รายการที่จะจ่ายออก ${n ? `· ${n} ชุด · ${fmt(kg)} กก.` : ''}</h2>${n ? '<button type="button" class="ghost sm" data-py="xfclear">ล้างทั้งหมด</button>' : ''}</div>
@@ -4031,7 +4044,7 @@ async function pyPrintXferF04(doc) {
   for (let p = 0; p < np; p++) { const trs = [];
     for (let j = 0; j < per; j++) { const x = L[p * per + j];
       if (!x) { trs.push(`<tr>${e12}</tr><tr>${e12}</tr><tr>${e12}</tr>`); continue; }
-      const kg = Number(x.kg); trs.push(`<tr><td class="c">/</td><td></td><td class="c">${esc(x.oc || '')}</td><td class="s">${esc(x.pcl || '')}</td><td class="n">${x.n}</td><td class="n">${k23(kg)}</td><td class="n">${k23(Math.round(kg * x.n * 1000) / 1000)}</td><td></td><td class="pn" rowspan="2">${esc(nm(x))}</td><td></td><td></td><td></td></tr>`
+      const kg = Number(x.kg); trs.push(`<tr><td class="c">/</td><td></td><td class="c">${esc(x.oc || '')}</td><td class="s">${esc(x.pcl || (x.knd === 'PF' ? x.lot : ''))}</td><td class="n">${x.n}</td><td class="n">${k23(kg)}</td><td class="n">${k23(Math.round(kg * x.n * 1000) / 1000)}</td><td></td><td class="pn" rowspan="2">${esc(nm(x))}</td><td></td><td></td><td></td></tr>`
         + `<tr><td></td><td></td><td class="c">${esc(x.item)}</td><td class="s">${esc(x.lot)}</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr>${e12}</tr>`); }
     pages.push(`<div class="pg landscape" style="position:relative">${css}${X.status === 'VOID' ? '<div class="xfv">ยกเลิก</div>' : ''}${pyHdrCo(co, 'ใบเบิก-คืนสารเสริม/ชุดสารเสริม', 'F-WI04-PSS01-01 Rev.01')}
       <div class="meta"><span><span class="k">วันที่</span> <span class="fill">${dce(X.day)}</span></span><span><span class="k">เวลา</span> <span class="fill">${hm(X.created_at)}</span></span><span><span class="k">หน่วยงาน</span> <span class="fill">บลูฟาโล่ เพ็ทแคร์</span></span></div>
@@ -4051,13 +4064,69 @@ async function pyPrintXfer(doc) {
   const pages = [];
   for (let p = 0; p < np; p++) { const part = L.slice(p * per, p * per + per); const rows = part.map((x, i) => `<tr><td class="c">${p * per + i + 1}</td><td class="nm"><b>${esc(pyShort(x.item))}</b><div>${esc(x.name || '')}</div></td><td>${esc(x.oc || '')}</td><td>${esc(x.lot)}</td><td>${esc(pyRange(x.seqs))}</td><td class="c">${x.n}</td><td class="r">${fmt(x.kg)}</td><td class="r">${fmt(x.n * Number(x.kg))}</td></tr>`);
     while (rows.length < per) rows.push('<tr>' + '<td></td>'.repeat(8) + '</tr>');
-    pages.push(`<div class="pg portrait" style="position:relative">${css}${X.status === 'VOID' ? '<div class="xfv">ยกเลิก</div>' : ''}${pyHdrCo(co, 'ใบจ่ายออกชุดสารเสริม (PY-PC → BFL-PC)', `เลขที่ ${esc(X.doc_no)}<br>แผ่น ${p + 1}/${np}`)}
-      <div class="hd"><div>วันที่ <span class="fill">${dfull(X.day)}</span></div><div>เวลา <span class="fill">${hm(X.created_at)}</span></div><div>จาก <span class="fill">คลัง PY-PC (หน่วยงานจัดเตรียมพรีมิกซ์)</span></div><div>ถึง <span class="fill">${esc(X.dest)}</span></div><div class="w">หมายเหตุ <span class="fill">${esc(X.note || '')}${X.status === 'VOID' ? ' · ยกเลิก: ' + esc(X.void_reason || '') : ''}</span></div></div>
+    pages.push(`<div class="pg portrait" style="position:relative">${css}${X.status === 'VOID' ? '<div class="xfv">ยกเลิก</div>' : ''}${pyHdrCo(co, X.dest === 'BFL' ? 'ใบเบิกกลิ่นผง (PF) → BFL Mix Coater' : 'ใบจ่ายออกชุดสารเสริม (PY-PC → BFL-PC)', `เลขที่ ${esc(X.doc_no)}<br>แผ่น ${p + 1}/${np}`)}
+      <div class="hd"><div>วันที่ <span class="fill">${dfull(X.day)}</span></div><div>เวลา <span class="fill">${hm(X.created_at)}</span></div><div>จาก <span class="fill">${X.dest === 'BFL' ? 'คลัง PY' : 'คลัง PY-PC'} (หน่วยงานจัดเตรียมพรีมิกซ์)</span></div><div>ถึง <span class="fill">${X.dest === 'BFL' ? 'BFL · Mix Coater' + (X.prod_lot ? ' · Lot การผลิต ' + esc(X.prod_lot) : '') : esc(X.dest)}</span></div><div class="w">หมายเหตุ <span class="fill">${esc(X.note || '')}${X.status === 'VOID' ? ' · ยกเลิก: ' + esc(X.void_reason || '') : ''}</span></div></div>
       <table class="xf"><colgroup><col style="width:9mm"><col><col style="width:30mm"><col style="width:37mm"><col style="width:22mm"><col style="width:13mm"><col style="width:15mm"><col style="width:18mm"></colgroup>
       <tr><th>ลำดับ</th><th>รหัส / ชื่อชุดสารเสริม</th><th>รหัส Odoo</th><th>Lot No.</th><th>ชุดที่</th><th>จำนวน (ชุด)</th><th>กก./ชุด</th><th>รวม (กก.)</th></tr>${rows.join('')}
       ${p === np - 1 ? `<tr class="tot"><td></td><td>รวม</td><td></td><td></td><td></td><td class="c">${fmt(sn)}</td><td></td><td class="r">${fmt(skg)}</td></tr>` : ''}</table>
-      <div class="xfsg"><div><div>________________________</div><div>( ${esc(X.byn || X.created_by)} )</div><div>ผู้จ่าย · หน่วยงานจัดเตรียมพรีมิกซ์</div></div><div><div>________________________</div><div>(${'&nbsp;'.repeat(36)})</div><div>ผู้รับ · BFL-PC</div></div><div><div>________________________</div><div>(${'&nbsp;'.repeat(36)})</div><div>ผู้ตรวจสอบ</div></div></div></div>`); }
-  openForm('ใบจ่ายออก ' + X.doc_no, 'portrait', pages);
+      <div class="xfsg"><div><div>________________________</div><div>( ${esc(X.byn || X.created_by)} )</div><div>${X.dest === 'BFL' ? 'ผู้สั่งเบิก · Control' : 'ผู้จ่าย · หน่วยงานจัดเตรียมพรีมิกซ์'}</div></div><div><div>________________________</div><div>(${'&nbsp;'.repeat(36)})</div><div>${X.dest === 'BFL' ? 'ผู้รับ · Mix Coater' : 'ผู้รับ · BFL-PC'}</div></div><div><div>________________________</div><div>(${'&nbsp;'.repeat(36)})</div><div>ผู้ตรวจสอบ</div></div></div></div>`); }
+  openForm((X.dest === 'BFL' ? 'ใบเบิกกลิ่นผง ' : 'ใบจ่ายออก ') + X.doc_no, 'portrait', pages);
+}
+
+// ===== หน้า: เบิกกลิ่นผง PF → BFL Mix Coater (Control manual · ผู้ใช้ 24 พ.ย.) =====
+// คลัง PY เท่านั้น · ใบ PFO-YYMMDD-NNN · ชุดออกจากคลัง (สถานะ จ่ายออก) · BFL-PC ใช้ จ่ายออก PY-PC เหมือนชุดพรีมิกซ์ · สแกนเบิก/เท ทำภายหลัง
+function viewPyPf() {
+  const F = S.py.pf; const D0 = S.py.data; if (!D0) return pyHead('เบิกกลิ่นผง PF → BFL') + pyLoading();
+  const lots = (D0.lots || []).filter((l) => l.knd === 'PF' && (l.store || 'PY') === 'PY' && l.py > 0).sort((a, b) => String(a.mfg).localeCompare(String(b.mfg)) || String(a.lot).localeCompare(String(b.lot)));
+  const gs = pyXferGroups(F.cart); const n = F.cart.length; const kg = F.cart.reduce((a, u) => a + (Number(u.kg) || 0), 0);
+  const last = F.last ? `<div class="msg ${F.last.ok ? '' : 'bad'}" style="font-size:17px">${F.last.ok ? '✓' : '✗'} ${esc(F.last.msg)}</div>` : '';
+  const done = F.done ? `<div class="card" style="border-color:var(--ok, #1a7f4b)"><h2 style="margin-top:0">✓ เบิกกลิ่นผงแล้ว ใบ ${esc(F.done)}</h2><div class="chips"><button type="button" data-py="pff04" data-doc="${esc(F.done)}">🖨 F-WI04 ใบเบิก-คืน (BFL)</button><button type="button" data-py="pfprint" data-doc="${esc(F.done)}">🖨 ใบเบิกกลิ่นผง</button><button type="button" class="ghost" data-py="pfdoneclose">ปิด</button></div></div>` : '';
+  const pl = String(F.plot || '').trim(); const plots = F.plots || []; const plHit = plots.find((x) => x.lot === pl);
+  const xs = (D0.xfers || []).filter((x) => x.dest === 'BFL');
+  const hist = xs.map((x) => `<div class="lrow" style="flex-wrap:wrap;gap:8px;${x.status === 'VOID' ? 'opacity:.6' : ''}"><span style="flex:1 1 260px"><b class="mono">${esc(x.doc)}</b> ${x.status === 'VOID' ? '<span class="tag bad">ยกเลิก</span>' : ''} · ${x.sets} ชุด · ${fmt(x.kg)} กก.${x.plot ? ' · Lot การผลิต ' + esc(x.plot) : ''}<span class="muted smt" style="display:block">${dtm(x.at)} · ${esc(x.byn || x.by)}${x.note ? ' · ' + esc(x.note) : ''}${x.void_reason ? ' · ยกเลิก: ' + esc(x.void_reason) : ''}</span></span>
+      <span class="chips"><button type="button" class="ghost sm" data-py="pff04" data-doc="${esc(x.doc)}">🖨 F-WI04</button><button type="button" class="ghost sm" data-py="pfprint" data-doc="${esc(x.doc)}">🖨 ใบเบิก</button>${x.status !== 'VOID' ? (F.cx === x.doc ? `<input data-bind="py.pf.cxr" value="${esc(F.cxr)}" placeholder="เหตุผล" style="width:150px" maxlength="200"><button type="button" class="sm" data-py="pfvoid" data-doc="${esc(x.doc)}" ${F.cxr.trim().length >= 3 && !S.busy ? '' : 'disabled'}>ยืนยันยกเลิกใบ</button><button type="button" class="ghost sm" data-py="pfcx" data-doc="">ปิด</button>` : `<button type="button" class="ghost sm" data-py="pfcx" data-doc="${esc(x.doc)}">ยกเลิกใบ</button>`) : ''}</span></div>`).join('');
+  return pyHead('เบิกกลิ่นผง PF → BFL Mix Coater', 'Control เบิกกลิ่นผง coater จากคลัง PY เข้าโรงงาน BFL · สแกนป้าย -04 / -05 หรือเลือก Lot + ชุดที่ → ยืนยัน → พิมพ์ F-WI04 · กลิ่นผงคลัง PY-PC ใช้เมนู จ่ายออก PY-PC (จัดเตรียมพรีมิกซ์)') + done
+    + `<div class="card" style="display:flex;flex-direction:column;gap:10px;border-color:var(--blue)">
+      <div class="chips"><input data-bind="py.pf.q" id="pyfq" value="${esc(F.q)}" placeholder="สแกนป้ายชุด (-04) หรือป้ายถุง (-05) กลิ่นผง คลัง PY" autocomplete="off" style="flex:1 1 240px;font-size:18px;padding:10px"><button type="button" data-cam="py">📷 สแกน</button></div>
+      <div class="chips"><select data-bind="py.pf.lot" style="flex:2 1 280px;min-width:0"><option value="">— หรือเลือก Lot กลิ่นผงในคลัง PY (เก่าก่อน) —</option>${lots.map((l) => `<option value="${esc(l.lot)}" ${F.lot === l.lot ? 'selected' : ''}>${esc(l.lot)} · ${esc(pyShort(l.item))} · ${l.py} ชุด</option>`).join('')}</select>
+        ชุดที่ <input data-bind="py.pf.seqs" value="${esc(F.seqs)}" placeholder="ว่าง = ทุกชุด · เช่น 1-3" style="width:170px"><button type="button" class="sm" data-py="pfadd" ${F.lot && !S.busy ? '' : 'disabled'}>+ เพิ่ม</button></div>
+      ${lots.length ? '' : '<span class="muted smt">ยังไม่มีกลิ่นผงในคลัง PY — จัดเตรียมพรีมิกซ์รับเข้าที่หน้า รับเข้า PY (รหัส -PF / -PF-PRM)</span>'}${last}</div>
+    <div class="card" style="display:flex;flex-direction:column;gap:10px"><div class="fc"><h2 style="margin:0">รายการที่จะเบิก ${n ? `· ${n} ชุด · ${fmt(kg)} กก.` : ''}</h2>${n ? '<button type="button" class="ghost sm" data-py="pfclear">ล้างทั้งหมด</button>' : ''}</div>
+      ${gs.length ? `<div class="tw"><table><thead><tr><th>#</th><th>รหัสกลิ่นผง</th><th>Lot No.</th><th>ชุดที่</th><th class="num">ชุด</th><th class="num">กก./ชุด</th><th class="num">รวม กก.</th><th></th></tr></thead><tbody>${gs.map((g, i) => `<tr><td>${i + 1}</td><td><b class="mono" style="color:var(--ink)">${esc(pyShort(g.item))}</b><span class="muted smt" style="display:block">${esc(g.name || '')}${g.oc ? ' · Odoo ' + esc(g.oc) : ''}</span></td><td class="mono">${esc(g.lot)}</td><td>${esc(pyRange(g.seqs.join(',')))}</td><td class="num"><b>${g.seqs.length}</b></td><td class="num">${fmt(g.kg)}</td><td class="num">${fmt(g.kg * g.seqs.length)}</td><td><button type="button" class="ghost sm" data-py="pfrm" data-lot="${esc(g.lot)}">ลบ</button></td></tr>`).join('')}</tbody></table></div>
+        <div class="grid2"><div class="fld"><span>Lot การผลิต (ไม่บังคับ)</span><input data-bind="py.pf.plot" value="${esc(F.plot)}" list="pypfl" inputmode="numeric" autocomplete="off" placeholder="เช่น 261124012" style="max-width:260px">
+          <datalist id="pypfl">${plots.slice(0, 200).map((x) => `<option value="${esc(x.lot)}">${esc(x.prod || '')}</option>`).join('')}</datalist>
+          <span class="smt" style="margin-top:3px">${pl ? (plHit ? `<span style="color:var(--ok, #1a7f4b)">✓ ${esc(plHit.prod || '')}</span>` : '<span class="muted">ไม่อยู่ในรายการ 30 วัน — ระบบตรวจกับ production_lot ตอนยืนยัน</span>') : '<span class="muted">ใส่แล้ว F-WI04 แสดง Lot การผลิต + เบอร์อาหาร</span>'}</span></div>
+          <div class="fld"><span>หมายเหตุ</span><input data-bind="py.pf.note" value="${esc(F.note)}" maxlength="200" placeholder="เช่น เครื่อง coater / ผู้รับ"></div></div>
+        <div><button type="button" data-py="pfdo" ${n && !S.busy ? '' : 'disabled'}>ยืนยันเบิก ${n} ชุด → BFL Mix Coater</button></div>` : '<p class="muted smt">ยังไม่มีรายการ — สแกนป้าย หรือเลือก Lot ด้านบน</p>'}</div>
+    <div class="card"><div class="fc"><h2 style="margin:0">ใบเบิกกลิ่นผง (3 วันล่าสุด)</h2><span class="chips"><input data-bind="py.pf.find" value="${esc(F.find)}" placeholder="PFO-YYMMDD-NNN" style="width:170px"><button type="button" class="ghost sm" data-py="pff04" data-doc="" ${F.find.trim() ? '' : 'disabled'}>🖨 F-WI04 ใบเก่า</button></span></div>${hist || '<p class="muted smt">ยังไม่มีใบเบิกกลิ่นผง</p>'}</div>`;
+}
+async function pyPfAdd(p) {
+  const F = S.py.pf; if (S.busy) return; S.busy = true; render();
+  try { const r = await rpc('rm_py_pf_pick', { p_token: S.tok, p }); const have = new Set(F.cart.map((u) => u.unit)); const add = (r.units || []).filter((u) => !have.has(u.unit));
+    F.cart = F.cart.concat(add); F.last = { ok: true, msg: add.length ? `เพิ่ม ${add.length} ชุด · ` + pyXferGroups(add).map((g) => pyShort(g.item) + ' ' + g.lot + ' #' + pyRange(g.seqs.join(','))).join(' | ') : 'ชุดนี้อยู่ในรายการแล้ว' };
+    if (p.lot) { F.lot = ''; F.seqs = ''; } F.done = ''; }
+  catch (e) { F.last = { ok: false, msg: e.message }; }
+  F.q = ''; S.busy = false; render(); pyFocus();
+  try { if (navigator.vibrate) navigator.vibrate(F.last.ok ? 60 : [90, 60, 90]); } catch (e) { /* ไม่รองรับ */ }
+}
+// F-WI04-PSS01-01 ใบเบิก-คืน ฉบับ BFL จากใบเบิกกลิ่นผง PFO · 1 แถว = รหัส + Lot · หน่วยงาน Mix Coater · เบอร์อาหาร = ชื่อสูตรเต็มจาก Lot การผลิต · ผู้สั่งเบิก/ผู้เบิก/ผู้จ่าย เว้นว่างให้เซ็น
+async function pyPrintPfF04(doc) {
+  let r; try { r = await rpc('rm_py_xfer_get', { p_token: S.tok, p_doc: doc }); } catch (e) { S.toast = e.message; S.toastErr = true; render(); return; }
+  const X = r.xfer; const L = r.lines; if (!L.length) { S.toast = 'ใบนี้ไม่มีรายการ'; S.toastErr = true; render(); return; }
+  if (X.dest !== 'BFL') { pyPrintXferF04(doc); return; } // ใบ PYT (PY-PC → BFL-PC) ใช้ฉบับ BFL-PC
+  const css = `<style>.f4 th{font-size:11pt}.f4 td{height:6.6mm;font-size:11pt}.f4 td.k{font-size:9.5pt}.f4 td.pn{font-size:8.5pt;line-height:1.05;white-space:normal;word-break:break-word;padding:0 .8mm}.f4b{position:relative;margin-top:4mm;font-size:14pt}.f4r{margin-top:3mm;font-size:14pt}${X.status === 'VOID' ? '.xfv{position:absolute;left:0;right:0;top:40%;text-align:center;font-size:80pt;color:rgba(0,0,0,.18);transform:rotate(-20deg);font-weight:700}' : ''}</style>`;
+  const pages = [];
+  for (let i = 0; i < L.length; i += 21) { const chunk = L.slice(i, i + 21); const trs = [];
+    for (let j = 0; j < 21; j++) { const x = chunk[j]; const kg = x ? Number(x.kg) : 0;
+      trs.push(x ? `<tr><td class="c">✓</td><td></td><td class="s">${esc(x.item)}</td><td class="s">${esc(x.lot)}</td><td class="c">${x.n}</td><td class="n">${fkg(kg)}</td><td class="n">${fkg(Math.round(kg * x.n * 1000) / 1000)}</td><td class="c">${esc(X.prod_lot || '')}</td><td class="k pn">${esc(X.prodn || X.product_id || '')}</td><td></td><td></td><td></td></tr>`
+        : '<tr>' + '<td></td>'.repeat(12) + '</tr>'); }
+    pages.push(`<div class="pg landscape" style="position:relative">${css}${X.status === 'VOID' ? '<div class="xfv">ยกเลิก</div>' : ''}${pyHdrCo(pyCo('BFL'), 'ใบเบิก-คืนสารเสริม/ชุดสารเสริม', 'F-WI04-PSS01-01 Rev.00')}
+      <div class="meta"><span><span class="k">วันที่</span> <span class="fill">${dfull(X.day)}</span></span><span><span class="k">หน่วยงาน</span> <span class="fill">Mix Coater</span></span></div>
+      <table class="f4"><colgroup><col style="width:10mm"><col style="width:10mm"><col style="width:50mm"><col style="width:42mm"><col style="width:13mm"><col style="width:14mm"><col style="width:15mm"><col style="width:22mm"><col style="width:32mm"><col style="width:24mm"><col style="width:24mm"><col style="width:19mm"></colgroup>
+      <tr><th>เบิก</th><th>คืน</th><th>รหัสสารเสริม/ชื่อชุดจัดเตรียมสารเสริม</th><th>Lot No. สารเสริม/Lot No.<br>ผลิตชุดเสริมเสริม</th><th>จำนวน</th><th>น้ำหนัก<br>ต่อชุด</th><th>รวม (Kg)</th><th>Lot การผลิต</th><th>เบอร์อาหาร</th><th>ผู้สั่งเบิก</th><th>ผู้เบิก</th><th>ผู้จ่าย</th></tr>${trs.join('')}</table>
+      <div class="f4r">หมายเหตุ <span class="fill" style="min-width:250mm"></span></div>
+      <div class="f4b"><span>ผู้ทวนสอบ <span class="fill" style="min-width:60mm"></span></span><span style="position:absolute;left:176mm">ผู้ตรวจสอบ <span class="fill" style="min-width:68mm"></span></span></div></div>`); }
+  openForm('F-WI04-PSS01-01 ใบเบิกกลิ่นผง BFL ' + X.doc_no, 'landscape', pages);
 }
 
 // ===== หน้า: ใบสั่งเบิก (Control) =====
@@ -4147,22 +4216,22 @@ function viewPyMaster() {
   const M = S.py.ms; const pm = pyCan('premix'); const all = pyItems();
   const q = M.q.trim().toUpperCase().split(/\s+/).filter(Boolean);
   const rows = all.filter((i) => !q.length || q.every((w) => (i.c + ' ' + i.n + ' ' + (i.g || '') + ' ' + (i.oc || '') + ' ' + (i.on || '')).toUpperCase().includes(w)))
-    .filter((i) => M.only === 'py' ? i.py > 0 || i.pc > 0 : M.only === 'noodoo' ? !i.oc : M.only === 'manual' ? i.src === 'manual' : M.only === 'off' ? !i.a : M.only === 'nottt' ? !i.t : true);
+    .filter((i) => M.only === 'py' ? i.py > 0 || i.pc > 0 : M.only === 'noodoo' ? !i.oc : M.only === 'manual' ? i.src === 'manual' : M.only === 'off' ? !i.a : M.only === 'nottt' ? !i.t : M.only === 'set' ? i.k !== 'PF' : M.only === 'pf' ? i.k === 'PF' : true);
   const f = M.f; const pxs = (S.py.master || {}).px || [];
   const form = f ? `<div class="card" style="display:flex;flex-direction:column;gap:10px;border-color:var(--blue)"><h2 style="margin:0">${f.isNew ? 'เพิ่มรหัส' : 'แก้ไข ' + esc(f.code)}</h2>
-      <div class="chips">ประเภท <button type="button" class="tg" aria-pressed="${f.kind === 'SET'}" data-set="py.ms.f.kind" data-val="SET">ชุดสารเสริม (-41)</button><button type="button" class="tg" aria-pressed="${f.kind === 'PX'}" data-set="py.ms.f.kind" data-val="PX">พรีมิกซ์ (รหัส PX)</button></div>
+      <div class="chips">ประเภท <button type="button" class="tg" aria-pressed="${f.kind === 'SET'}" data-set="py.ms.f.kind" data-val="SET">ชุดสารเสริม (-41)</button><button type="button" class="tg" aria-pressed="${f.kind === 'PX'}" data-set="py.ms.f.kind" data-val="PX">พรีมิกซ์ (รหัส PX)</button><button type="button" class="tg" aria-pressed="${f.kind === 'PF'}" data-set="py.ms.f.kind" data-val="PF">กลิ่นผง coater (-PF / -PF-PRM)</button></div>
       <div class="grid4">${f.kind === 'PX' && f.isNew ? `<div class="fld" style="grid-column:span 2"><span>รหัสพรีมิกซ์ (คลัง PX)</span><select data-bind="py.ms.f.code"><option value="">— เลือก —</option>${pxs.map((x) => `<option value="${esc(x.c)}" ${f.code === x.c ? 'selected' : ''}>${esc(x.c)} · ${esc(x.n)}</option>`).join('')}</select></div>`
-        : `<div class="fld"><span>รหัส</span><input data-bind="py.ms.f.code" value="${esc(f.code)}" ${f.isNew ? '' : 'disabled'} placeholder="97-XXXX-41" style="text-transform:uppercase"></div><div class="fld"><span>ชื่อ</span><input data-bind="py.ms.f.name" value="${esc(f.name)}" maxlength="150"></div>`}
+        : `<div class="fld"><span>รหัส</span><input data-bind="py.ms.f.code" value="${esc(f.code)}" ${f.isNew ? '' : 'disabled'} placeholder="${f.kind === 'PF' ? '97-XXXX-PF-PRM' : '97-XXXX-41'}" style="text-transform:uppercase"></div><div class="fld"><span>ชื่อ</span><input data-bind="py.ms.f.name" value="${esc(f.name)}" maxlength="150"></div>`}
         <div class="fld"><span>กลุ่ม</span><input data-bind="py.ms.f.grp" value="${esc(f.grp)}" maxlength="40" placeholder="CAT / DOG / FISH …"></div><div class="fld"><span>TTT</span><input data-bind="py.ms.f.ttt" value="${esc(f.ttt)}" maxlength="3" style="text-transform:uppercase"></div></div>
       <div class="chips">ถุงต่อชุด ${[1, 2, 3, 4].map((n) => `<button type="button" class="tg" aria-pressed="${int(f.bg || 1) === n}" data-set="py.ms.f.bg" data-val="${n}">${n} ถุง</button>`).join('')}<span class="muted smt">มากกว่า 1 = ชุดแยกถุงตอนเท (บางตัวผสมรอไม่ได้) · ป้าย -04 ถุงละใบ · ต้องสแกนครบทุกถุง</span></div>
       <div class="grid2"><div class="fld"><span>รหัส Odoo</span><input data-bind="py.ms.f.oc" value="${esc(f.oc || '')}" maxlength="40" placeholder="รหัสสินค้าใน Odoo" autocomplete="off"></div><div class="fld"><span>ชื่อ Odoo</span><input data-bind="py.ms.f.on" value="${esc(f.on || '')}" maxlength="150" placeholder="ชื่อสินค้าใน Odoo" autocomplete="off"></div></div>
       <div class="chips"><button type="button" class="tg" aria-pressed="${f.active}" data-set="py.ms.f.active" data-val="${f.active ? '' : '1'}">${f.active ? '✓ ใช้งาน' : 'ปิดใช้งาน'}</button></div>
       <div><button type="button" data-py="msave" ${f.code.trim() && (f.kind === 'PX' || f.name.trim()) && !S.busy ? '' : 'disabled'}>บันทึก</button> <button type="button" class="ghost" data-py="mclose">ปิด</button></div></div>` : '';
-  const ON = [['', 'ทั้งหมด'], ['py', 'มีของในคลัง'], ['manual', 'เพิ่มเอง'], ['nottt', 'ยังไม่มี TTT'], ['noodoo', 'ยังไม่มีรหัส Odoo'], ['off', 'ปิดใช้งาน']];
-  return pyHead('Master ชุดสารเสริม', `${all.length} รหัส · นำเข้าจาก 97-PREMIX.xlsx (-41) · จัดเตรียมพรีมิกซ์เพิ่ม/แก้ได้`) + form
+  const ON = [['', 'ทั้งหมด'], ['set', 'ชุด -41 / PX'], ['pf', 'กลิ่นผง PF'], ['py', 'มีของในคลัง'], ['manual', 'เพิ่มเอง'], ['nottt', 'ยังไม่มี TTT'], ['noodoo', 'ยังไม่มีรหัส Odoo'], ['off', 'ปิดใช้งาน']];
+  return pyHead('Master ชุดสารเสริม', `${all.length} รหัส · นำเข้าจาก 97-PREMIX.xlsx (-41 / กลิ่นผง -PF-PRM, -PF) · จัดเตรียมพรีมิกซ์เพิ่ม/แก้ได้`) + form
     + `<div class="card" style="display:flex;flex-direction:column;gap:10px"><div class="chips"><input data-bind="py.ms.q" value="${esc(M.q)}" placeholder="🔍 ค้นหารหัส / ชื่อ / กลุ่ม / รหัส-ชื่อ Odoo" style="flex:1 1 240px">${pm ? '<button type="button" class="sm" data-py="mnew">+ เพิ่มรหัส</button>' : ''}</div>
       <div class="chips">${ON.map(([id, l]) => `<button type="button" class="tg" aria-pressed="${M.only === id}" data-set="py.ms.only" data-val="${id}">${l}</button>`).join('')}<span>${rows.length} รายการ</span></div>
-      <div class="tw"><table><thead><tr><th>รหัส</th><th>ชื่อ</th><th>Odoo</th><th>กลุ่ม</th><th>TTT</th><th class="num">กก./ชุดล่าสุด</th><th class="num">PY</th><th class="num">PY-PC</th><th class="num">เบิกค้าง</th><th></th></tr></thead><tbody>${rows.slice(0, 300).map((i) => `<tr class="${i.a ? '' : 'void'}"><td class="mono" style="color:var(--ink)">${esc(i.c)}${i.k === 'PX' ? ' <span class="tag">PX</span>' : ''}${pyBagTag(i.bg)}</td><td>${esc(i.n)}</td><td>${i.oc ? `<span class="mono">${esc(i.oc)}</span>` : '<span class="muted smt">–</span>'}${i.on ? `<span class="muted smt" style="display:block">${esc(i.on)}</span>` : ''}</td><td>${esc(i.g || '')}</td><td>${esc(i.t || '')}</td><td class="num">${i.kg ? fmt(i.kg) : ''}</td><td class="num">${i.py || ''}</td><td class="num">${i.pc || ''}</td><td class="num">${i.is || ''}</td><td>${pm ? `<button type="button" class="ghost sm" data-py="medit" data-code="${esc(i.c)}">แก้</button>` : ''}</td></tr>`).join('') || `<tr><td colspan="10" class="muted">${S.py.mLoading ? 'กำลังโหลด…' : 'ไม่พบ'}</td></tr>`}</tbody></table></div>${rows.length > 300 ? '<span class="muted smt">แสดง 300 รายการแรก — พิมพ์ค้นหาเพื่อกรอง</span>' : ''}</div>`;
+      <div class="tw"><table><thead><tr><th>รหัส</th><th>ชื่อ</th><th>Odoo</th><th>กลุ่ม</th><th>TTT</th><th class="num">กก./ชุดล่าสุด</th><th class="num">PY</th><th class="num">PY-PC</th><th class="num">เบิกค้าง</th><th></th></tr></thead><tbody>${rows.slice(0, 300).map((i) => `<tr class="${i.a ? '' : 'void'}"><td class="mono" style="color:var(--ink)">${esc(i.c)}${pyKindTag(i.k)}${pyBagTag(i.bg)}</td><td>${esc(i.n)}</td><td>${i.oc ? `<span class="mono">${esc(i.oc)}</span>` : '<span class="muted smt">–</span>'}${i.on ? `<span class="muted smt" style="display:block">${esc(i.on)}</span>` : ''}</td><td>${esc(i.g || '')}</td><td>${esc(i.t || '')}</td><td class="num">${i.kg ? fmt(i.kg) : ''}</td><td class="num">${i.py || ''}</td><td class="num">${i.pc || ''}</td><td class="num">${i.is || ''}</td><td>${pm ? `<button type="button" class="ghost sm" data-py="medit" data-code="${esc(i.c)}">แก้</button>` : ''}</td></tr>`).join('') || `<tr><td colspan="10" class="muted">${S.py.mLoading ? 'กำลังโหลด…' : 'ไม่พบ'}</td></tr>`}</tbody></table></div>${rows.length > 300 ? '<span class="muted smt">แสดง 300 รายการแรก — พิมพ์ค้นหาเพื่อกรอง</span>' : ''}</div>`;
 }
 
 function pyPickHint(o) { // หยิบจากไหน: Lot เก่าก่อน (วันผลิต) · ที่จัดเก็บของชุดที่อยู่ PY
@@ -4191,7 +4260,7 @@ function viewPyHelp() {
   return bar + (H.err ? `<div class="msg bad">${esc(H.err)}</div><button type="button" class="ghost" data-py="helpreload">โหลดใหม่</button>` : H.html || '<p class="muted">กำลังโหลดคู่มือ…</p>');
 }
 document.addEventListener('click', (e) => { const a = e.target.closest && e.target.closest('#pym a[data-sec]'); if (!a) return; e.preventDefault(); pyHelpGo(a.dataset.sec); });
-const PY_VIEWS = { pyhome: viewPyHome, pyrecv: viewPyRecv, pyret: viewPyRet, pyxfer: viewPyXfer, pyorder: viewPyOrder, pyscan: viewPyScan, pyforms: viewPyForms, pymaster: viewPyMaster, pyhelp: viewPyHelp };
+const PY_VIEWS = { pyhome: viewPyHome, pyrecv: viewPyRecv, pyret: viewPyRet, pyxfer: viewPyXfer, pyorder: viewPyOrder, pypf: viewPyPf, pyscan: viewPyScan, pyforms: viewPyForms, pymaster: viewPyMaster, pyhelp: viewPyHelp };
 
 // ---------- สแกน ----------
 async function pyScanGo() {
@@ -4403,7 +4472,7 @@ document.addEventListener('click', async (e) => {
   if (a === 'rvclose') { P.rv.done = null; render(); return; }
   if (a === 'rvlocadd') { P.rv.locs.push({ loc: '', qty: '' }); if (P.rv.locs.length === 2 && !P.rv.locs[0].qty) P.rv.locs[0].qty = P.rv.sets; render(); return; }
   if (a === 'rvlocdel') { P.rv.locs.splice(int(ds.i), 1); if (!P.rv.locs.length) P.rv.locs.push({ loc: '', qty: '' }); render(); return; }
-  if (a === 'recv') { const v = P.rv; const one = v.locs.length === 1; const nb = v.bags || 1; const p = { item: v.item, lot: pyLotNo(), sets: int(v.sets), kg: nb > 1 ? undefined : num(v.kg), bags: nb, bag_kg: nb > 1 ? v.bkg.slice(0, nb).map(num) : undefined, note: v.note.trim() || undefined, store: v.store, doc: v.doc, pc_lot: String(v.pcl || '').trim() || undefined, bag: v.bag ? { formula: v.formula.trim(), product: v.product.trim(), type: 'MIXER' } : undefined,
+  if (a === 'recv') { const v = P.rv; const one = v.locs.length === 1; const nb = v.bags || 1; const p = { item: v.item, lot: pyLotNo(), sets: int(v.sets), kg: nb > 1 ? undefined : num(v.kg), bags: nb, bag_kg: nb > 1 ? v.bkg.slice(0, nb).map(num) : undefined, note: v.note.trim() || undefined, store: v.store, doc: v.doc, pc_lot: pyIsPF(v.item) ? undefined : String(v.pcl || '').trim() || undefined, bag: v.bag ? { formula: v.formula.trim(), product: v.product.trim(), type: pyIsPF(v.item) ? 'COATER' : 'MIXER' } : undefined,
       locs: v.locs.map((x) => ({ loc: x.loc, qty: one ? int(v.sets) : int(x.qty) })) };
     pyAct('rm_py_receive', { p }, (r) => 'รับเข้า ' + r.lot + ' แล้ว · ' + r.sets + ' ชุด' + ((r.bags || []).length ? ' · ถุง ' + r.bags.join(', ') : '') + ' — พิมพ์ป้ายได้เลย',
       (r) => { v.done = { nbags: r.nbags || nb, lot: r.lot, sets: r.sets, bags: r.bags || (r.bag ? [r.bag] : []), store: r.store || v.store, doc: r.doc || v.doc }; v.locs = [{ loc: '', qty: '' }]; v.lot = ''; v.sets = ''; v.note = ''; v.pcl = ''; S.py.master = null; loadPYMaster(); }); return; }
@@ -4452,9 +4521,21 @@ document.addEventListener('click', async (e) => {
   if (a === 'xfprint') { const d = ds.doc || P.xf.find.trim().toUpperCase(); if (d) pyPrintXfer(d); return; }
   if (a === 'xfcx') { P.xf.cx = ds.doc || ''; P.xf.cxr = ''; render(); return; }
   if (a === 'xfvoid') { const d = ds.doc; pyAct('rm_py_xfer_void', { p_doc: d, p_reason: P.xf.cxr.trim() }, (r) => `ยกเลิกใบ ${d} แล้ว · ${r.sets} ชุดกลับเข้าคลัง PY-PC`, () => { P.xf.cx = ''; P.xf.cxr = ''; if (P.xf.done === d) P.xf.done = ''; }); return; }
+  // เบิกกลิ่นผง PF (Control)
+  if (a === 'pfadd') { const L = ((P.data || {}).lots || []).find((x) => x.lot === P.pf.lot); const seqs = pySeqs(P.pf.seqs, L ? L.sets : 500); pyPfAdd({ lot: P.pf.lot, seqs: seqs || [] }); return; }
+  if (a === 'pfrm') { P.pf.cart = P.pf.cart.filter((u) => u.lot !== ds.lot); render(); return; }
+  if (a === 'pfclear') { P.pf.cart = []; P.pf.last = null; render(); return; }
+  if (a === 'pfdoneclose') { P.pf.done = ''; render(); return; }
+  if (a === 'pfdo') { const F = P.pf; pyAct('rm_py_pf_issue', { p: { units: F.cart.map((u) => u.unit), prod_lot: String(F.plot || '').trim() || undefined, note: F.note.trim() || undefined } }, (r) => `เบิกกลิ่นผง ${r.sets} ชุด · ${fmt(r.kg)} กก. → BFL แล้ว · ใบ ${r.doc}`,
+      (r) => { F.done = r.doc; F.cart = []; F.note = ''; F.plot = ''; F.last = null; S.py.master = null; }); return; }
+  if (a === 'pff04') { const d = ds.doc || P.pf.find.trim().toUpperCase(); if (d) pyPrintPfF04(d); return; }
+  if (a === 'pfprint') { if (ds.doc) pyPrintXfer(ds.doc); return; }
+  if (a === 'pfcx') { P.pf.cx = ds.doc || ''; P.pf.cxr = ''; render(); return; }
+  if (a === 'pfvoid') { const d = ds.doc; pyAct('rm_py_xfer_void', { p_doc: d, p_reason: P.pf.cxr.trim() }, (r) => `ยกเลิกใบ ${d} แล้ว · ${r.sets} ชุดกลับเข้าคลัง PY`, () => { P.pf.cx = ''; P.pf.cxr = ''; if (P.pf.done === d) P.pf.done = ''; }); return; }
   if (a === 'stxls') { pyStockXls(); return; }
   if (a === 'stpdf') { pyStockPdf(); return; }
-  if (a === 'hqclr') { P.hq = ''; P.hs = ''; render(); return; }
+  if (a === 'hqclr') { P.hq = ''; P.hs = ''; P.hk = ''; render(); return; }
+  if (a === 'hk') { P.hk = ds.val || ''; render(); return; }
   if (a === 'hs') { P.hs = ds.val || ''; render(); return; }
   if (a === 'hv') { P.hv = ds.val === 'hist' ? 'hist' : 'stock'; if (P.hv === 'hist' && !P.hl.from) { const d = (S.snap || {}).biz_day || todayYmd(); P.hl.to = d; P.hl.from = ntAdd(d, -7); pyHistLoad(); return; } render(); return; }
   if (a === 'hlload') { pyHistLoad(); return; }
@@ -4473,7 +4554,7 @@ document.addEventListener('input', (e) => {
   const el = e.target; const b = el.dataset && el.dataset.bind; if (b !== 'py.rv.iq' && b !== 'py.od.iq') return;
   const it = pyResolve(el.value); PYCB.act = -1;
   if (b === 'py.rv.iq') { const v = S.py.rv; if (it && v.item !== it.c) { v.item = it.c; pyRvItem(); renderKeep(el); } else if (!it && v.item) { v.item = ''; renderKeep(el); } }
-  else if (it) { const o = S.py.od; if (!o.lines.some((x) => x.item === it.c) && o.lines.length < 20) o.lines.push({ item: it.c, qpb: '1' }); o.iq = ''; renderKeep(el); pyCbHide(); return; }
+  else if (it && it.k !== 'PF') { const o = S.py.od; if (!o.lines.some((x) => x.item === it.c) && o.lines.length < 20) o.lines.push({ item: it.c, qpb: '1' }); o.iq = ''; renderKeep(el); pyCbHide(); return; }
   const n = document.activeElement; if (n && n.dataset && n.dataset.pycb) pyCbShow(n);
 });
 document.addEventListener('focusin', (e) => { const el = e.target; if (el.dataset && el.dataset.pycb && PYCB.el !== el) { PYCB.act = -1; pyCbShow(el); } });
@@ -4493,7 +4574,8 @@ document.addEventListener('keydown', (e) => {
   if (e.key !== 'Enter') return;
   if (el.id === 'pyq') { e.preventDefault(); S.py.q = el.value; pyScanGo(); return; }
   if (el.id === 'pyrq') { e.preventDefault(); const v = el.value.trim(); if (v) pyRetGo(v); return; }
-  if (el.id === 'pyxq') { e.preventDefault(); const v = el.value.trim(); if (v) pyXferAdd({ code: v }); }
+  if (el.id === 'pyxq') { e.preventDefault(); const v = el.value.trim(); if (v) pyXferAdd({ code: v }); return; }
+  if (el.id === 'pyfq') { e.preventDefault(); const v = el.value.trim(); if (v) pyPfAdd({ code: v }); }
 });
 if (S.tok && S.snap) render(); // สคริปต์นี้โหลดหลังหน้าแรก render ไปแล้ว → วาดใหม่ให้มีหน้าจอ PY
 </script>
