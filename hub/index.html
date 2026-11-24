@@ -164,7 +164,7 @@ const LS = { get(k, d) { try { const v = localStorage.getItem(k); return v == nu
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const S = { view: 'loading', theme: LS.get('hub-theme', 'light'), shared: LS.get('hub-shared', false), session: LS.get('hub-session', null),
   names: [], pick: null, pin: '', pin1: '', oldPin: '', err: '', apps: [], open: {}, tab: 'home', admin: null, edit: null, busy: false,
-  md: { list: null, tab: '', data: null, edit: null }, sum: { month: '', cache: {}, busy: false, err: '' } };
+  md: { list: null, tab: '', data: null, edit: null }, sum: sumFresh() };
 const PAGES = ['home', 'admin', 'md'];   // Hub pages (not apps)
 document.documentElement.dataset.theme = S.theme;
 
@@ -389,11 +389,11 @@ async function openApp(key, force) {
   st.appendChild(f); render();
 }
 function expired() { toast('หมดเวลาเข้าใช้งาน — login ใหม่', true); clearSession(); start(); }
-function clearSession() { S.session = null; LS.set('hub-session', null); S.apps = []; S.tab = 'home'; S.admin = null; S.edit = null; S.md = { list: null, tab: '', data: null, edit: null }; S.sum = { month: '', cache: {}, busy: false, err: '' }; const r = document.getElementById('root'); if (r) r.innerHTML = ''; }
+function clearSession() { S.session = null; LS.set('hub-session', null); S.apps = []; S.tab = 'home'; S.admin = null; S.edit = null; S.md = { list: null, tab: '', data: null, edit: null }; S.sum = sumFresh(); const r = document.getElementById('root'); if (r) r.innerHTML = ''; }
 
 
 /* ---------- สรุปรายวัน (หน้าแรก · เฉพาะ Admin) · 25 พ.ย. 2026 ----------
- * RPC hub_daily_summary(p_token, p_month) อ่านอย่างเดียว คำนวณฝั่ง Supabase: Extruder = ชั่วโมงเดินเครื่อง (RuntimeType 'Runtime') ต่อสาย ตัดตามวันผลิต 08:00–07:59
+ * RPC hub_sum_ext / hub_sum_coat / hub_sum_pack (p_token, p_month) แยกส่วน ต่างคนต่างอ่านเฉพาะแท็บของตัวเอง อ่านอย่างเดียว คำนวณฝั่ง Supabase: Extruder = ชั่วโมงเดินเครื่อง (RuntimeType 'Runtime') ต่อสาย ตัดตามวันผลิต 08:00–07:59
  * Coater = ผลต่าง Total_Weight สะสมต่อ lot+สาย · Packing = Output_Kg ไม่ยกเลิก ไม่รวม WIP (WIP แยกบรรทัดหมายเหตุ)
  * อ่านเฉพาะช่วงที่ใช้ (Extruder เฉพาะภายในเดือน · Coater/Packing เฉพาะ 2 เดือน ผ่านดัชนี seq) · เฉพาะเดือนปัจจุบัน + ก่อนหน้า 1 เดือน
  * ไม่ poll: โหลดเมื่อเปิดหน้าแรก (เก็บในเครื่อง 5 นาที) หรือกด ↻ เพื่อลดการอ่าน Supabase */
@@ -417,41 +417,52 @@ function sumChart(days) {
   return '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="ชั่วโมงเดินเครื่อง Extruder รายวัน">' + g + '</svg>';
 }
 const sumOk = () => !!(S.session && S.session.me && S.session.me.is_admin);   // สรุปรายวัน: เฉพาะ Hub Admin เห็น
+const SUMK = ['ext', 'coat', 'pack'];   // 1 ส่วน = 1 RPC (hub_sum_ext / hub_sum_coat / hub_sum_pack) แต่ละส่วนโหลด/ล้มเหลวแยกกัน
+function sumFresh() { return { month: '', cache: { ext: {}, coat: {}, pack: {} }, busy: {}, err: {} }; }   // function declaration: ใช้ได้ก่อนบรรทัดนี้ (S ตั้งต้น)
+function sumSec(k, m, body) {   // ส่วนที่ยังไม่มีข้อมูล: แสดงกำลังโหลด/ข้อผิดพลาดของส่วนนั้นเท่านั้น
+  const M = S.sum; return M.err[k] ? '<div class="err">' + esc(M.err[k]) + '</div>' : '<div class="muted">กำลังโหลด…</div>';
+}
 function sumHtml() {
   if (!sumOk()) return '';
-  const M = S.sum, m = M.month || (S.sumNow || ''), D = M.cache[m];
+  const M = S.sum, m = M.month || (S.sumNow || ''), E = M.cache.ext[m], C = M.cache.coat[m], P = M.cache.pack[m];
   const head = '<div class="hd"><h2>สรุปรายวัน</h2><button data-act="sumMo" data-arg="-1"' + (m && S.sumNow && m <= monthShift(S.sumNow, -1) ? ' disabled' : '') + ' title="เดือนก่อน">◀</button><span class="mo">' + (m ? monthLbl(m) : '…') + '</span>'
     + '<button data-act="sumMo" data-arg="1"' + (m && m >= (S.sumNow || m) ? ' disabled' : '') + ' title="เดือนถัดไป">▶</button><button data-act="sumReload" title="โหลดใหม่">↻</button></div>';
-  if (!D) return '<div class="card sum">' + head + (M.err ? '<div class="err">' + esc(M.err) + '</div>' : '<div class="muted">กำลังโหลด…</div>') + '</div>';
-  const days = D.days, tot = (k) => days.reduce((a, r) => a + (+r[k] || 0), 0), cnt = (k) => days.filter((r) => +r[k] > 0).length, avg = (k) => cnt(k) ? tot(k) / cnt(k) : null;
-  const wip = tot('wip');
-  const lg = '<div class="lg"><span><i class="c1" style="background:var(--blue)"></i>EXT-1 รวม <b>' + nf(tot('e1'), 1) + '</b> ชม. · เฉลี่ย <b>' + nf(avg('e1'), 1) + '</b>/วันเดิน (' + cnt('e1') + ' วัน)</span>'
-    + '<span><i style="background:var(--amber)"></i>EXT-2 รวม <b>' + nf(tot('e2'), 1) + '</b> ชม. · เฉลี่ย <b>' + nf(avg('e2'), 1) + '</b>/วันเดิน (' + cnt('e2') + ' วัน)</span></div>';
-  const rows = days.map((r) => '<tr class="' + (r.d === D.today ? 'td' : (r.coat == null && r.pack == null ? 'off' : '')) + '"><td>' + (+r.d.slice(8)) + '/' + (+r.d.slice(5, 7)) + (r.d === D.today ? ' <span class="tag">วันนี้</span>' : '') + '</td>'
-    + '<td class="n">' + nf(r.coat) + '</td><td class="n">' + nf(r.pack) + '</td></tr>').join('');
-  return '<div class="card sum">' + head + '<div class="muted small">ชั่วโมงเดินเครื่อง Extruder รายวัน (วันผลิต 08:00–07:59)</div>' + lg + sumChart(days)
-    + '<h3>ยอดรายวัน · Coater / Packing (kg)</h3><div class="tw"><table><thead><tr><th>วันที่</th><th class="n">Coater</th><th class="n">Packing</th></tr></thead><tbody>' + rows + '</tbody>'
-    + '<tfoot><tr><td>รวม</td><td class="n">' + nf(tot('coat')) + '</td><td class="n">' + nf(tot('pack')) + '</td></tr>'
-    + '<tr class="av"><td>เฉลี่ย/วันที่มียอด</td><td class="n">' + nf(avg('coat')) + '</td><td class="n">' + nf(avg('pack')) + '</td></tr></tfoot></table></div>'
-    + '<div class="note">Coater = น้ำหนักที่ลงเครื่อง (ผลต่างตาชั่งสะสมต่อ lot) · Packing = Output ไม่ยกเลิก ไม่รวม WIP' + (wip > 0 ? ' (WIP เดือนนี้ ' + nf(wip) + ' kg แยกไว้)' : '') + ' · วันผลิต 08:00–07:59 · อัปเดต '
-    + new Date(D.at).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) + '</div></div>';
+  const sum = (D, k) => D.days.reduce((a, r) => a + (+r[k] || 0), 0), cnt = (D, k) => D.days.filter((r) => +r[k] > 0).length, avg = (D, k) => cnt(D, k) ? sum(D, k) / cnt(D, k) : null;
+  let h = '<div class="muted small">ชั่วโมงเดินเครื่อง Extruder รายวัน (วันผลิต 08:00–07:59)</div>';
+  if (!E) h += sumSec('ext');
+  else h += '<div class="lg"><span><i class="c1" style="background:var(--blue)"></i>EXT-1 รวม <b>' + nf(sum(E, 'e1'), 1) + '</b> ชม. · เฉลี่ย <b>' + nf(avg(E, 'e1'), 1) + '</b>/วันเดิน (' + cnt(E, 'e1') + ' วัน)</span>'
+    + '<span><i style="background:var(--amber)"></i>EXT-2 รวม <b>' + nf(sum(E, 'e2'), 1) + '</b> ชม. · เฉลี่ย <b>' + nf(avg(E, 'e2'), 1) + '</b>/วันเดิน (' + cnt(E, 'e2') + ' วัน)</span></div>' + sumChart(E.days);
+  h += '<h3>ยอดรายวัน · Coater / Packing (kg)</h3>';
+  if (!C || !P) h += sumSec(!C ? 'coat' : 'pack');
+  else {
+    const T = C.today, pk = {}; P.days.forEach((r) => { pk[r.d] = r; });
+    const rows = C.days.map((r) => { const q = pk[r.d] || {}; return '<tr class="' + (r.d === T ? 'td' : (r.coat == null && q.pack == null ? 'off' : '')) + '"><td>' + (+r.d.slice(8)) + '/' + (+r.d.slice(5, 7)) + (r.d === T ? ' <span class="tag">วันนี้</span>' : '') + '</td>'
+      + '<td class="n">' + nf(r.coat) + '</td><td class="n">' + nf(q.pack) + '</td></tr>'; }).join('');
+    const wip = sum(P, 'wip');
+    h += '<div class="tw"><table><thead><tr><th>วันที่</th><th class="n">Coater</th><th class="n">Packing</th></tr></thead><tbody>' + rows + '</tbody>'
+      + '<tfoot><tr><td>รวม</td><td class="n">' + nf(sum(C, 'coat')) + '</td><td class="n">' + nf(sum(P, 'pack')) + '</td></tr>'
+      + '<tr class="av"><td>เฉลี่ย/วันที่มียอด</td><td class="n">' + nf(avg(C, 'coat')) + '</td><td class="n">' + nf(avg(P, 'pack')) + '</td></tr></tfoot></table></div>'
+      + '<div class="note">Coater = น้ำหนักที่ลงเครื่อง (ผลต่างตาชั่งสะสมต่อ lot) · Packing = Output ไม่ยกเลิก ไม่รวม WIP' + (wip > 0 ? ' (WIP เดือนนี้ ' + nf(wip) + ' kg แยกไว้)' : '') + ' · วันผลิต 08:00–07:59 · อัปเดต '
+      + new Date(Math.max(new Date(C.at), new Date(P.at))).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) + '</div>';
+  }
+  return '<div class="card sum">' + head + h + '</div>';
 }
-async function loadSum(force) {
-  const M = S.sum; if (M.busy || !sumOk()) return;
-  const m = M.month || '', c = M.cache[m || S.sumNow || ''];
-  if (c && !force && Date.now() - c.got < 5 * 60e3) return;
-  if (M.err && !force && !c) return;   // ล้มเหลวแล้ว: ไม่ลองซ้ำเองทุกครั้งที่วาดหน้า รอกด ↻ หรือเปลี่ยนเดือน
-  M.busy = true; M.err = '';
+async function loadSumPart(k, m, force) {
+  const M = S.sum, c = M.cache[k][m || S.sumNow || ''];
+  if (M.busy[k] || (c && !force && Date.now() - c.got < 5 * 60e3)) return;
+  if (M.err[k] && !force && !c) return;   // ล้มเหลวแล้ว: ไม่ลองซ้ำเองทุกครั้งที่วาดหน้า รอกด ↻ หรือเปลี่ยนเดือน
+  M.busy[k] = true; M.err[k] = '';
   try {
-    const r = await rpc('hub_daily_summary', { p_token: tok(), p_month: m || null });
+    const r = await rpc('hub_sum_' + k, { p_token: tok(), p_month: m || null });
     if (!r.ok) { if (r.error === 'AUTH') return expired(); throw new Error(r.error === 'ADMIN' ? 'เฉพาะ Admin' : (r.error || 'โหลดสรุปไม่สำเร็จ')); }
-    r.got = Date.now(); S.sumNow = S.sumNow || r.month; S.sumToday = r.today; if (!M.month) M.month = r.month; M.cache[r.month] = r;
-  } catch (e) { M.err = e.message; } finally { M.busy = false; if (S.tab === 'home') render(); }
+    r.got = Date.now(); S.sumNow = S.sumNow || r.month; S.sumToday = r.today; if (!M.month) M.month = r.month; M.cache[k][r.month] = r;
+  } catch (e) { M.err[k] = e.message; } finally { M.busy[k] = false; if (S.tab === 'home') render(); }
 }
+function loadSum(force) { if (!sumOk()) return; const m = S.sum.month || ''; SUMK.forEach((k) => loadSumPart(k, m, force)); }
 
 /* ---------- actions ---------- */
 const ACT = {
-  sumMo(k) { const M = S.sum; if (!S.sumNow) return; M.err = ''; M.month = monthShift(M.month || S.sumNow, +k); const lo = monthShift(S.sumNow, -1);   // เฉพาะเดือนปัจจุบัน + เดือนก่อนหน้า 1 เดือน
+  sumMo(k) { const M = S.sum; if (!S.sumNow) return; M.err = {}; M.month = monthShift(M.month || S.sumNow, +k); const lo = monthShift(S.sumNow, -1);   // เฉพาะเดือนปัจจุบัน + เดือนก่อนหน้า 1 เดือน
     if (M.month > S.sumNow) M.month = S.sumNow; if (M.month < lo) M.month = lo; render(); loadSum(); },
   sumReload() { loadSum(true); },
   theme() { S.theme = S.theme === 'dark' ? 'light' : 'dark'; LS.set('hub-theme', S.theme); document.documentElement.dataset.theme = S.theme; render(); },
