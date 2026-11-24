@@ -24,7 +24,7 @@
  * (local runner exr_get / exw_commit). Only rare admin screens / Excel export still call Apps Script (with the same session token). */
 (function () {
   var SB = 'https://kdytxuufvigwjccebrki.supabase.co', KEY = 'sb_publishable_IYCMIaN7tJleWINprA42CQ_dX10sXFF';
-  var EXEC = 'https://script.google.com/macros/s/AKfycbxStPT3Y1nU_2-TbAlmfWvvGN93GfpIbjUmci5dWM9GXt_JFRwsnZRVi8Cjf1jkfGu5QA/exec', LSK = 'exsa-page', TITLE = 'BFL Extruder Param Log', BUILD = 2026112403;
+  var EXEC = 'https://script.google.com/macros/s/AKfycbxStPT3Y1nU_2-TbAlmfWvvGN93GfpIbjUmci5dWM9GXt_JFRwsnZRVi8Cjf1jkfGu5QA/exec', LSK = 'exsa-page', TITLE = 'BFL Extruder Param Log', BUILD = 2026112404;
 
   function lsGet() { try { return JSON.parse(localStorage.getItem(LSK) || 'null'); } catch (e) { return null; } }
   function lsSet(v) { try { localStorage.setItem(LSK, JSON.stringify(v)); } catch (e) { try { localStorage.removeItem(LSK); } catch (e2) {} } }
@@ -49,12 +49,18 @@
         }, function () { throw new Error('สัญญาณหลุด — ลองใหม่อีกครั้ง'); });
     }
     function chk(j) { if (j && j.err) throw new Error('VALIDATION: ' + j.err); return j; }
+    var CTX = null;
     var LOCAL = {
       getLoginUsers: function () { return rpc('exs_users'); },
       login: function (id, pin) { return rpc('exs_login', { p_id: String(id || ''), p_pin: String(pin == null ? '' : pin) }).then(chk); },
       hubLogin: function (t) { return rpc('exs_hub_login', { p_ticket: String(t || '') }).then(chk); },
       changePin: function (t, o, n) { return rpc('exs_change_pin', { p_token: t, p_old: String(o || ''), p_new: String(n || '') }).then(chk).then(function () { return true; }); },
-      exCtx: function (t, want, have) { return rpc('exs_ctx', { p_token: t, p_want: want || [], p_have: have || {} }); },
+      // the page asks for this before every run; the answer (user + 2 h ticket + switches) is reused for 5 min → one small call per 5 min
+      exCtx: function (t, want, have) {
+        var now = Date.now();
+        if (CTX && CTX.t === t && now - CTX.at < 5 * 60e3) { var c = JSON.parse(CTX.j); c.serverNow += now - CTX.at; return Promise.resolve(c); }
+        return rpc('exs_ctx', { p_token: t, p_want: want || [], p_have: have || {} }).then(function (v) { if (v && v.ticket) CTX = { t: t, at: Date.now(), j: JSON.stringify(v) }; return v; });
+      },
       getStamp: function (t, lot, ext) { return rpc('exs_stamp', { p_token: t, p_lot: lot || '', p_ext: ext || '' }); }
     };
     // anything else (admin screens, Excel export, a read the phone could not run) → Apps Script, as before
