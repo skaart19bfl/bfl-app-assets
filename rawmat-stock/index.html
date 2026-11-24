@@ -4286,21 +4286,23 @@ const PY_L5_CSS = `.l5{position:absolute;left:.55in;top:.13in;width:9.95in;heigh
 .l5 .qr{position:absolute;right:.6in;top:.9in;text-align:center;font-size:10pt}.l5 .qr svg{width:.95in;height:.95in;display:block}
 .l5 .f{position:absolute;left:1.15in;display:flex;font-size:17pt;align-items:flex-end}
 .l5 .f span:first-child{width:1.95in;white-space:nowrap}
-.l5 .f .v{border-bottom:.75px solid #000;width:3.9in;text-align:center;min-height:.27in;font-weight:700}
+.l5 .f .v{border-bottom:.75px solid #000;width:3.9in;text-align:center;min-height:.27in;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .l5 .f.a{top:1.0in}.l5 .f.b{top:1.62in}.l5 .f.c{top:1.9in}.l5 .f.d{top:1.31in}
 .l5 .sp{position:absolute;left:.5in;top:2.25in;font-size:17pt;font-weight:700;text-decoration:underline}
 .l5 table{position:absolute;left:1.8in;top:2.25in;width:6.25in;border-collapse:collapse;font-size:15pt;table-layout:fixed}
 .l5 th,.l5 td{border:.75px solid #000;height:.27in;padding:0 .06in;font-weight:400;white-space:nowrap;overflow:hidden}
 .l5 th:nth-child(1){width:3.1in}.l5 th:nth-child(3){width:.65in}.l5 td.c{text-align:center}
 .l5 .sg{position:absolute;right:1.1in;top:5.2in;text-align:center;font-size:16pt;line-height:1.5}`;
+// ป้าย -05: ช่องค่า 1 บรรทัด — ข้อความยาวลดขนาดอักษรในหน้าพิมพ์จนพอดีช่อง (วัดจริงหลังโหลดฟอนต์ · ต่ำสุด 9pt) ไม่ขึ้นบรรทัดใหม่ทับช่องถัดไป (ผู้ใช้ 24 พ.ย.)
+const PY_FIT_JS = `<script>(document.fonts ? document.fonts.ready : Promise.resolve()).then(function(){document.querySelectorAll('.fit').forEach(function(e){var p=17;while(e.scrollWidth>e.clientWidth+1&&p>9){p-=.5;e.style.fontSize=p+'pt'}})})<\/script>`;
 async function pyPrintBag(bag) {
   let r; try { r = await rpc('rm_py_bag_get', { p_token: S.tok, p_bag: bag }); } catch (e) { S.toast = e.message; S.toastErr = true; render(); return; }
   const B = r.bag; const pcls = [...new Set(r.lines.map((x) => x.pcl).filter(Boolean))]; const rows = []; for (let i = 0; i < 10; i++) { const x = r.lines[i]; rows.push(x ? `<tr><td>${esc(x.item)}${x.bags > 1 ? ` (ชุดละ ${x.bags} ถุง)` : ''}</td><td>${esc(x.lot)}</td><td class="c">${x.qty} ชุด</td></tr>` : '<tr><td></td><td></td><td></td></tr>'); }
   const page = `<div class="page land"><div class="l5"><img class="logo" src="${LOGO}" alt=""><div class="hd"><div>${esc(pyCo(r.doc))}</div><div>ป้ายบ่งชี้จำนวนชุดสารเสริม</div></div>
     <div class="fno">F-WI01-PSS01-05 Rev.01</div><div class="qr">${qrSvg(r.qr, 3)}<div>${esc(B.bag_no)}</div></div>
-    <div class="f a"><span>Formula Code</span><span class="v">${esc(B.formula_code || '')}</span></div>${pcls.length ? `<div class="f d"><span>Lot รับเข้า BFL-PC</span><span class="v">${esc(pcls.join(', '))}</span></div>` : ''}<div class="f b"><span>Product Name</span><span class="v">${esc(B.product_name || '')}</span></div><div class="f c"><span>ประเภทชุดสารเสริม</span><span class="v">${esc(B.set_type || '')}</span></div>
+    <div class="f a"><span>Formula Code</span><span class="v fit">${esc(B.formula_code || '')}</span></div>${pcls.length ? `<div class="f d"><span>Lot รับเข้า BFL-PC</span><span class="v fit">${esc(pcls.join(', '))}</span></div>` : ''}<div class="f b"><span>Product Name</span><span class="v fit">${esc(B.product_name || '')}</span></div><div class="f c"><span>ประเภทชุดสารเสริม</span><span class="v">${esc(B.set_type || '')}</span></div>
     <div class="sp">ส่วนประกอบ</div><table><tr><th>รหัส/ชื่อชุดจัดเตรียมสารเสริม</th><th>Lot No.ผลิตชุดสารเสริม</th><th>จำนวน</th></tr>${rows.join('')}</table>
-    <div class="sg"><div>.........................................................</div><div>(&nbsp;${'&nbsp;'.repeat(40)})</div><div><b>เจ้าหน้าที่หน่วยงานพรีมิกซ์</b></div></div></div></div>`;
+    <div class="sg"><div>.........................................................</div><div>(&nbsp;${'&nbsp;'.repeat(40)})</div><div><b>เจ้าหน้าที่หน่วยงานพรีมิกซ์</b></div></div></div></div>${PY_FIT_JS}`;
   pyOpenLetter('ป้ายบ่งชี้จำนวนชุดสารเสริม ' + B.bag_no, 'landscape', PY_L5_CSS, [page]);
 }
 
