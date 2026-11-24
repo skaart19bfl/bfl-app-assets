@@ -58,7 +58,7 @@
       getStamp: function (t, lot, ext) { return rpc('exs_stamp', { p_token: t, p_lot: lot || '', p_ext: ext || '' }); }
     };
     // anything else (admin screens, Excel export, a read the phone could not run) → Apps Script, as before
-    var READ = /^(get|list|load|read|find|search|ex[A-Z]|ncp[A-Za-z]*Questions$|__)/;   // asked again when no answer; saves never
+    var READ = /^(get|list|load|read|find|search|ex[A-Z]|ncp[A-Za-z]*Questions$|__)|PhotoGet$/;   // asked again when no answer; saves never
     function post(body, n) {
       n = n || 0;
       var rd = READ.test(String(body.fn || '')), ac = typeof AbortController === 'function' ? new AbortController() : null;
