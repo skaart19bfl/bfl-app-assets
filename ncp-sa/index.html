@@ -24,7 +24,7 @@
  * something changed (ncp_stamp) — or 5 minutes passed — so the Edge Function is asked only when there is something new. */
 (function () {
   var SB = 'https://kdytxuufvigwjccebrki.supabase.co', KEY = 'sb_publishable_IYCMIaN7tJleWINprA42CQ_dX10sXFF';
-  var FN = SB + '/functions/v1/ncp-srv', LSK = 'ncpsa-page', TITLE = 'BFL NCP System', BUILD = 2026112402;
+  var FN = SB + '/functions/v1/ncp-srv', LSK = 'ncpsa-page', TITLE = 'BFL NCP System', BUILD = 2026112403;
 
   function lsGet() { try { return JSON.parse(localStorage.getItem(LSK) || 'null'); } catch (e) { return null; } }
   function lsSet(v) { try { localStorage.setItem(LSK, JSON.stringify(v)); } catch (e) { try { localStorage.removeItem(LSK); } catch (e2) {} } }
@@ -208,6 +208,8 @@
       + '<script>(' + stampGuard.toString() + ')();<\/script>';
     // same sign-in as the Apps Script page (ncpflow_token: the sessions live in Supabase for both)
     var h = page.html.replace(/<script(\s+src=["']https?:\/\/[^"']+["'])\s*>/gi, '<script$1 async>'), m;
+    // user 24 Nov 2026: NCP come from the Coating app via Supabase, not AppSheet → sync wording (the Apps Script page keeps its own text)
+    h = h.replace(/Sync จาก AppSheet ผิดพลาด/g, 'Sync NCP ผิดพลาด').replace(/ดึงข้อมูลจาก AppSheet/g, 'Sync NCP');
     if ((m = /<head[^>]*>/i.exec(h))) h = h.slice(0, m.index + m[0].length) + head + h.slice(m.index + m[0].length);
     else if ((m = /^\s*<!doctype[^>]*>/i.exec(h))) h = m[0] + head + h.slice(m[0].length);
     else h = '<!DOCTYPE html>' + head + h;
