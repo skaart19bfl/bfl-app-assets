@@ -9,23 +9,42 @@
 
   function lsGet() { try { return JSON.parse(localStorage.getItem(LSK) || 'null'); } catch (e) { return null; } }
   function lsSet(v) { try { localStorage.setItem(LSK, JSON.stringify(v)); } catch (e) { try { localStorage.removeItem(LSK); } catch (e2) {} } }
-  function post(body) {
-    return fetch(EXEC, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body), cache: 'no-store' })
+  // 24 Nov 2026: some Apps Script answers never arrive (the request runs, the reply hangs) → ask again after 12 s (the page only)
+  function post(body, n) {
+    n = n || 0;
+    var ac = typeof AbortController === 'function' ? new AbortController() : null, tm = ac && setTimeout(function () { ac.abort(); }, 12000);
+    return fetch(EXEC, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body), cache: 'no-store', signal: ac ? ac.signal : undefined })
       .then(function (r) { if (!r.ok) throw new Error('เซิร์ฟเวอร์ตอบ ' + r.status); return r.text(); })
       .then(function (t) {
+        clearTimeout(tm);
         var j; try { j = JSON.parse(t); } catch (e) { throw new Error('เซิร์ฟเวอร์ตอบไม่ถูกต้อง'); }
         if (!j.ok) throw new Error(j.e || 'ผิดพลาด'); return j.v;
-      });
+      }, function (e) { clearTimeout(tm); if (n < 3 && ac && ac.signal.aborted) return post(body, n + 1); throw e; });
   }
 
   /* Runs inside the app page, before its own scripts. Kept free of globals except google + __GASP. */
   function shim(C) {
-    function post(body) {
-      return fetch(C.exec, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body), cache: 'no-store' })
+    // 24 Nov 2026 (Extruder Log stuck while loading): some Apps Script answers never arrive — the function runs, the reply hangs forever.
+    // Reads (get… / list… / ex… / login …) are asked again after 15 s (up to 3 more times); anything else gives up after 90 s with a
+    // message to check before saving again (it may have been saved).
+    var READ = /^(get|list|load|read|find|search|ex[A-Z]|hubLogin$|login$|ncp[A-Za-z]*Questions$|__)/;
+    function post(body, n) {
+      n = n || 0;
+      var rd = READ.test(String(body.fn || '')), ac = typeof AbortController === 'function' ? new AbortController() : null;
+      var tm = ac && setTimeout(function () { ac.abort(); }, rd ? 15000 : 90000);
+      return fetch(C.exec, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body), cache: 'no-store', signal: ac ? ac.signal : undefined })
         .then(function (r) { if (!r.ok) throw new Error('เซิร์ฟเวอร์ตอบ ' + r.status); return r.text(); })
         .then(function (t) {
+          clearTimeout(tm);
           var j; try { j = JSON.parse(t); } catch (e) { throw new Error('เซิร์ฟเวอร์ตอบไม่ถูกต้อง (ลองใหม่อีกครั้ง)'); }
           if (!j.ok) throw new Error(j.e || 'ผิดพลาด'); return j.v;
+        }, function (e) {
+          clearTimeout(tm);
+          if (ac && ac.signal.aborted) {
+            if (rd && n < 3) return post(body, n + 1);
+            throw new Error(rd ? 'เซิร์ฟเวอร์ไม่ตอบ — ลองใหม่อีกครั้ง' : 'เซิร์ฟเวอร์ไม่ตอบ — ตรวจดูก่อนว่าบันทึกแล้วหรือยัง แล้วค่อยบันทึกซ้ำ');
+          }
+          throw e;
         });
     }
     function runner(ok, bad, uo) {
