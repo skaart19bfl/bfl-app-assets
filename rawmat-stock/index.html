@@ -3644,6 +3644,14 @@ const PY_ST = { PY: 'อยู่คลัง', ISSUED: 'เบิกแล้�
 const PY_STORES = ['PY', 'PY-PC']; const PY_DOCS = ['BFL', 'BFL-PC'];
 const PY_CO = { BFL: 'บริษัท บลูฟาโล่ จำกัด', 'BFL-PC': 'บริษัท บลูฟาโล่ เพ็ทแคร์ จำกัด' };
 const pyCo = (d) => PY_CO[d] || PY_CO.BFL;
+// สวิตช์เอกสาร (ผู้ใช้ 25 พ.ย.): ใช้ในการผลิต BFL → F-WI04 / F-WI07 ออกหัว BFL ก่อน · หัว BFL-PC ใช้เฉพาะใบจ่ายออก PY-PC → BFL-PC
+// Control / admin เปิด-ปิดทีละใบ (rm_py_doc_cfg · pkp_cfg py.doc.f04 / py.doc.f07) · ปิด = หัวตามเอกสารที่เลือกตอนรับเข้า Lot แบบเดิม
+async function pyDocCfg(force) {
+  const c = S.py.dc; if (!force && c && Date.now() - c.t < 60e3) return c;
+  try { const r = await rpc('rm_py_doc_cfg', { p_token: S.tok }); S.py.dc = Object.assign(r, { t: Date.now() }); }
+  catch (e) { if (!S.py.dc) S.py.dc = { f04: true, f07: true, can: false, t: 0 }; }
+  return S.py.dc;
+}
 // 1 ชุดแยกหลายถุง (ผู้ใช้ 21 พ.ย.): ป้าย -04 ถุงละใบ · เบิก/เทต้องสแกนครบทุกถุง
 const pyBagTag = (n) => n > 1 ? ` <span class="tag" style="background:#fff3cd;color:#8a5a00">ชุดละ ${n} ถุง</span>` : '';
 const pyMaskTxt = (n, mask) => Array.from({ length: n }, (_, i) => (mask & (1 << i)) ? '✓' : '·').join('');
@@ -3681,7 +3689,7 @@ S.py = {
   ms: { q: '', only: '', f: null },
   lp: { lot: '', seqs: '' }, mv: { lot: '', bag: '', seqs: '', to: '' }, le: { lot: '', kg: '', reason: '', store: '', doc: '', bkg: [] }, lc: { lot: '', reason: '' }, bv: { bag: '', reason: '' },
   pf: { q: '', lot: '', seqs: '', cart: [], note: '', plot: '', last: null, done: '', cx: '', cxr: '', find: '', plots: null }, hk: '',
-  fm: { from: '', to: '', doc: '', doc2: '', co: '' }, help: { html: '', loading: false, err: '', sec: '' }
+  dc: null, fm: { from: '', to: '', doc: '', doc2: '', co: '' }, help: { html: '', loading: false, err: '', sec: '' }
 };
 
 async function loadPY(silent) {
@@ -3705,6 +3713,7 @@ function pyOnScreen(sc) { // เปิดหน้าจอ PY: โหลดข�
   loadPY(); if (['pyrecv', 'pyorder', 'pymaster'].includes(sc)) loadPYMaster();
   if (sc === 'pyorder' && !S.py.od.lots) loadPYOrders();
   if (sc === 'pyret') loadPYRetLog();
+  if (sc === 'pyforms') pyDocCfg(true).then(render);
   if (sc === 'pypf' && !S.py.pf.plots) loadPYPfLots();
   if (sc === 'pyscan' || sc === 'pyret' || sc === 'pyxfer' || sc === 'pypf') setTimeout(pyFocus, 50);
 }
@@ -4198,17 +4207,23 @@ function viewPyScan() {
 // ===== หน้า: ฟอร์ม F-WI04 / F-WI07 =====
 function viewPyForms() {
   const F = S.py.fm; const day = (S.snap || {}).biz_day || todayYmd(); if (!F.from) F.from = day; if (!F.to) F.to = F.from;
-  const ords = pyOrders();
+  const ords = pyOrders(); const dc = S.py.dc; const b04 = !dc || dc.f04, b07 = !dc || dc.f07, can = !!(dc && dc.can) && !S.busy;
+  const sw = (k, on, nm) => `<div class="lrow" style="align-items:center;gap:10px;flex-wrap:wrap"><span><b>${nm}</b></span><span class="chips">
+      <button type="button" class="tg" aria-pressed="${on}" data-py="dcset" data-form="${k}" data-on="1" ${can && !on ? '' : 'disabled'}>หัว BFL (ใช้ในการผลิต BFL)</button>
+      <button type="button" class="tg" aria-pressed="${!on}" data-py="dcset" data-form="${k}" data-on="0" ${can && on ? '' : 'disabled'}>ตามเอกสารของ Lot (BFL / BFL-PC)</button></span></div>`;
   return pyHead('ฟอร์ม PY ชุดสารเสริม', 'พิมพ์จากข้อมูลในระบบ · TH SarabunPSK · ขาว-ดำ')
-    + `<div class="card" style="display:flex;flex-direction:column;gap:10px"><h2 style="margin:0">F-WI04-PSS01-01 Rev.00 ใบเบิก-คืนสารเสริม/ชุดสารเสริม</h2>
+    + `<div class="card" style="display:flex;flex-direction:column;gap:8px"><h2 style="margin:0">หัวเอกสาร</h2>
+      ${dc ? sw('f04', b04, 'F-WI04 ใบเบิก-คืนชุดสารเสริม') + sw('f07', b07, 'F-WI07 บันทึกการเทสารผสม') : '<p class="muted smt" style="margin:0">กำลังโหลด…</p>'}
+      <span class="muted smt">ใช้ในการผลิต BFL ใช้เอกสาร BFL เป็นหลัก · หัว BFL-PC ใช้เฉพาะใบจ่ายออก PY-PC → BFL-PC (หน้า "จ่ายออก PY-PC") · ${dc && dc.can ? 'แตะเพื่อเปิด-ปิด มีผลทุกเครื่อง' : 'Control / admin เป็นผู้เปิด-ปิด'}</span></div>
+    <div class="card" style="display:flex;flex-direction:column;gap:10px"><h2 style="margin:0">F-WI04-PSS01-01 Rev.00 ใบเบิก-คืนสารเสริม/ชุดสารเสริม</h2>
       <div class="chips">รอบวัน <input type="date" data-bind="py.fm.from" value="${esc(F.from)}"> ถึง <input type="date" data-bind="py.fm.to" value="${esc(F.to)}">
-        <span>เอกสาร</span>${[['', 'ทั้งหมด'], ['BFL', 'BFL'], ['BFL-PC', 'BFL-PC']].map(([v, t]) => `<button type="button" class="tg" aria-pressed="${(F.co || '') === v}" data-set="py.fm.co" data-val="${v}">${t}</button>`).join('')}
-        <button type="button" data-py="f04">🖨 พิมพ์ F-WI04 (A4 แนวนอน)</button></div><span class="muted smt">1 แถว = รหัส + Lot เดียวกันในใบสั่งเดียวกัน · เบิก = สแกนเบิก · คืน = สแกนส่งคืน · แยกแผ่นตามรอบวัน (08:00–07:59) และตามเอกสารระบบของ Lot (BFL = บริษัท บลูฟาโล่ จำกัด · BFL-PC = บริษัท บลูฟาโล่ เพ็ทแคร์ จำกัด)</span></div>
+        ${b04 ? '' : `<span>เอกสาร</span>${[['', 'ทั้งหมด'], ['BFL', 'BFL'], ['BFL-PC', 'BFL-PC']].map(([v, t]) => `<button type="button" class="tg" aria-pressed="${(F.co || '') === v}" data-set="py.fm.co" data-val="${v}">${t}</button>`).join('')}`}
+        <button type="button" data-py="f04">🖨 พิมพ์ F-WI04 (A4 แนวนอน)</button></div><span class="muted smt">1 แถว = รหัส + Lot เดียวกันในใบสั่งเดียวกัน · เบิก = สแกนเบิก · คืน = สแกนส่งคืน · แยกแผ่นตามรอบวัน (08:00–07:59)${b04 ? ' · หัว บริษัท บลูฟาโล่ จำกัด ทุกแผ่น' : ' และตามเอกสารระบบของ Lot (BFL = บริษัท บลูฟาโล่ จำกัด · BFL-PC = บริษัท บลูฟาโล่ เพ็ทแคร์ จำกัด)'}</span></div>
     <div class="card" style="display:flex;flex-direction:column;gap:10px"><h2 style="margin:0">F-WI07-PRD04-01 Rev.03 บันทึกการเทสารผสมล่วงหน้า</h2>
       <div class="chips"><select data-bind="py.fm.doc" style="flex:1 1 300px;min-width:0"><option value="">— เลือกใบสั่งเบิก —</option>${ords.map((o) => `<option value="${esc(o.doc)}" ${F.doc === o.doc ? 'selected' : ''}>${esc(pyOrdLabel(o))}</option>`).join('')}</select>
         หรือพิมพ์เลขใบ <input data-bind="py.fm.doc2" value="${esc(F.doc2 || '')}" placeholder="PYO-YYMMDD-NNN" style="width:170px">
         <button type="button" data-py="f07" data-doc="" ${(F.doc2 || F.doc).trim() ? '' : 'disabled'}>🖨 พิมพ์ F-WI07 (A4 แนวตั้ง)</button></div>
-      <span class="muted smt">หัวฟอร์มตามเอกสารระบบของ Lot ที่เบิก (BFL / BFL-PC) · หัวคอลัมน์ 1–20 = รหัสในใบสั่ง · แถว = ชุดที่ (batch) · ✓ = เทแล้ว (ชุด/batch มากกว่า 1 แยกแถวลงมาทีละชุด) · เวลาเทเสร็จ = เวลาสแกนเทชุดล่าสุดของแถว</span></div>`;
+      <span class="muted smt">${b07 ? 'หัว บริษัท บลูฟาโล่ จำกัด' : 'หัวฟอร์มตามเอกสารระบบของ Lot ที่เบิก (BFL / BFL-PC)'} · หัวคอลัมน์ 1–20 = รหัสในใบสั่ง · แถว = ชุดที่ (batch) · ✓ = เทแล้ว (ชุด/batch มากกว่า 1 แยกแถวลงมาทีละชุด) · เวลาเทเสร็จ = เวลาสแกนเทชุดล่าสุดของแถว</span></div>`;
 }
 
 // ===== หน้า: Master ชุดสารเสริม =====
@@ -4378,10 +4393,11 @@ async function pyPrintBag(bag) {
 // ---------- F-WI04-PSS01-01 Rev.00 ใบเบิก-คืนสารเสริม/ชุดสารเสริม (A4 แนวนอน · 21 แถว) ----------
 async function pyPrintF04() {
   const F = S.py.fm; let r; try { r = await rpc('rm_py_log', { p_token: S.tok, p: { from: F.from, to: F.to, types: ['ISSUE', 'RETURN'] } }); } catch (e) { S.toast = e.message; S.toastErr = true; render(); return; }
+  const bfl = (await pyDocCfg()).f04; const fco = bfl ? '' : F.co; // สวิตช์เปิด = หัว BFL ทุกแถว (ผู้ใช้ 25 พ.ย.)
   const g = {};
-  r.rows.filter((x) => !x.voided && (!F.co || (x.ldoc || 'BFL') === F.co)).forEach((x) => { const k = [x.day, x.type, x.doc, x.item, x.lot].join('|'); if (!g[k]) g[k] = { co: x.ldoc || 'BFL', day: x.day, type: x.type, item: x.item, name: x.name, lot: x.lot, n: 0, seqs: new Set(), kg: Number(x.kgset || x.kg), plot: x.plot, prod: x.prodn || x.prod, oby: x.obyn || x.oby, by: new Set(), at: x.at }; if (!g[k].seqs.has(x.seq)) { g[k].seqs.add(x.seq); g[k].n++; } g[k].by.add(x.byn || x.by); }); // ชุดแยกถุง: นับเป็นชุด (สแกนทีละถุง)
+  r.rows.filter((x) => !x.voided && (!fco || (x.ldoc || 'BFL') === fco)).forEach((x) => { const k = [x.day, x.type, x.doc, x.item, x.lot].join('|'); if (!g[k]) g[k] = { co: bfl ? 'BFL' : x.ldoc || 'BFL', day: x.day, type: x.type, item: x.item, name: x.name, lot: x.lot, n: 0, seqs: new Set(), kg: Number(x.kgset || x.kg), plot: x.plot, prod: x.prodn || x.prod, oby: x.obyn || x.oby, by: new Set(), at: x.at }; if (!g[k].seqs.has(x.seq)) { g[k].seqs.add(x.seq); g[k].n++; } g[k].by.add(x.byn || x.by); }); // ชุดแยกถุง: นับเป็นชุด (สแกนทีละถุง)
   const rows = Object.values(g).sort((a, b) => (a.day < b.day ? -1 : a.day > b.day ? 1 : a.at < b.at ? -1 : 1));
-  if (!rows.length) { S.toast = 'ไม่มีรายการเบิก/คืน' + (F.co ? ' (เอกสาร ' + F.co + ')' : '') + 'ในช่วงวันที่เลือก'; S.toastErr = true; render(); return; }
+  if (!rows.length) { S.toast = 'ไม่มีรายการเบิก/คืน' + (fco ? ' (เอกสาร ' + fco + ')' : '') + 'ในช่วงวันที่เลือก'; S.toastErr = true; render(); return; }
   const css = `<style>.f4 th{font-size:11pt}.f4 td{height:6.6mm;font-size:11pt}.f4 td.k{font-size:9.5pt}.f4 td.pn{font-size:8.5pt;line-height:1.05;white-space:normal;word-break:break-word;padding:0 .8mm}.f4b{position:relative;margin-top:4mm;font-size:14pt}.f4r{margin-top:3mm;font-size:14pt}</style>`;
   const days = [...new Set(rows.map((x) => x.day))]; const pages = [];
   const cos = PY_DOCS.filter((c) => rows.some((x) => x.co === c)); // แยกแผ่นตามเอกสารระบบที่เลือกตอนรับเข้า (ผู้ใช้ 21 พ.ย.)
@@ -4395,7 +4411,7 @@ async function pyPrintF04() {
       <tr><th>เบิก</th><th>คืน</th><th>รหัสสารเสริม/ชื่อชุดจัดเตรียมสารเสริม</th><th>Lot No. สารเสริม/Lot No.<br>ผลิตชุดเสริมเสริม</th><th>จำนวน</th><th>น้ำหนัก<br>ต่อชุด</th><th>รวม (Kg)</th><th>Lot การผลิต</th><th>เบอร์อาหาร</th><th>ผู้สั่งเบิก</th><th>ผู้เบิก</th><th>ผู้จ่าย</th></tr>${trs.join('')}</table>
       <div class="f4r">หมายเหตุ <span class="fill" style="min-width:250mm"></span></div>
       <div class="f4b"><span>ผู้ทวนสอบ <span class="fill" style="min-width:60mm"></span></span><span style="position:absolute;left:176mm">ผู้ตรวจสอบ <span class="fill" style="min-width:68mm"></span></span></div></div>`); } }));
-  openForm('F-WI04-PSS01-01 ใบเบิก-คืนชุดสารเสริม ' + (F.co ? F.co + ' ' : '') + F.from + (F.to !== F.from ? '_' + F.to : ''), 'landscape', pages);
+  openForm('F-WI04-PSS01-01 ใบเบิก-คืนชุดสารเสริม ' + (fco ? fco + ' ' : '') + F.from + (F.to !== F.from ? '_' + F.to : ''), 'landscape', pages);
 }
 
 // ---------- F-WI07-PRD04-01 Rev.03 บันทึกการเทสารผสมล่วงหน้า (A4 แนวตั้ง · 25 แถว) ----------
@@ -4403,7 +4419,7 @@ async function pyPrintF07(doc) {
   let r; try { r = await rpc('rm_py_order_get', { p_token: S.tok, p_doc: doc }); } catch (e) { S.toast = e.message; S.toastErr = true; render(); return; }
   const O = r.order; const lines = r.lines.slice(0, 20); const us = r.units;
   const lots = [...new Set(us.map((u) => u.lot))]; const bags = new Set();
-  const ucos = [...new Set(us.filter((u) => u.st !== 'VOID').map((u) => u.doc || 'BFL'))]; const co = pyCo(ucos.length === 1 ? ucos[0] : 'BFL'); // หัวฟอร์มตามเอกสารระบบของ Lot ที่เบิก
+  const ucos = [...new Set(us.filter((u) => u.st !== 'VOID').map((u) => u.doc || 'BFL'))]; const co = (await pyDocCfg()).f07 ? pyCo('BFL') : pyCo(ucos.length === 1 ? ucos[0] : 'BFL'); // สวิตช์เปิด = หัว BFL (ผู้ใช้ 25 พ.ย.) · ปิด = ตามเอกสารระบบของ Lot ที่เบิก
   const nm = {};
   try { const lg = await rpc('rm_py_log', { p_token: S.tok, p: { from: String(O.created_at).slice(0, 10), to: todayYmd(), types: ['ISSUE', 'POUR'] } }); lg.rows.forEach((x) => { if (x.byn) nm[x.by] = x.byn; if (x.type === 'ISSUE' && x.doc === O.doc_no && x.bag && !x.voided) bags.add(x.bag); }); } catch (e) { /* ไม่มีข้อมูลถุง */ }
   const pby = [...new Set(us.filter((u) => u.pby).map((u) => nm[u.pby] || u.pby))];
@@ -4503,6 +4519,7 @@ document.addEventListener('click', async (e) => {
   if (a === 'ovcx') { P.ov.cx = ds.id; P.ov.reason = ''; render(); return; }
   if (a === 'ovcxdo') { const doc = P.ov.doc; pyAct('rm_py_cancel', { p_move: int(ds.id), p_reason: P.ov.reason.trim() }, 'ยกเลิกรายการแล้ว', async () => { P.ov.cx = ''; P.ov.data = await rpc('rm_py_order_get', { p_token: S.tok, p_doc: doc }); }); return; }
   // ฟอร์ม
+  if (a === 'dcset') { const on = ds.on === '1'; const r = await pyAct('rm_py_doc_cfg_set', { p_form: ds.form, p_on: on }, (ds.form === 'f04' ? 'F-WI04' : 'F-WI07') + (on ? ' → หัว BFL' : ' → ตามเอกสารของ Lot')); if (r) { S.py.dc = Object.assign(r, { t: Date.now() }); render(); } return; }
   if (a === 'f04') { pyPrintF04(); return; }
   if (a === 'f07') { const doc = (ds.doc || P.fm.doc2 || P.fm.doc).trim().toUpperCase(); if (doc) pyPrintF07(doc); return; }
   // Master
