@@ -69,7 +69,7 @@
   setTimeout(check, 4000);
   setInterval(function () { if (!document.hidden) check(); }, 60 * 60e3);   // F1: hourly (every gated call is checked anyway)
   document.addEventListener('visibilitychange', function () { if (!document.hidden && Date.now() - G.last > 30 * 60e3) check(); });
-})('hub', 2026112501);</script>
+})('hub', 2026112502);</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>BFL Production Hub</title>
 <link rel="icon" type="image/png" sizes="64x64" href="favicon-64.png">
@@ -143,7 +143,7 @@
   .sum .lg { display:flex; gap:14px; flex-wrap:wrap; font-size:13px; margin:2px 0 6px; } .sum .lg i { display:inline-block; width:12px; height:12px; border-radius:3px; margin-right:5px; vertical-align:-1px; }
   .sum .lg b { font-family:'IBM Plex Mono',monospace; font-weight:600; }
   .sum svg { width:100%; height:auto; display:block; } .sum svg text { fill:var(--muted); font-size:12px; font-family:'IBM Plex Mono',monospace; }
-  .sum .c1 { fill:var(--blue); } .sum .c2 { fill:var(--amber); } .sum .pl { fill:var(--line2); } .sum .pd { fill:#8b5cf6; } .sum .md { fill:#dc2626; } .sum .lg i.k { width:10px; height:10px; border-radius:2px; } .sum svg text.vl { fill:var(--text); font-size:9px; } .sum svg text.vi { fill:#fff; font-size:9px; font-weight:600; } .sum h4 { margin:12px 0 2px; font-size:14px; } .sum .gl { stroke:var(--line); stroke-width:1; } .sum .td { fill:var(--blue-weak); }
+  .sum .c1 { fill:var(--blue); } .sum .c2 { fill:var(--ok); } .sum .pl { fill:var(--line2); } .sum .pd { fill:var(--amber); } .sum .md { fill:#dc2626; } .sum .lg i.k { width:10px; height:10px; border-radius:2px; } .sum svg text.vl { fill:var(--text); font-size:9px; } .sum svg text.vi { fill:#fff; font-size:9px; font-weight:600; } .sum h4 { margin:12px 0 2px; font-size:14px; } .sum .gl { stroke:var(--line); stroke-width:1; } .sum .td { fill:var(--blue-weak); }
   .sum .tw { overflow:auto; max-height:70vh; margin-top:10px; border:1px solid var(--line); border-radius:12px; }
   .sum table { font-variant-numeric:tabular-nums; } .sum th { position:sticky; top:0; background:var(--card); z-index:1; white-space:nowrap; } .sum td.n, .sum th.n { text-align:right; font-family:'IBM Plex Mono',monospace; }
   .sum tr.td td { background:var(--blue-weak); } .sum tr.off td { color:var(--muted); } .sum tfoot td { font-weight:700; border-top:2px solid var(--line2); background:var(--card); position:sticky; bottom:0; }
@@ -436,12 +436,12 @@ function sumHtml() {
   const head = '<div class="hd"><h2>สรุปรายวัน</h2><button data-act="sumMo" data-arg="-1"' + (m && S.sumNow && m <= monthShift(S.sumNow, -1) ? ' disabled' : '') + ' title="เดือนก่อน">◀</button><span class="mo">' + (m ? monthLbl(m) : '…') + '</span>'
     + '<button data-act="sumMo" data-arg="1"' + (m && m >= (S.sumNow || m) ? ' disabled' : '') + ' title="เดือนถัดไป">▶</button><button data-act="sumReload" title="โหลดใหม่">↻</button></div>';
   const sum = (D, k) => D.days.reduce((a, r) => a + (+r[k] || 0), 0), cnt = (D, k) => D.days.filter((r) => +r[k] > 0).length, avg = (D, k) => cnt(D, k) ? sum(D, k) / cnt(D, k) : null;
-  let h = '<div class="muted small">ชั่วโมงเดินเครื่อง Extruder รายวัน (วันผลิต 08:00–07:59) · สีในแท่ง: เดินเครื่อง · <span style="color:#dc2626">■</span> เครื่องเสีย (Machine) · <span style="color:#8b5cf6">■</span> หยุดจาก PD (รอวัตถุดิบ/ปัญหากระบวนการ) · <span style="color:var(--muted)">■</span> หยุดตามแผน · ช่องว่าง = ยังไม่มีบันทึก/ยังมาไม่ถึง</div>';
+  let h = '<div class="muted small">ชั่วโมงเดินเครื่อง Extruder รายวัน (วันผลิต 08:00–07:59) · สีในแท่ง: เดินเครื่อง · <span style="color:#dc2626">■</span> เครื่องเสีย (Machine) · <span style="color:var(--amber)">■</span> หยุดจาก PD (รอวัตถุดิบ/ปัญหากระบวนการ) · <span style="color:var(--muted)">■</span> หยุดตามแผน · ช่องว่าง = ยังไม่มีบันทึก/ยังมาไม่ถึง</div>';
   if (!E) h += sumSec('ext');
-  else [['1', 'c1', 'var(--blue)', 'EXT-1'], ['2', 'c2', 'var(--amber)', 'EXT-2']].forEach(([n, cls, col, nm]) => {
+  else [['1', 'c1', 'var(--blue)', 'EXT-1'], ['2', 'c2', 'var(--ok)', 'EXT-2']].forEach(([n, cls, col, nm]) => {
     const run = sum(E, 'e' + n), pl = sum(E, 'p' + n), av = sum(E, 'c' + n) - pl, pct = av > 0 ? run / av * 100 : null, dn = cnt(E, 'e' + n);
     h += '<h4>' + nm + '</h4><div class="lg"><span><i style="background:' + col + '"></i>เดินเครื่อง <b>' + nf(run, 1) + '</b> ชม. จากเวลาที่ไม่ได้หยุดตามแผน <b>' + nf(av, 1) + '</b> ชม. = <b>' + (pct == null ? '–' : nf(pct, 1) + '%') + '</b> · เฉลี่ย <b>' + (pct == null ? '–' : nf(pct * 0.24, 1)) + '</b> ชม./วัน</span>'
-      + '<span><i class="k" style="background:#dc2626"></i>เครื่องเสีย <b>' + nf(sum(E, 'md' + n), 1) + '</b></span><span><i class="k" style="background:#8b5cf6"></i>PD <b>' + nf(sum(E, 'pd' + n), 1) + '</b></span><span><i class="k" style="background:var(--line2)"></i>หยุดตามแผน <b>' + nf(pl, 1) + '</b> ชม. · เดิน ' + dn + ' วัน</span></div>' + sumChart(E.days, 'e' + n, n, cls, nm);
+      + '<span><i class="k" style="background:#dc2626"></i>เครื่องเสีย <b>' + nf(sum(E, 'md' + n), 1) + '</b></span><span><i class="k" style="background:var(--amber)"></i>PD <b>' + nf(sum(E, 'pd' + n), 1) + '</b></span><span><i class="k" style="background:var(--line2)"></i>หยุดตามแผน <b>' + nf(pl, 1) + '</b> ชม. · เดิน ' + dn + ' วัน</span></div>' + sumChart(E.days, 'e' + n, n, cls, nm);
   });
   h += '<h3>ยอดรายวัน · Coater / Packing (kg)</h3>';
   if (!C || !P) h += sumSec(!C ? 'coat' : 'pack');
@@ -452,10 +452,9 @@ function sumHtml() {
     const wip = sum(P, 'wip');
     h += '<div class="tw"><table><thead><tr><th>วันที่</th><th class="n">Coater</th><th class="n">Packing</th></tr></thead><tbody>' + rows + '</tbody>'
       + '<tfoot><tr><td>รวม</td><td class="n">' + nf(sum(C, 'coat')) + '</td><td class="n">' + nf(sum(P, 'pack')) + '</td></tr>'
-      + '<tr class="av"><td>จำนวนกะที่มียอด</td><td class="n">' + nf(sum(C, 'coat_sh')) + '</td><td class="n">' + nf(sum(P, 'pack_sh')) + '</td></tr>'
       + '<tr class="av"><td>เฉลี่ย/วัน</td><td class="n">' + nf(sum(C, 'coat_sh') ? sum(C, 'coat') / sum(C, 'coat_sh') * 3 : null) + '</td><td class="n">' + nf(sum(P, 'pack_sh') ? sum(P, 'pack') / sum(P, 'pack_sh') * 3 : null) + '</td></tr>'
       + '</tfoot></table></div>'
-      + '<div class="note">Coater = น้ำหนักที่ลงเครื่อง (ผลต่างตาชั่งสะสมต่อ lot) · Packing = Output ไม่ยกเลิก ไม่รวม WIP' + (wip > 0 ? ' (WIP เดือนนี้ ' + nf(wip) + ' kg แยกไว้)' : '') + ' · เฉลี่ย/วัน = ยอดรวม ÷ จำนวนกะที่มีบันทึก × 3 กะ (กะละ 8 ชม. เริ่ม 08:00 · กะที่ไม่มีบันทึกเช่นหยุดตามแผนไม่ถูกนับ) · อัปเดต '
+      + '<div class="note">Coater = น้ำหนักที่ลงเครื่อง (ผลต่างตาชั่งสะสมต่อ lot) · Packing = Output ไม่ยกเลิก ไม่รวม WIP' + (wip > 0 ? ' (WIP เดือนนี้ ' + nf(wip) + ' kg แยกไว้)' : '') + ' · เฉลี่ย/วัน = ค่าเฉลี่ยต่อวันผลิตเต็ม คิดจากกะที่มีบันทึกเท่านั้น (กะที่หยุดตามแผนไม่ถูกนับ) · อัปเดต '
       + new Date(Math.max(new Date(C.at), new Date(P.at))).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) + '</div>';
   }
   return '<div class="card sum">' + head + h + '</div>';
