@@ -143,7 +143,7 @@
   .sum .lg { display:flex; gap:14px; flex-wrap:wrap; font-size:13px; margin:2px 0 6px; } .sum .lg i { display:inline-block; width:12px; height:12px; border-radius:3px; margin-right:5px; vertical-align:-1px; }
   .sum .lg b { font-family:'IBM Plex Mono',monospace; font-weight:600; }
   .sum svg { width:100%; height:auto; display:block; } .sum svg text { fill:var(--muted); font-size:12px; font-family:'IBM Plex Mono',monospace; }
-  .sum .c1 { fill:var(--blue); } .sum .c2 { fill:var(--amber); } .sum .pl { fill:var(--line2); } .sum svg text.vl { fill:var(--text); font-size:9px; } .sum svg text.vi { fill:#fff; font-size:9px; font-weight:600; } .sum h4 { margin:12px 0 2px; font-size:14px; } .sum .gl { stroke:var(--line); stroke-width:1; } .sum .td { fill:var(--blue-weak); }
+  .sum .c1 { fill:var(--blue); } .sum .c2 { fill:var(--amber); } .sum .pl { fill:var(--line2); } .sum .pd { fill:#8b5cf6; } .sum .md { fill:#dc2626; } .sum .lg i.k { width:10px; height:10px; border-radius:2px; } .sum svg text.vl { fill:var(--text); font-size:9px; } .sum svg text.vi { fill:#fff; font-size:9px; font-weight:600; } .sum h4 { margin:12px 0 2px; font-size:14px; } .sum .gl { stroke:var(--line); stroke-width:1; } .sum .td { fill:var(--blue-weak); }
   .sum .tw { overflow:auto; max-height:70vh; margin-top:10px; border:1px solid var(--line); border-radius:12px; }
   .sum table { font-variant-numeric:tabular-nums; } .sum th { position:sticky; top:0; background:var(--card); z-index:1; white-space:nowrap; } .sum td.n, .sum th.n { text-align:right; font-family:'IBM Plex Mono',monospace; }
   .sum tr.td td { background:var(--blue-weak); } .sum tr.off td { color:var(--muted); } .sum tfoot td { font-weight:700; border-top:2px solid var(--line2); background:var(--card); position:sticky; bottom:0; }
@@ -401,19 +401,22 @@ const TH_M = ['มกราคม', 'กุมภาพันธ์', 'มีน
 const nf = (v, d) => v == null ? '–' : Number(v).toLocaleString('en-US', { minimumFractionDigits: d || 0, maximumFractionDigits: d || 0 });
 const monthLbl = (m) => { const [y, mo] = m.split('-'); return TH_M[+mo - 1] + ' ' + (+y + 543); };
 const monthShift = (m, k) => { const [y, mo] = m.split('-').map(Number); const d = new Date(Date.UTC(y, mo - 1 + k, 1)); return d.getUTCFullYear() + '-' + String(d.getUTCMonth() + 1).padStart(2, '0'); };
-function sumChart(days, run, pln, cls, nm) {   // 1 กราฟ = 1 สาย · แท่งทึบ = ชม.เดินเครื่อง · แท่งเทา (ต่อบนแท่งทึบ) = หยุดตามแผน · ตัวเลข = ชม.เดินเครื่อง
+function sumChart(days, run, sfx, cls, nm) {   // 1 กราฟ = 1 สาย · แท่งทึบ = ชม.เดินเครื่อง · แท่งเทา (ต่อบนแท่งทึบ) = หยุดตามแผน · ตัวเลข = ชม.เดินเครื่อง
   const W = Math.max(300, Math.min(800, (document.documentElement.clientWidth || 720) - 64)), H = W < 500 ? 200 : 210, L = 28, R = 8, T = 12, B = 22, pw = W - L - R, ph = H - T - B, n = Math.max(days.length, 1), step = pw / n, bw = Math.max(5, Math.min(22, step * 0.7)), Y = (h) => T + ph - (h / 24) * ph, rot = step < 24;
   let g = '';
   [0, 8, 16, 24].forEach((h) => { g += '<line class="gl" x1="' + L + '" x2="' + (W - R) + '" y1="' + Y(h) + '" y2="' + Y(h) + '"/><text x="' + (L - 5) + '" y="' + (Y(h) + 4) + '" text-anchor="end">' + h + '</text>'; });
   days.forEach((r, i) => {
-    const x = L + i * step + step / 2, dd = +r.d.slice(8), lbl = dd + '/' + (+r.d.slice(5, 7)), v = +r[run] || 0, pv = +r[pln] || 0;
+    const x = L + i * step + step / 2, dd = +r.d.slice(8), lbl = dd + '/' + (+r.d.slice(5, 7)), v = +r[run] || 0;
     if (r.d === S.sumToday) g += '<rect class="td" x="' + (x - step / 2) + '" y="' + T + '" width="' + step + '" height="' + ph + '" rx="3"/>';
-    const hv = (v / 24) * ph, hp = (pv / 24) * ph;
-    if (pv > 0.05) g += '<rect class="pl" x="' + (x - bw / 2) + '" y="' + (T + ph - hv - hp) + '" width="' + bw + '" height="' + hp + '" rx="2"><title>' + nm + ' · ' + lbl + ' · หยุดตามแผน ' + nf(pv, 1) + ' ชม.</title></rect>';
+    const hv = (v / 24) * ph; let acc = hv, hpTop = 0;   // ซ้อนจากล่าง: เดินเครื่อง → เครื่องเสีย → PD → หยุดตามแผน (ว่าง = ยังไม่มีบันทึก/ยังไม่ถึงเวลา)
+    [['md', 'md', 'เครื่องเสีย'], ['pd', 'pd', 'หยุดจาก PD'], ['pl', 'pl', 'หยุดตามแผน']].forEach(([kk, c, tt]) => {
+      const q = +r[(kk === 'pl' ? 'p' : kk) + sfx] || 0; if (q <= 0.05) return; const hq = (q / 24) * ph;
+      g += '<rect class="' + c + '" x="' + (x - bw / 2) + '" y="' + (T + ph - acc - hq) + '" width="' + bw + '" height="' + hq + '"><title>' + nm + ' · ' + lbl + ' · ' + tt + ' ' + nf(q, 1) + ' ชม.</title></rect>'; acc += hq; hpTop += hq;
+    });
     if (v > 0.005) {
       g += '<rect class="' + cls + '" x="' + (x - bw / 2) + '" y="' + (T + ph - hv) + '" width="' + bw + '" height="' + hv + '" rx="2"><title>' + nm + ' · ' + lbl + ' · เดินเครื่อง ' + nf(v, 1) + ' ชม.</title></rect>';
       const t = nf(v, 1), inside = hv >= (rot ? 26 : 16);   // แท่งสูงพอ: ใส่ตัวเลขในแท่ง (ขาว) · ไม่พอ: ไว้เหนือแท่ง
-      const ty = inside ? (rot ? T + ph - 3 : T + ph - hv + 12) : T + ph - hv - hp - 3;   // แคบ (มือถือ): หมุนตัวเลข วางที่ฐานแท่ง
+      const ty = inside ? (rot ? T + ph - 3 : T + ph - hv + 12) : T + ph - hv - hpTop - 3;   // แคบ (มือถือ): หมุนตัวเลข วางที่ฐานแท่ง
       g += rot ? '<text class="' + (inside ? 'vi' : 'vl') + '" transform="translate(' + (x + 3.5) + ',' + ty + ') rotate(-90)" text-anchor="start">' + t + '</text>'
         : '<text class="' + (inside ? 'vi' : 'vl') + '" x="' + x + '" y="' + ty + '" text-anchor="middle">' + t + '</text>';
     }
@@ -433,12 +436,12 @@ function sumHtml() {
   const head = '<div class="hd"><h2>สรุปรายวัน</h2><button data-act="sumMo" data-arg="-1"' + (m && S.sumNow && m <= monthShift(S.sumNow, -1) ? ' disabled' : '') + ' title="เดือนก่อน">◀</button><span class="mo">' + (m ? monthLbl(m) : '…') + '</span>'
     + '<button data-act="sumMo" data-arg="1"' + (m && m >= (S.sumNow || m) ? ' disabled' : '') + ' title="เดือนถัดไป">▶</button><button data-act="sumReload" title="โหลดใหม่">↻</button></div>';
   const sum = (D, k) => D.days.reduce((a, r) => a + (+r[k] || 0), 0), cnt = (D, k) => D.days.filter((r) => +r[k] > 0).length, avg = (D, k) => cnt(D, k) ? sum(D, k) / cnt(D, k) : null;
-  let h = '<div class="muted small">ชั่วโมงเดินเครื่อง Extruder รายวัน (วันผลิต 08:00–07:59) · <i style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--line2);vertical-align:-1px"></i> = หยุดตามแผนผลิต (ไม่นับเป็นเวลาที่ควรเดิน)</div>';
+  let h = '<div class="muted small">ชั่วโมงเดินเครื่อง Extruder รายวัน (วันผลิต 08:00–07:59) · สีในแท่ง: เดินเครื่อง · <span style="color:#dc2626">■</span> เครื่องเสีย (Machine) · <span style="color:#8b5cf6">■</span> หยุดจาก PD (รอวัตถุดิบ/ปัญหากระบวนการ) · <span style="color:var(--muted)">■</span> หยุดตามแผน · ช่องว่าง = ยังไม่มีบันทึก/ยังมาไม่ถึง</div>';
   if (!E) h += sumSec('ext');
   else [['1', 'c1', 'var(--blue)', 'EXT-1'], ['2', 'c2', 'var(--amber)', 'EXT-2']].forEach(([n, cls, col, nm]) => {
     const run = sum(E, 'e' + n), pl = sum(E, 'p' + n), av = sum(E, 'c' + n) - pl, pct = av > 0 ? run / av * 100 : null, dn = cnt(E, 'e' + n);
     h += '<h4>' + nm + '</h4><div class="lg"><span><i style="background:' + col + '"></i>เดินเครื่อง <b>' + nf(run, 1) + '</b> ชม. จากเวลาที่ไม่ได้หยุดตามแผน <b>' + nf(av, 1) + '</b> ชม. = <b>' + (pct == null ? '–' : nf(pct, 1) + '%') + '</b> · เฉลี่ย <b>' + (pct == null ? '–' : nf(pct * 0.24, 1)) + '</b> ชม./วัน</span>'
-      + '<span>หยุดตามแผน <b>' + nf(pl, 1) + '</b> ชม. · เดิน ' + dn + ' วัน</span></div>' + sumChart(E.days, 'e' + n, 'p' + n, cls, nm);
+      + '<span><i class="k" style="background:#dc2626"></i>เครื่องเสีย <b>' + nf(sum(E, 'md' + n), 1) + '</b></span><span><i class="k" style="background:#8b5cf6"></i>PD <b>' + nf(sum(E, 'pd' + n), 1) + '</b></span><span><i class="k" style="background:var(--line2)"></i>หยุดตามแผน <b>' + nf(pl, 1) + '</b> ชม. · เดิน ' + dn + ' วัน</span></div>' + sumChart(E.days, 'e' + n, n, cls, nm);
   });
   h += '<h3>ยอดรายวัน · Coater / Packing (kg)</h3>';
   if (!C || !P) h += sumSec(!C ? 'coat' : 'pack');
