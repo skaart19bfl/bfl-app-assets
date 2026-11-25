@@ -21,10 +21,10 @@
 /* ncp-sa (NCP edge N3, 24 Nov 2026, user chose "Edge Function"): NCP System WITHOUT Apps Script.
  * The page (Index.html) comes from Supabase (ncps_page) and is kept in this browser. Every server call goes to the Edge Function ncp-srv
  * (the same Code.gs, run in Supabase). The 5-second "anything new?" poll stays in the page, but answers here unless Supabase Realtime said
- * something changed (ncp_stamp) — or 5 minutes passed — so the Edge Function is asked only when there is something new. */
+ * something changed (ncp_stamp) or the 3-minute check (ncps_poll) finds something new — so the Edge Function is asked only then. */
 (function () {
   var SB = 'https://kdytxuufvigwjccebrki.supabase.co', KEY = 'sb_publishable_IYCMIaN7tJleWINprA42CQ_dX10sXFF';
-  var FN = SB + '/functions/v1/ncp-srv', LSK = 'ncpsa-page', TITLE = 'BFL NCP System', BUILD = 2026112403;
+  var FN = SB + '/functions/v1/ncp-srv', LSK = 'ncpsa-page', TITLE = 'BFL NCP System', BUILD = 2026112501;
 
   function lsGet() { try { return JSON.parse(localStorage.getItem(LSK) || 'null'); } catch (e) { return null; } }
   function lsSet(v) { try { localStorage.setItem(LSK, JSON.stringify(v)); } catch (e) { try { localStorage.removeItem(LSK); } catch (e2) {} } }
@@ -58,22 +58,37 @@
           throw new Error('สัญญาณหลุด — ลองใหม่อีกครั้ง');
         });
     }
-    // "anything new?" — Realtime marks dirty; the page's 5-s poll is answered here while nothing changed (asked for real every 5 min)
+    // "anything new?" — Realtime marks dirty; the page's 5-s poll is answered here while nothing changed (see snap below)
     var RT = { ok: false, dirty: true, last: 0, ver: null, n: 0 };
-    function snap(args) {
-      var ver = args[1], now = Date.now();
-      if (ver && ver === RT.ver && !RT.dirty && RT.ok && now - RT.last < 5 * 60e3) return Promise.resolve({ same: true, ver: ver, stale: false });
-      if (ver && ver === RT.ver && !RT.dirty && !RT.ok && now - RT.last < 60e3) return Promise.resolve({ same: true, ver: ver, stale: false });
-      RT.dirty = false; RT.last = now;
+    // 25 Nov 2026 (user): no asking while the screen is not being looked at · the periodic ask goes first to a tiny database check
+    // (ncps_poll, a yes/no) and wakes the Edge Function only when something is new (its cold start loads the NCP data)
+    function same(ver) { return Promise.resolve({ same: true, ver: ver, stale: false }); }
+    function real(args) {
+      RT.dirty = false; RT.last = Date.now();
       return post({ fn: 'getSnapshot', args: args }).then(function (s) { if (s && s.ver) RT.ver = String(s.ver); return s; }, function (e) { RT.dirty = true; throw e; });
     }
+    function poll(ver) {
+      return fetch(C.sb + '/rest/v1/rpc/ncps_poll', { method: 'POST', cache: 'no-store', headers: { apikey: C.key, Authorization: 'Bearer ' + C.key, 'Content-Type': 'application/json' }, body: JSON.stringify({ p_ver: ver }) })
+        .then(function (r) { if (!r.ok) throw new Error('poll ' + r.status); return r.json(); });
+    }
+    function snap(args) {
+      var ver = args[1], now = Date.now();
+      if (!ver || ver !== RT.ver || RT.dirty) return real(args);
+      if (document.hidden) return same(ver);                               // visible again → soon() → checked at once
+      if (now - RT.last < (RT.ok ? 3 : 2) * 60e3 || RT.polling) return same(ver);
+      RT.polling = true; RT.last = now; RT.polls = (RT.polls || 0) + 1;
+      return poll(ver).then(function (p) { RT.polling = false; if (p && p.go === false) return same(ver); RT.woke = (RT.woke || 0) + 1; return real(args); },
+        function () { RT.polling = false; return real(args); });
+    }
+    // screen back / Realtime "something changed" → check now (ncps_poll compares VER, so a session-only write does not wake the server)
+    function soon() { RT.last = 0; }
+    document.addEventListener('visibilitychange', function () { if (!document.hidden) soon(); });
     function realtime() {
       if (!window.supabase || !window.supabase.createClient) return;
       try {
         var c = window.supabase.createClient(C.sb, C.key, { auth: { persistSession: false, autoRefreshToken: false } });
-        c.channel('ncp-stamp').on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'ncp_stamp' }, function () { RT.dirty = true; RT.n++; })
-          .subscribe(function (st) { RT.ok = st === 'SUBSCRIBED'; if (!RT.ok) RT.dirty = true; });
-        document.addEventListener('visibilitychange', function () { if (!document.hidden) RT.dirty = true; });
+        c.channel('ncp-stamp').on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'ncp_stamp' }, function () { soon(); RT.n++; })
+          .subscribe(function (st) { RT.ok = st === 'SUBSCRIBED'; soon(); });
       } catch (e) { RT.ok = false; }
     }
     var s = document.createElement('script'); s.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js'; s.async = true; s.onload = realtime;
