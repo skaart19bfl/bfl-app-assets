@@ -437,7 +437,7 @@ function sumHtml() {
   if (!E) h += sumSec('ext');
   else [['1', 'c1', 'var(--blue)', 'EXT-1'], ['2', 'c2', 'var(--amber)', 'EXT-2']].forEach(([n, cls, col, nm]) => {
     const run = sum(E, 'e' + n), pl = sum(E, 'p' + n), av = sum(E, 'c' + n) - pl, pct = av > 0 ? run / av * 100 : null, dn = cnt(E, 'e' + n);
-    h += '<h4>' + nm + '</h4><div class="lg"><span><i style="background:' + col + '"></i>เดินเครื่อง <b>' + nf(run, 1) + '</b> ชม. จากเวลาที่ไม่ได้หยุดตามแผน <b>' + nf(av, 1) + '</b> ชม. = <b>' + (pct == null ? '–' : nf(pct, 1) + '%') + '</b></span>'
+    h += '<h4>' + nm + '</h4><div class="lg"><span><i style="background:' + col + '"></i>เดินเครื่อง <b>' + nf(run, 1) + '</b> ชม. จากเวลาที่ไม่ได้หยุดตามแผน <b>' + nf(av, 1) + '</b> ชม. = <b>' + (pct == null ? '–' : nf(pct, 1) + '%') + '</b> · เฉลี่ย <b>' + (pct == null ? '–' : nf(pct * 0.24, 1)) + '</b> ชม./วัน</span>'
       + '<span>หยุดตามแผน <b>' + nf(pl, 1) + '</b> ชม. · เดิน ' + dn + ' วัน</span></div>' + sumChart(E.days, 'e' + n, 'p' + n, cls, nm);
   });
   h += '<h3>ยอดรายวัน · Coater / Packing (kg)</h3>';
@@ -450,8 +450,9 @@ function sumHtml() {
     h += '<div class="tw"><table><thead><tr><th>วันที่</th><th class="n">Coater</th><th class="n">Packing</th></tr></thead><tbody>' + rows + '</tbody>'
       + '<tfoot><tr><td>รวม</td><td class="n">' + nf(sum(C, 'coat')) + '</td><td class="n">' + nf(sum(P, 'pack')) + '</td></tr>'
       + '<tr class="av"><td>จำนวนกะที่มียอด</td><td class="n">' + nf(sum(C, 'coat_sh')) + '</td><td class="n">' + nf(sum(P, 'pack_sh')) + '</td></tr>'
-      + '<tr class="av"><td>เฉลี่ย/กะที่มียอด</td><td class="n">' + nf(sum(C, 'coat_sh') ? sum(C, 'coat') / sum(C, 'coat_sh') : null) + '</td><td class="n">' + nf(sum(P, 'pack_sh') ? sum(P, 'pack') / sum(P, 'pack_sh') : null) + '</td></tr></tfoot></table></div>'
-      + '<div class="note">Coater = น้ำหนักที่ลงเครื่อง (ผลต่างตาชั่งสะสมต่อ lot) · Packing = Output ไม่ยกเลิก ไม่รวม WIP' + (wip > 0 ? ' (WIP เดือนนี้ ' + nf(wip) + ' kg แยกไว้)' : '') + ' · เฉลี่ย = ยอดรวม ÷ จำนวนกะที่มีบันทึก (3 กะ กะละ 8 ชม. เริ่ม 08:00 · กะที่หยุดตามแผนไม่มีบันทึกจึงไม่ถูกนับ) · อัปเดต '
+      + '<tr class="av"><td>เฉลี่ย/วัน</td><td class="n">' + nf(sum(C, 'coat_sh') ? sum(C, 'coat') / sum(C, 'coat_sh') * 3 : null) + '</td><td class="n">' + nf(sum(P, 'pack_sh') ? sum(P, 'pack') / sum(P, 'pack_sh') * 3 : null) + '</td></tr>'
+      + '</tfoot></table></div>'
+      + '<div class="note">Coater = น้ำหนักที่ลงเครื่อง (ผลต่างตาชั่งสะสมต่อ lot) · Packing = Output ไม่ยกเลิก ไม่รวม WIP' + (wip > 0 ? ' (WIP เดือนนี้ ' + nf(wip) + ' kg แยกไว้)' : '') + ' · เฉลี่ย/วัน = ยอดรวม ÷ จำนวนกะที่มีบันทึก × 3 กะ (กะละ 8 ชม. เริ่ม 08:00 · กะที่ไม่มีบันทึกเช่นหยุดตามแผนไม่ถูกนับ) · อัปเดต '
       + new Date(Math.max(new Date(C.at), new Date(P.at))).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) + '</div>';
   }
   return '<div class="card sum">' + head + h + '</div>';
