@@ -1,0 +1,3 @@
+// editor switches (names start with "store" → doPost refuses them)
+function storeLocalReadsOn() { PropertiesService.getScriptProperties().setProperty('PD_LOCAL_R', '1'); console.log('PD_LOCAL_R=1 at ' + new Date()); return 'PD_LOCAL_R=1'; }
+function storeLocalReadsOff() { PropertiesService.getScriptProperties().setProperty('PD_LOCAL_R', '0'); console.log('PD_LOCAL_R=0 at ' + new Date()); return 'PD_LOCAL_R=0'; }

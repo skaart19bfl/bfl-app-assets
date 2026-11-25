@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="th" data-theme="light">
+<head>
+<base target="_top">
+<meta charset="utf-8"><script>(function bflGuard(APP, BUILD, OPT) { /* BFL version guard — 23 พ.ย. 2026 (ผู้ใช้ "A, B และให้บังคับ อัพเวอร์ชั่น ไม่งั้นเข้าไม่ได้")
+ * ทุกคำขอไป Supabase ติด x-client-info: bfl/<app>/<build> · ทุกคำขอไป Apps Script ติด av · ทุก 10 นาที (และเมื่อกลับมาที่แท็บ) ถาม app_ver_min
+ * เวอร์ชันนี้ต่ำกว่าที่กำหนด / Supabase หรือ Apps Script ตอบ APP_UPDATE / (แอปที่โหลดผ่าน boot.js) หน้าใน Apps Script เปลี่ยน
+ * → ขึ้นหน้าบังคับโหลดใหม่ และหยุดส่งคำขอทั้งหมด */
+  var W = window; if (W.__bflAv) return;
+  var SB = 'https://kdytxuufvigwjccebrki.supabase.co', KEY = 'sb_publishable_IYCMIaN7tJleWINprA42CQ_dX10sXFF', TAG = 'bfl/' + APP + '/' + BUILD, f0 = W.fetch;
+  var G = W.__bflAv = { app: APP, build: BUILD, tag: TAG, blocked: false, last: 0, block: block, check: check, act: Date.now(), runs: {}, slow: slow };
+  // E14 (24 Nov 2026): nobody touching the screen → the app's "anything new?" loops ask less often (G.slow(key, base) = true → skip this tick)
+  //   idle > 5 min: loops every ≤ 30 s → 30 s, longer loops → 5 min · idle > 30 min: → 60 s / 15 min · a touch or key → back to normal at once
+  ['pointerdown', 'keydown', 'touchstart', 'wheel'].forEach(function (e) { W.addEventListener(e, function () { G.act = Date.now(); }, { passive: true, capture: true }); });
+  function slow(key, base) {
+    var now = Date.now(), idle = now - G.act, every = base;
+    if (idle > 30 * 60e3) every = base < 30e3 ? 60e3 : 15 * 60e3;
+    else if (idle > 5 * 60e3) every = base < 30e3 ? 30e3 : 5 * 60e3;
+    if (now - (G.runs[key] || 0) < every - 400) return true;
+    G.runs[key] = now; return false;
+  }
+  // only the REST API (the Edge Function prod-calc does not allow extra headers in its CORS)
+  function kind(u) { return u.indexOf('.supabase.co/rest/v1/') >= 0 ? 'sb' : (u.indexOf('script.google.com/macros/') >= 0 ? 'gas' : ''); }
+  W.fetch = function (u, o) {
+    var url = typeof u === 'string' ? u : (u && u.url) || '', k = kind(url);
+    if (!k) return f0.apply(W, arguments);
+    if (G.blocked) { show(); return Promise.reject(new Error('APP_UPDATE: แอปเวอร์ชันเก่า — กด "โหลดแอปใหม่"')); }
+    o = o ? Object.assign({}, o) : {};
+    if (k === 'sb') { var h = new Headers(o.headers || (typeof u !== 'string' && u.headers) || {}); h.set('x-client-info', TAG); o.headers = h; }
+    else if (typeof o.body === 'string' && o.body.charAt(0) === '{') {
+      try { var b = JSON.parse(o.body); if (b && typeof b === 'object' && !Array.isArray(b)) { b.av = TAG; o.body = JSON.stringify(b); } } catch (e) { /* not JSON */ }
+    }
+    var p = f0.call(W, u, o);
+    p.then(function (r) {
+      if (k === 'gas' || r.status >= 400) r.clone().text().then(function (t) { if (t.indexOf('APP_UPDATE') >= 0 && (k === 'sb' || t.indexOf('"ok":false') >= 0)) block(); }, function () {});
+    }, function () {});
+    return p;
+  };
+  function check() {
+    if (G.blocked) return; G.last = Date.now();
+    f0.call(W, SB + '/rest/v1/rpc/app_ver_min', { method: 'POST', cache: 'no-store', headers: { apikey: KEY, Authorization: 'Bearer ' + KEY, 'Content-Type': 'application/json', 'x-client-info': TAG }, body: JSON.stringify({ p_app: APP }) })
+      .then(function (r) { return r.ok ? r.text() : ''; }).then(function (t) { if (Number(t) > BUILD) block(); }, function () {});
+    if (OPT && OPT.exec && OPT.hash) {   // page kept by gas/boot.js: a newer page in Apps Script → keep it for the reload, then reload
+      f0.call(W, OPT.exec, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ fn: '__page', hash: OPT.hash, av: TAG }), cache: 'no-store' })
+        .then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
+          var v = j && j.ok && j.v; if (!v || v.same || !v.html || !v.hash) return;
+          try { localStorage.setItem(OPT.lsk, JSON.stringify({ hash: v.hash, html: v.html, at: Date.now() })); } catch (e) { /* full */ }
+          block();
+        }, function () {});
+    }
+  }
+  function block() { G.blocked = true; show(); }
+  function show() {
+    if (document.getElementById('bfl-av')) return;
+    if (!document.body) { setTimeout(show, 100); return; }
+    var d = document.createElement('div'); d.id = 'bfl-av'; d.setAttribute('role', 'alertdialog');
+    d.setAttribute('style', 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:2147483647;background:rgba(15,27,45,.92);display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;font-family:system-ui,sans-serif');
+    d.innerHTML = '<div style="background:#fff;color:#1B2A3D;border-radius:16px;max-width:420px;width:100%;padding:24px;box-sizing:border-box;text-align:center;box-shadow:0 10px 40px rgba(0,0,0,.4)">'
+      + '<div style="font-size:21px;font-weight:700;margin-bottom:8px">มีแอปเวอร์ชันใหม่</div>'
+      + '<div style="font-size:16px;line-height:1.55;margin-bottom:18px">ต้องโหลดแอปใหม่ก่อน จึงจะใช้งานต่อได้<br>ข้อมูลที่ยังไม่ได้กดบันทึก ต้องกรอกใหม่หลังโหลด</div>'
+      + '<button type="button" style="border:0;border-radius:12px;padding:14px 24px;font:600 17px system-ui,sans-serif;background:#1F3A5F;color:#fff;width:100%">โหลดแอปใหม่</button></div>';
+    d.querySelector('button').onclick = function () {
+      this.disabled = true; this.textContent = 'กำลังโหลด…';
+      if (!(OPT && OPT.exec)) try { Object.keys(localStorage).forEach(function (k) { if (/^gasp-page-/.test(k)) localStorage.removeItem(k); }); } catch (e) { /* none */ }
+      location.reload();
+    };
+    document.body.appendChild(d);
+  }
+  setTimeout(check, 4000);
+  setInterval(function () { if (!document.hidden) check(); }, 60 * 60e3);   // F1: hourly (every gated call is checked anyway)
+  document.addEventListener('visibilitychange', function () { if (!document.hidden && Date.now() - G.last > 30 * 60e3) check(); });
+})('hub', 2026112502);</script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>BFL Production Hub</title>
+<link rel="icon" type="image/png" sizes="64x64" href="favicon-64.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0F2744">
+<meta name="apple-mobile-web-app-title" content="BFL Hub">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+  /* BFL theme = Packing app (user 9 Nov 2026): grey-blue page, navy top bar, white cards, blue for "selected", IBM Plex Sans Thai */
+  :root { --bg:#EEF2F7; --card:#fff; --ink:#0F2744; --muted:#566779; --line:#D5DEE8; --line2:#BCC9D7; --blue:#1E5BD8; --navy:#0F2744; --amber:#FAAA20;
+          --bar:#0F2744; --bar-line:#5E7894; --blue-weak:#E7EFFC; --bad:#C2410C; --bad-weak:#FDE7DC; --ok:#157A43; --r:16px; --shadow:none; }
+  html[data-theme=dark] { --bg:#0B1A2E; --card:#12263F; --ink:#E6EDF7; --muted:#9FB0C4; --line:#24405F; --line2:#36506F; --blue:#5B8DEF; --navy:#9DBBF5;
+          --bar:#081424; --bar-line:#36506F; --blue-weak:#1A3358; --bad:#FF8A65; --bad-weak:#3D2216; --ok:#4CC38A; --shadow:none; }
+  * { box-sizing:border-box; }
+  html, body { margin:0; height:100%; background:var(--bg); color:var(--ink); font:16px/1.45 "IBM Plex Sans Thai", system-ui, sans-serif; -webkit-tap-highlight-color:transparent; }
+  button, input, select { font:inherit; color:inherit; }
+  button { cursor:pointer; border:1.5px solid var(--line2); background:var(--card); border-radius:12px; min-height:44px; padding:8px 14px; font-weight:600; }
+  button.primary { background:var(--ink); border-color:var(--ink); color:var(--card); font-weight:700; min-height:52px; border-radius:14px; }
+  html[data-theme=dark] button.primary { background:var(--blue); border-color:var(--blue); color:#fff; }
+  button.primary:disabled { opacity:.45; cursor:default; }
+  button.ghost { background:transparent; }
+  button.danger { color:var(--bad); }
+  input, select { width:100%; min-height:46px; border:2px solid var(--line2); border-radius:12px; padding:8px 12px; background:var(--card); }
+  label { display:flex; flex-direction:column; gap:4px; font-size:14px; color:var(--muted); }
+  .wrap { max-width:460px; margin:0 auto; padding:24px 16px 40px; }
+  .brand { display:flex; align-items:center; gap:10px; margin-bottom:18px; }
+  /* BFL Production logo (user 10 Nov 2026) — white tile so the artwork reads the same in light and dark */
+  .logo { width:56px; height:56px; border-radius:14px; background:#fff; border:1px solid var(--line); padding:2px; flex:none; display:block; object-fit:contain; }
+  .brand b { font-size:20px; } .brand small { display:block; color:var(--muted); font-size:13px; }
+  .card { background:var(--card); border:0; border-radius:var(--r); padding:16px; box-shadow:var(--shadow); }
+  .col { display:flex; flex-direction:column; gap:12px; } .row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .muted { color:var(--muted); } .small { font-size:13px; } h2 { margin:0 0 4px; font-size:20px; } h3 { margin:14px 0 6px; font-size:15px; color:var(--muted); font-weight:600; }
+  .names button { width:100%; text-align:left; font-weight:600; }
+  .pin { display:flex; gap:10px; justify-content:center; margin:10px 0; } .pin i { width:18px; height:18px; border-radius:50%; border:2px solid var(--ink); }
+  .pin i.on { background:var(--ink); }
+  .tpin { display:flex; gap:10px; justify-content:center; } .tpin span { width:48px; height:56px; border:1px solid var(--line); border-radius:12px; display:grid; place-items:center; font-size:26px; font-weight:700; background:var(--card); }
+  .pad { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; } .pad button { min-height:62px; font-size:24px; font-weight:600; border:0; border-radius:14px; font-family:'IBM Plex Mono',monospace; background:var(--bg); }
+  .switch { display:flex; flex-direction:row; align-items:center; gap:10px; color:var(--ink); text-align:left; padding:10px 12px; border:1px solid var(--line); border-radius:12px; background:var(--card); cursor:pointer; }
+  .switch input { width:22px; min-height:22px; margin:0; }
+  .err { background:var(--bad-weak); color:var(--bad); padding:10px 12px; border-radius:12px; font-size:14px; }
+  /* app shell */
+  #root { height:100%; }
+  #shell { display:flex; flex-direction:column; height:100%; height:100dvh; }
+  .top { display:flex; align-items:center; gap:8px; padding:8px 12px; background:var(--bar); color:#fff; }
+  .top .who { flex:1; min-width:0; } .top .who b { display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; } .top .who small { color:#C3D1E2; font-size:12px; }
+  .top button { min-height:38px; padding:6px 10px; font-size:14px; background:transparent; border-color:var(--bar-line); color:#fff; }
+  .top .logo { width:38px; height:38px; border-radius:10px; border-color:transparent; padding:1px; }
+  .tabs { display:flex; gap:6px; padding:8px 12px; background:var(--bg); border-bottom:1px solid var(--line); overflow-x:auto; }
+  .tabs button { white-space:nowrap; min-height:42px; font-weight:600; border:2px solid var(--line2); }
+  .tabs button.on { background:var(--blue); border-color:var(--blue); color:#fff; }
+  .tabs button .dot { display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--amber); margin-left:6px; vertical-align:middle; }
+  .stage { flex:1; position:relative; min-height:0; }
+  .stage iframe { position:absolute; inset:0; width:100%; height:100%; border:0; background:var(--bg); }
+  .stage .page { position:absolute; inset:0; overflow:auto; }
+  .tiles { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:12px; }
+  .tile { min-height:96px; text-align:left; display:flex; flex-direction:column; justify-content:space-between; font-weight:700; font-size:17px; border-radius:var(--r); }
+  .tile small { font-weight:400; color:var(--muted); font-size:12px; }
+  .loading { position:absolute; inset:0; display:grid; place-items:center; color:var(--muted); pointer-events:none; }
+  table { width:100%; border-collapse:collapse; font-size:14px; } td, th { padding:8px 6px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; }
+  .tag { display:inline-block; font-size:11px; padding:1px 7px; border-radius:99px; background:var(--blue-weak); color:var(--navy); margin:1px 2px 1px 0; }
+  html[data-theme=dark] .tag { color:#cfe0ff; }
+  .toast { font-weight:600; position:fixed; left:50%; bottom:20px; transform:translateX(-50%); background:var(--ink); color:var(--bg); padding:10px 16px; border-radius:12px; z-index:9; max-width:92vw; }
+  .toast.e { background:var(--bad); color:#fff; }
+  .chips { display:flex; gap:6px; flex-wrap:wrap; } .chips button { min-height:40px; font-size:14px; } .chips button.on { background:var(--blue); border-color:var(--blue); color:#fff; }
+  .md td.k { font-family:'IBM Plex Mono',monospace; font-size:13px; white-space:nowrap; } .md tr.off td { opacity:.45; } .md td small { color:var(--muted); display:block; }
+  /* สรุปรายวัน (25 พ.ย. 2026) — หน้าแรก Hub: chart Extruder runtime 2 สาย + ตารางประจำเดือน Coater / Packing */
+  .sum { margin-top:18px; } .sum .hd { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:8px; } .sum .hd h2 { margin:0; flex:1; min-width:150px; font-size:18px; }
+  .sum .hd button { min-height:38px; padding:4px 12px; } .sum .hd button:disabled { opacity:.35; cursor:default; } .sum .mo { font-weight:700; min-width:96px; text-align:center; }
+  .sum .lg { display:flex; gap:14px; flex-wrap:wrap; font-size:13px; margin:2px 0 6px; } .sum .lg i { display:inline-block; width:12px; height:12px; border-radius:3px; margin-right:5px; vertical-align:-1px; }
+  .sum .lg b { font-family:'IBM Plex Mono',monospace; font-weight:600; }
+  .sum svg { width:100%; height:auto; display:block; } .sum svg text { fill:var(--muted); font-size:12px; font-family:'IBM Plex Mono',monospace; }
+  .sum .c1 { fill:var(--blue); } .sum .c2 { fill:var(--ok); } .sum .pl { fill:var(--line2); } .sum .pd { fill:var(--amber); } .sum .md { fill:#dc2626; } .sum .lg i.k { width:10px; height:10px; border-radius:2px; } .sum svg text.vl { fill:var(--text); font-size:9px; } .sum svg text.vi { fill:#fff; font-size:9px; font-weight:600; } .sum h4 { margin:12px 0 2px; font-size:14px; } .sum .gl { stroke:var(--line); stroke-width:1; } .sum .td { fill:var(--blue-weak); }
+  .sum .tw { overflow:auto; max-height:70vh; margin-top:10px; border:1px solid var(--line); border-radius:12px; }
+  .sum table { font-variant-numeric:tabular-nums; } .sum th { position:sticky; top:0; background:var(--card); z-index:1; white-space:nowrap; } .sum td.n, .sum th.n { text-align:right; font-family:'IBM Plex Mono',monospace; }
+  .sum tr.td td { background:var(--blue-weak); } .sum tr.off td { color:var(--muted); } .sum tfoot td { font-weight:700; border-top:2px solid var(--line2); background:var(--card); position:sticky; bottom:0; }
+  .sum tfoot tr.av td { font-weight:400; color:var(--muted); position:static; border-top:0; } .sum .note { font-size:12px; color:var(--muted); margin-top:6px; }
+  @media (max-width:520px) { .top .hide-sm { display:none; } }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+/* BFL Production Hub (user 9 Nov 2026; renamed from "BFL Hub" the same day) — one login (new PIN per person) for Production · Coating · NCP System · Raw material.
+ * Logins / users / app list live in Supabase bfl-production (hub_* functions). Each app opens inside this page; apps that support
+ * the Hub get a one-time ticket (?hub=…) and sign the person in as the app account the Admin mapped. Every app still opens directly as before.
+ * Shared station devices (Control, QC): the login ends at the end of the shift (08:00 / 16:00 / 00:00). Personal devices: 30 days. */
+const SB = 'https://kdytxuufvigwjccebrki.supabase.co/rest/v1/rpc/', KEY = 'sb_publishable_IYCMIaN7tJleWINprA42CQ_dX10sXFF';
+const LS = { get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} } };
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const S = { view: 'loading', theme: LS.get('hub-theme', 'light'), shared: LS.get('hub-shared', false), session: LS.get('hub-session', null),
+  names: [], pick: null, pin: '', pin1: '', oldPin: '', err: '', apps: [], open: {}, tab: 'home', admin: null, edit: null, busy: false,
+  md: { list: null, tab: '', data: null, edit: null }, sum: sumFresh() };
+const PAGES = ['home', 'admin', 'md'];   // Hub pages (not apps)
+document.documentElement.dataset.theme = S.theme;
+
+async function rpc(fn, args) {
+  const r = await fetch(SB + fn, { method: 'POST', headers: { apikey: KEY, Authorization: 'Bearer ' + KEY, 'Content-Type': 'application/json' }, body: JSON.stringify(args || {}) });
+  const b = await r.json().catch(() => null);
+  if (!r.ok) throw new Error((b && b.message) || 'เชื่อมต่อไม่สำเร็จ ลองใหม่');
+  return b;
+}
+let tT; function toast(m, e) { let t = document.querySelector('.toast'); if (!t) { t = document.createElement('div'); document.body.appendChild(t); }
+  t.className = 'toast' + (e ? ' e' : ''); t.textContent = m; clearTimeout(tT); tT = setTimeout(() => t.remove(), e ? 5000 : 2500); }
+function go(v) { S.view = v; S.err = ''; render(); }
+const tok = () => S.session && S.session.token;
+
+/* ---------- screens ---------- */
+const V = {};
+V.loading = () => '<div class="wrap"><div class="muted">กำลังโหลด…</div></div>';
+const brand = (sub) => '<div class="brand"><img class="logo" src="logo-128.png" alt="BFL Production"><div><b>BFL Production Hub</b><small>' + esc(sub || 'Production · Coating · NCP · วัตถุดิบ · Extruder · Packing') + '</small></div></div>';
+const errBox = () => S.err ? '<div class="err">' + esc(S.err) + '</div>' : '';
+const pinDots = (n) => '<div class="pin">' + [0, 1, 2, 3].map((i) => '<i class="' + (i < n ? 'on' : '') + '"></i>').join('') + '</div>';
+const pad = () => '<div class="pad">' + [1, 2, 3, 4, 5, 6, 7, 8, 9].map((d) => '<button data-act="key" data-arg="' + d + '">' + d + '</button>').join('')
+  + '<button class="ghost" data-act="clr">ล้าง</button><button data-act="key" data-arg="0">0</button><button class="ghost" data-act="del">⌫</button></div>';
+
+V.setup = () => {
+  const head = '<div class="wrap">' + brand('ตั้งค่าครั้งแรก') + '<div class="card col"><h2>ตั้ง Admin คนแรก</h2>';
+  if (!S.setupName) return head + '<span class="muted small">ทำครั้งเดียว — คนนี้จะเพิ่มผู้ใช้คนอื่นและตั้ง PIN ชั่วคราวให้</span>'
+    + '<label>ชื่อ (แสดงตอน login)<input id="sn" autocomplete="off" value="' + esc(S.setupDraft || '') + '"></label>' + errBox()
+    + '<button class="primary" data-act="setupName">ถัดไป → ตั้ง PIN</button></div></div>';
+  return head + '<span class="muted small"><b>' + esc(S.setupName) + '</b> · ' + (!S.pin1 ? 'กดตั้ง PIN 4 หลักของคุณเอง' : 'กด PIN เดิมอีกครั้ง') + '</span>'
+    + pinDots(S.pin.length) + errBox() + pad() + '<button class="ghost" data-act="setupBack">← แก้ชื่อ</button></div></div>';
+};
+
+V.login = () => {
+  const groups = {}; S.names.forEach((u) => (groups[u.dept || 'อื่นๆ'] = groups[u.dept || 'อื่นๆ'] || []).push(u));
+  return '<div class="wrap">' + brand() + '<div class="card col"><h2>เข้าสู่ระบบ</h2><span class="muted small">แตะชื่อของคุณ</span>'
+    + (S.names.length ? Object.keys(groups).map((g) => '<h3>' + esc(g) + '</h3><div class="col names">' + groups[g].map((u) => '<button data-act="pick" data-arg="' + esc(u.id) + '">' + esc(u.name) + '</button>').join('') + '</div>').join('')
+      : '<span class="muted">ยังไม่มีผู้ใช้ — ให้ Admin เพิ่มก่อน</span>')
+    + '<label class="switch"><input type="checkbox" data-act="shared"' + (S.shared ? ' checked' : '') + '> <span><b>เครื่องประจำจุด (ใช้ร่วมกัน)</b><br><span class="small muted">ออกจากระบบเองเมื่อหมดกะ 08:00 / 16:00 / 00:00</span></span></label>'
+    + '<div class="row" style="justify-content:flex-end"><button class="ghost small" data-act="theme">' + (S.theme === 'dark' ? '☀︎ สว่าง' : '☾ มืด') + '</button></div></div></div>';
+};
+V.pin = () => '<div class="wrap">' + brand() + '<div class="card col"><h2>' + esc(S.pick.name) + '</h2><span class="muted small">ใส่ PIN 4 หลัก'
+  + (S.shared ? ' · เครื่องประจำจุด' : ' · เครื่องส่วนตัว (จำไว้ 30 วัน)') + '</span>' + pinDots(S.pin.length) + errBox() + pad()
+  + '<button class="ghost" data-act="back">← เปลี่ยนชื่อ</button></div></div>';
+V.newpin = () => {
+  const step = !S.oldPin ? 'ใส่ PIN ชั่วคราวที่ได้รับจาก Admin' : !S.pin1 ? 'ตั้ง PIN ใหม่ของคุณ (4 หลัก)' : 'ใส่ PIN ใหม่อีกครั้ง';
+  return '<div class="wrap">' + brand('ตั้ง PIN ใหม่') + '<div class="card col"><h2>' + esc(S.session.me.name) + '</h2><span class="muted small">' + step + '</span>'
+    + pinDots(S.pin.length) + errBox() + pad() + '<button class="ghost" data-act="logout">ยกเลิก</button></div></div>';
+};
+
+V.app = () => {
+  const me = S.session.me, tabs = [{ key: 'home', name: 'หน้าแรก' }].concat(S.apps).concat(me.is_admin ? [{ key: 'admin', name: 'ผู้ใช้' }, { key: 'md', name: 'ข้อมูลหลัก' }] : []);
+  return '<div id="shell"><div class="top"><img class="logo" src="logo-128.png" alt="BFL Production">'
+    + '<div class="who"><b>' + esc(me.name) + '</b><small>' + esc(me.dept || '') + (S.session.shared ? ' · เครื่องประจำจุด ถึง ' + new Date(S.session.exp).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) : '') + '</small></div>'
+    + (!PAGES.includes(S.tab) ? '<button data-act="reload" title="โหลดแอปนี้ใหม่">↻<span class="hide-sm"> โหลดใหม่</span></button><button data-act="popout" title="เปิดแอปนี้ในแท็บใหม่">↗<span class="hide-sm"> แท็บใหม่</span></button>' : '')
+    + '<button data-act="theme">' + (S.theme === 'dark' ? '☀︎' : '☾') + '</button>'
+    + '<button data-act="logout">' + (S.session.shared ? 'เปลี่ยนผู้ใช้' : 'ออก') + '</button></div>'
+    + '<div class="tabs">' + tabs.map((t) => '<button class="' + (S.tab === t.key ? 'on' : '') + '" data-act="tab" data-arg="' + t.key + '">' + esc(t.name) + '</button>').join('') + '</div>'
+    + '<div class="stage" id="stage"></div></div>';
+};
+function homeHtml() {
+  return '<div class="page"><div class="wrap" style="max-width:860px">'
+    + (S.apps.length ? '<div class="tiles">' + S.apps.map((a) => '<button class="tile card" data-act="tab" data-arg="' + a.key + '">' + esc(a.name)
+      + '<small>' + (a.url ? (a.frame === false ? 'เปิดเป็นแท็บใหม่' : a.sso ? 'เข้าอัตโนมัติ' : 'login ในแอป') : 'ยังไม่ได้ตั้ง URL') + '</small></button>').join('') + '</div>'
+      : '<div class="card muted">ยังไม่ได้รับสิทธิ์ใช้แอปใด — แจ้ง Admin</div>')
+    + sumHtml()
+    + '<p class="muted small" style="margin-top:18px">แตะแอปเพื่อเปิด · สลับแอปได้จากแถบด้านบนโดยไม่ต้องโหลดใหม่ · ทุกแอปยังเปิดจากลิงก์เดิมได้เหมือนเดิม</p></div></div>';
+}
+function adminHtml() {
+  const A = S.admin;
+  if (!A) return '<div class="page"><div class="wrap muted">กำลังโหลด…</div></div>';
+  if (S.edit) return '<div class="page"><div class="wrap" style="max-width:560px">' + editHtml() + '</div></div>';
+  const appName = {}; A.apps.forEach((a) => (appName[a.key] = a.name));
+  return '<div class="page"><div class="wrap" style="max-width:860px"><div class="row" style="justify-content:space-between"><h2>ผู้ใช้ Hub</h2><button class="primary" data-act="newUser">+ เพิ่มผู้ใช้</button></div>'
+    + '<div class="card" style="margin-top:10px;overflow:auto"><table><thead><tr><th>ชื่อ</th><th>ฝ่าย</th><th>แอปที่ใช้ได้</th><th></th></tr></thead><tbody>'
+    + A.users.map((u) => '<tr style="' + (u.active ? '' : 'opacity:.5') + '"><td><b>' + esc(u.name) + '</b>' + (u.is_admin ? ' <span class="tag">Admin</span>' : '') + (u.must_change ? ' <span class="tag">รอตั้ง PIN</span>' : '') + (u.active ? '' : ' <span class="tag">ปิดใช้งาน</span>') + '</td>'
+      + '<td>' + esc(u.dept) + '</td><td>' + Object.keys(u.apps || {}).map((k) => '<span class="tag">' + esc(appName[k] || k) + '</span>').join('') + '</td>'
+      + '<td><button data-act="editUser" data-arg="' + esc(u.id) + '">แก้ไข</button></td></tr>').join('') + '</tbody></table></div>'
+    + '<h3>ลิงก์แอป</h3><div class="card col">' + A.apps.map((a) => '<label>' + esc(a.name) + (a.sso ? ' · เข้าอัตโนมัติจาก Hub' : ' · login ในแอป') + '<div class="row" style="flex-wrap:nowrap"><input id="url_' + a.key + '" value="' + esc(a.url) + '"><button data-act="saveUrl" data-arg="' + a.key + '">บันทึก</button></div></label>').join('') + '</div></div></div>';
+}
+function editHtml() {
+  const A = S.admin, e = S.edit, isNew = !e.id;
+  const acc = (k) => {
+    const list = A.accounts[k];
+    if (!list) return '<input data-in="app_' + k + '" value="' + esc((e.apps || {})[k] || '') + '" placeholder="username ในแอปนี้ (เว้นว่าง = ไม่ให้ใช้)">';
+    return '<select data-in="app_' + k + '"><option value="">— ไม่ให้ใช้ —</option>' + list.map((x) => '<option value="' + esc(x.id) + '"' + ((e.apps || {})[k] === x.id ? ' selected' : '') + '>' + esc(x.name + ' · ' + x.role) + '</option>').join('') + '</select>';
+  };
+  return '<div class="card col"><h2>' + (isNew ? 'เพิ่มผู้ใช้' : 'แก้ไข · ' + esc(e.name)) + '</h2>'
+    + '<label>ชื่อ (แสดงตอน login)<input data-in="name" value="' + esc(e.name || '') + '"></label>'
+    + '<label>ฝ่าย / จุดงาน<input data-in="dept" value="' + esc(e.dept || '') + '" placeholder="เช่น Control, QC, Coating, Rawmat"></label>'
+    + '<h3>ใช้แอปไหนได้ ด้วยบัญชีอะไร</h3>' + A.apps.map((a) => '<label>' + esc(a.name) + acc(a.key) + '</label>').join('')
+    + '<h3>' + (isNew ? 'PIN ชั่วคราว 4 หลัก (บังคับ)' : 'รีเซ็ต PIN — กด PIN ชั่วคราวใหม่ (ไม่กด = ไม่เปลี่ยน)') + '</h3>'
+    + '<div class="tpin">' + [0, 1, 2, 3].map((i) => '<span>' + esc(String(e.pin || '').charAt(i) || '·') + '</span>').join('') + '</div>'
+    + '<div class="pad">' + [1, 2, 3, 4, 5, 6, 7, 8, 9].map((d) => '<button data-act="tkey" data-arg="' + d + '">' + d + '</button>').join('')
+    + '<button class="ghost" data-act="tclr">ล้าง</button><button data-act="tkey" data-arg="0">0</button><button class="ghost" data-act="tdel">⌫</button></div>'
+    + '<span class="muted small">จด / บอกเลขนี้ให้ผู้ใช้ — ใช้ login ได้ครั้งเดียว</span>'
+    + '<span class="muted small">ผู้ใช้ต้องตั้ง PIN ของตัวเองตอน login ครั้งแรก</span>'
+    + '<label class="switch"><input type="checkbox" data-in="is_admin"' + (e.is_admin ? ' checked' : '') + '> Admin (จัดการผู้ใช้ได้)</label>'
+    + (isNew ? '' : '<label class="switch"><input type="checkbox" data-in="active"' + (e.active ? ' checked' : '') + '> เปิดใช้งาน</label>')
+    + errBox() + '<button class="primary" data-act="saveUser">บันทึก</button><button class="ghost" data-act="cancelEdit">← กลับ</button></div>';
+}
+
+/* ---------- ข้อมูลหลัก (step 5, 22 Nov 2026 — Sheet retire plan): masters that were edited in the sheet / AppSheet, now kept in Supabase.
+ * Hub Admin only (RPC md_list / md_get / md_save, logged in md_log). The sheet gets each change from the Production App copy job (≤ 15 min),
+ * where Extruder Log still reads them. Rows are never deleted: switch them off (Cancelled / Active = N). */
+const mdVal = (v) => v == null ? '' : typeof v === 'object' && v.$d != null ? new Date(v.$d).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' }) : String(v);
+// step 6: RuntimeType "Std Time" = the sheet's time cell (30/12/1899 + minutes, as Apps Script dates it) → shown / edited in minutes
+const MD_T0 = -2209185724000, mdIs = (c, k, x) => (c[k] || []).indexOf(x) >= 0;
+const mdMin = (v) => v && typeof v === 'object' && v.$d != null ? String(Math.round((v.$d - MD_T0) / 60000)) : v == null ? '' : String(v);
+const mdBool = (v) => v === true || /^true$/i.test(String(v)) ? 'TRUE' : v === false || /^false$/i.test(String(v)) ? 'FALSE' : '';
+const mdShow = (c, x, v) => mdIs(c, 'dur', x) ? (v == null || v === '' ? '' : mdMin(v) + ' นาที') : mdIs(c, 'bool', x) ? (mdBool(v) || mdVal(v)) : mdVal(v);
+const mdEditVal = (c, x, v) => mdIs(c, 'dur', x) ? mdMin(v) : mdIs(c, 'bool', x) ? mdBool(v) : v == null ? '' : typeof v === 'object' ? mdVal(v) : String(v);
+const mdOff = (c, d) => c.flagYN ? /^(n|no|false|0)$/i.test(String(d[c.flag] == null ? '' : d[c.flag]).trim()) : d[c.flag] === true || /^true$/i.test(String(d[c.flag] || ''));
+function mdName(col, id) { const L = (S.md.data.look || {})[col]; if (!L || id == null || id === '') return ''; const x = L.find((o) => o.id === String(id)); return x ? x.name : '⚠ ไม่พบในรายการ'; }
+function mdHtml() {
+  const M = S.md;
+  if (!M.list) return '<div class="page"><div class="wrap muted">กำลังโหลด…</div></div>';
+  const chips = '<div class="chips">' + M.list.map((t) => '<button class="' + (M.tab === t.tab ? 'on' : '') + '" data-act="mdTab" data-arg="' + esc(t.tab) + '">'
+    + esc(t.title.replace(/ \(.*\)$/, '')) + (t.ready ? ' · ' + t.n : ' · รอสลับ') + '</button>').join('') + '</div>';
+  let body = '<p class="muted small" style="margin-top:12px">เลือกตาราง · แก้ที่นี่ที่เดียว (ชีตได้สำเนาภายใน ~15 นาที) · ไม่ลบแถว ใช้ปิดใช้งานแทน</p>';
+  if (M.tab && !M.data) body = '<div class="muted" style="margin-top:12px">กำลังโหลด…</div>';
+  else if (M.data && !M.data.ok) body = '<div class="err" style="margin-top:12px">' + esc(M.data.error) + '</div>';
+  else if (M.data && M.edit) body = mdEditHtml();
+  else if (M.data) {
+    const c = M.data.cfg, cols = c.key.concat(c.edit.filter((x) => c.key.indexOf(x) < 0));
+    body = '<div class="row" style="margin-top:12px"><input id="mdq" placeholder="ค้นหา…" style="flex:1;min-width:160px"><button class="primary" data-act="mdNew" style="min-height:46px">+ เพิ่ม</button></div>'
+      + '<div class="card md" style="margin-top:10px;overflow:auto"><table><thead><tr>' + cols.map((x) => '<th>' + esc(x) + '</th>').join('') + '<th>' + esc(c.flag) + '</th><th></th></tr></thead><tbody>'
+      + M.data.rows.map((r) => { const off = mdOff(c, r.d);
+          return '<tr class="' + (off ? 'off' : '') + '" data-q="' + esc((r.k + ' ' + cols.map((x) => mdShow(c, x, r.d[x]) + ' ' + mdName(x, r.d[x])).join(' ')).toLowerCase()) + '">'
+            + cols.map((x, i) => '<td class="' + (i < c.key.length ? 'k' : '') + '">' + esc(mdShow(c, x, r.d[x])) + ((c.look || {})[x] && r.d[x] != null ? '<small>' + esc(mdName(x, r.d[x])) + '</small>' : '') + '</td>').join('')
+            + '<td>' + (off ? (c.flagYN ? 'ปิด' : 'ยกเลิก') : (c.flagYN ? 'ใช้' : '')) + '</td><td><button data-act="mdEdit" data-arg="' + esc(r.k) + '">แก้ไข</button></td></tr>'; }).join('')
+      + '</tbody></table></div><p class="muted small">' + M.data.rows.length + ' แถว · คีย์ ' + esc(c.key.join(' + ')) + (c.new === 'id8' ? ' (สร้างให้อัตโนมัติ)' : '') + '</p>';
+  }
+  return '<div class="page"><div class="wrap" style="max-width:980px"><h2>ข้อมูลหลัก</h2>' + chips + body + '</div></div>';
+}
+function mdEditHtml() {
+  const M = S.md, c = M.data.cfg, e = M.edit, isNew = !e.k;
+  const fld = (x, key) => {
+    const v = e.d[x] == null ? '' : typeof e.d[x] === 'object' ? mdVal(e.d[x]) : String(e.d[x]), L = (c.look || {})[x] && (M.data.look || {})[x];
+    if (L) return '<label>' + esc(x) + '<select data-md="' + esc(x) + '"><option value="">—</option>' + (v && !L.some((o) => o.id === v) ? '<option value="' + esc(v) + '" selected>' + esc(v) + ' · ⚠ ไม่พบในรายการ</option>' : '')
+      + L.filter((o) => !o.off || o.id === v).map((o) => '<option value="' + esc(o.id) + '"' + (o.id === v ? ' selected' : '') + '>' + esc(o.name ? o.name + ' (' + o.id + ')' : o.id) + '</option>').join('') + '</select></label>';
+    const O = mdIs(c, 'bool', x) ? ['', 'TRUE', 'FALSE'] : (c.opts || {})[x];
+    if (O) return '<label>' + esc(x) + '<select data-md="' + esc(x) + '">' + (v && O.indexOf(v) < 0 ? '<option value="' + esc(v) + '" selected>' + esc(v) + ' · ⚠ ไม่อยู่ในรายการ</option>' : '')
+      + O.map((o) => '<option value="' + esc(o) + '"' + (o === v ? ' selected' : '') + '>' + esc(o || '—') + '</option>').join('') + '</select></label>';
+    const num = mdIs(c, 'num', x) || mdIs(c, 'dur', x);
+    return '<label>' + esc(x) + (key ? ' (คีย์ — แก้ภายหลังไม่ได้)' : '') + (mdIs(c, 'dur', x) ? ' — นาที (0 = ไม่มี)' : '') + '<input data-md="' + esc(x) + '" value="' + esc(v) + '"' + (num ? ' inputmode="decimal"' : '') + ' autocomplete="off"></label>';
+  };
+  const keys = isNew && c.new !== 'id8' ? c.key.map((x) => fld(x, true)).join('') : '<span class="muted small">' + esc(c.key.join(' + ')) + ': <b class="k">' + esc(isNew ? '(สร้างให้อัตโนมัติ)' : e.k) + '</b></span>';
+  const off = mdOff(c, e.d);
+  return '<div class="card col" style="margin-top:12px;max-width:560px"><h2>' + (isNew ? 'เพิ่มแถว' : 'แก้ไข') + ' · ' + esc(M.data.cfg.title.replace(/ \(.*\)$/, '')) + '</h2>' + keys
+    + c.edit.filter((x) => c.key.indexOf(x) < 0).map((x) => fld(x)).join('')
+    + '<label class="switch"><input type="checkbox" data-md="__flag"' + ((c.flagYN ? !off : off) ? ' checked' : '') + '> ' + (c.flagYN ? 'ใช้งาน (' + esc(c.flag) + ' = Y)' : 'ยกเลิก (' + esc(c.flag) + ')') + '</label>'
+    + errBox() + '<button class="primary" data-act="mdSave"' + (S.busy ? ' disabled' : '') + '>บันทึก</button><button class="ghost" data-act="mdBack">← กลับ</button></div>';
+}
+
+/* ---------- poll guard (20 Nov 2026): apps kept alive in hidden frames (or with the screen off) don't poll for changes ----------
+ * Same origin → the Hub wraps each app frame's fetch. Only "anything new?" checks are held: Supabase RPCs named *stamp and Apps Script
+ * liveStamp / getStamp. They wait (one per kind per frame) until the frame is shown again, then run, so the app refreshes at once.
+ * Reads, saves and logins always go straight through. */
+const HUB_WAIT = [];
+function hubHidden(f) { return document.hidden || !f.isConnected || f.style.display === 'none'; }
+function hubRelease() {
+  for (let i = HUB_WAIT.length - 1; i >= 0; i--) { const w = HUB_WAIT[i]; if (!w.f.isConnected || !hubHidden(w.f)) { HUB_WAIT.splice(i, 1); w.go(); } }
+}
+function hubGuard(f) {
+  try {
+    const w = f.contentWindow; if (!w || !w.fetch || w.__hubGuard) return;
+    const real = w.fetch.bind(w), park = new Map();
+    const pollKey = (u, o) => {
+      const url = String((u && u.url) || u || ''), body = o && typeof o.body === 'string' ? o.body : '';
+      if (/\/rest\/v1\/rpc\/[a-z0-9_]*stamp(\?|$)/i.test(url)) return url;
+      if (/script\.google(usercontent)?\.com/.test(url) && /"fn":"(liveStamp|getStamp)"/.test(body)) return url + '|' + body.slice(0, 300);
+      return null;
+    };
+    w.fetch = function (u, o) {
+      const k = pollKey(u, o);
+      if (!k || !hubHidden(f)) return real(u, o);
+      let p = park.get(k);
+      if (!p) { p = new Promise((go) => HUB_WAIT.push({ f, go })).then(() => { park.delete(k); return real(u, o); }); park.set(k, p); }
+      return p.then((r) => r.clone());
+    };
+    w.__hubGuard = 1;
+  } catch (e) { /* not same origin or not ready: the app polls as before */ }
+}
+document.addEventListener('visibilitychange', hubRelease);
+
+/* ---------- render: the shell keeps app iframes alive, so switching tabs never reloads an app ---------- */
+function render() {
+  const root = document.getElementById('root');
+  if (S.view !== 'app') { root.innerHTML = V[S.view](); return; }
+  if (!document.getElementById('shell')) root.innerHTML = V.app();
+  else { const tmp = document.createElement('div'); tmp.innerHTML = V.app(); const sh = document.getElementById('shell');
+    sh.replaceChild(tmp.querySelector('.top'), sh.querySelector('.top')); sh.replaceChild(tmp.querySelector('.tabs'), sh.querySelector('.tabs')); }
+  const st = document.getElementById('stage');
+  let pg = st.querySelector('.page'); if (pg) pg.remove();
+  st.querySelectorAll('iframe, .loading').forEach((f) => { f.style.display = f.dataset.app === S.tab ? '' : 'none'; });
+  hubRelease();
+  const tabApp = S.apps.find((x) => x.key === S.tab && x.frame === false);
+  if (tabApp) st.insertAdjacentHTML('beforeend', '<div class="page"><div class="wrap col" style="max-width:460px;text-align:center;padding-top:48px">'
+    + '<h2>' + esc(tabApp.name) + '</h2><span class="muted small">แอปนี้ต้อง login บัญชี Google จึงเปิดในหน้า Hub ไม่ได้ — เปิดเป็นแท็บใหม่' + (tabApp.sso ? ' และเข้าให้อัตโนมัติ' : '') + '</span>'
+    + '<button class="primary" data-act="popout" style="min-height:56px;font-size:18px">เปิด ' + esc(tabApp.name) + ' ↗</button></div></div>');
+  if (S.tab === 'home') { st.insertAdjacentHTML('beforeend', homeHtml()); loadSum(); }
+  else if (S.tab === 'admin') st.insertAdjacentHTML('beforeend', adminHtml());
+  else if (S.tab === 'md') st.insertAdjacentHTML('beforeend', mdHtml());
+}
+async function openApp(key, force) {
+  const a = S.apps.find((x) => x.key === key); if (!a) return;
+  if (a.frame === false) return; // opens in a new tab from its page (button → popout)
+  const st = document.getElementById('stage'); let f = st.querySelector('iframe[data-app="' + key + '"]');
+  if (f && !force) return;
+  if (!a.url) { toast('ยังไม่ได้ตั้ง URL ของ ' + a.name + ' — แจ้ง Admin', true); return; }
+  let url = a.url;
+  if (a.sso) {
+    const r = await rpc('hub_ticket', { p_token: tok(), p_app: key });
+    if (!r.ok) { if (r.error === 'AUTH') return expired(); toast(r.error, true); return; }
+    url += (url.indexOf('?') >= 0 ? '&' : '?') + 'hub=' + r.ticket;
+  }
+  if (f) f.remove();
+  const ld = st.querySelector('.loading[data-app="' + key + '"]'); if (ld) ld.remove();
+  st.insertAdjacentHTML('beforeend', '<div class="loading" data-app="' + key + '">กำลังเปิด ' + esc(a.name) + '…</div>');
+  f = document.createElement('iframe'); f.dataset.app = key; f.src = url; f.allow = 'camera; microphone; clipboard-read; clipboard-write; fullscreen';
+  f.addEventListener('load', () => { hubGuard(f); const l = st.querySelector('.loading[data-app="' + key + '"]'); if (l) l.remove(); });
+  st.appendChild(f); render();
+}
+function expired() { toast('หมดเวลาเข้าใช้งาน — login ใหม่', true); clearSession(); start(); }
+function clearSession() { S.session = null; LS.set('hub-session', null); S.apps = []; S.tab = 'home'; S.admin = null; S.edit = null; S.md = { list: null, tab: '', data: null, edit: null }; S.sum = sumFresh(); const r = document.getElementById('root'); if (r) r.innerHTML = ''; }
+
+
+/* ---------- สรุปรายวัน (หน้าแรก · เฉพาะ Admin) · 25 พ.ย. 2026 ----------
+ * RPC hub_sum_ext / hub_sum_coat / hub_sum_pack (p_token, p_month) แยกส่วน ต่างคนต่างอ่านเฉพาะแท็บของตัวเอง อ่านอย่างเดียว คำนวณฝั่ง Supabase: Extruder = ชั่วโมงเดินเครื่อง (RuntimeType 'Runtime') ต่อสาย ตัดตามวันผลิต 08:00–07:59
+ * Coater = ผลต่าง Total_Weight สะสมต่อ lot+สาย · Packing = Output_Kg ไม่ยกเลิก ไม่รวม WIP (WIP แยกบรรทัดหมายเหตุ)
+ * อ่านเฉพาะช่วงที่ใช้ (Extruder เฉพาะภายในเดือน · Coater/Packing เฉพาะ 2 เดือน ผ่านดัชนี seq) · เฉพาะเดือนปัจจุบัน + ก่อนหน้า 1 เดือน
+ * ไม่ poll: โหลดเมื่อเปิดหน้าแรก (เก็บในเครื่อง 5 นาที) หรือกด ↻ เพื่อลดการอ่าน Supabase */
+const TH_M = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+const nf = (v, d) => v == null ? '–' : Number(v).toLocaleString('en-US', { minimumFractionDigits: d || 0, maximumFractionDigits: d || 0 });
+const monthLbl = (m) => { const [y, mo] = m.split('-'); return TH_M[+mo - 1] + ' ' + (+y + 543); };
+const monthShift = (m, k) => { const [y, mo] = m.split('-').map(Number); const d = new Date(Date.UTC(y, mo - 1 + k, 1)); return d.getUTCFullYear() + '-' + String(d.getUTCMonth() + 1).padStart(2, '0'); };
+function sumChart(days, run, sfx, cls, nm) {   // 1 กราฟ = 1 สาย · แท่งทึบ = ชม.เดินเครื่อง · แท่งเทา (ต่อบนแท่งทึบ) = หยุดตามแผน · ตัวเลข = ชม.เดินเครื่อง
+  const W = Math.max(300, Math.min(800, (document.documentElement.clientWidth || 720) - 64)), H = W < 500 ? 200 : 210, L = 28, R = 8, T = 12, B = 22, pw = W - L - R, ph = H - T - B, n = Math.max(days.length, 1), step = pw / n, bw = Math.max(5, Math.min(22, step * 0.7)), Y = (h) => T + ph - (h / 24) * ph, rot = step < 24;
+  let g = '';
+  [0, 8, 16, 24].forEach((h) => { g += '<line class="gl" x1="' + L + '" x2="' + (W - R) + '" y1="' + Y(h) + '" y2="' + Y(h) + '"/><text x="' + (L - 5) + '" y="' + (Y(h) + 4) + '" text-anchor="end">' + h + '</text>'; });
+  days.forEach((r, i) => {
+    const x = L + i * step + step / 2, dd = +r.d.slice(8), lbl = dd + '/' + (+r.d.slice(5, 7)), v = +r[run] || 0;
+    if (r.d === S.sumToday) g += '<rect class="td" x="' + (x - step / 2) + '" y="' + T + '" width="' + step + '" height="' + ph + '" rx="3"/>';
+    const hv = (v / 24) * ph; let acc = hv, hpTop = 0;   // ซ้อนจากล่าง: เดินเครื่อง → เครื่องเสีย → PD → หยุดตามแผน (ว่าง = ยังไม่มีบันทึก/ยังไม่ถึงเวลา)
+    [['md', 'md', 'เครื่องเสีย'], ['pd', 'pd', 'หยุดจาก PD'], ['pl', 'pl', 'หยุดตามแผน']].forEach(([kk, c, tt]) => {
+      const q = +r[(kk === 'pl' ? 'p' : kk) + sfx] || 0; if (q <= 0.05) return; const hq = (q / 24) * ph;
+      g += '<rect class="' + c + '" x="' + (x - bw / 2) + '" y="' + (T + ph - acc - hq) + '" width="' + bw + '" height="' + hq + '"><title>' + nm + ' · ' + lbl + ' · ' + tt + ' ' + nf(q, 1) + ' ชม.</title></rect>'; acc += hq; hpTop += hq;
+    });
+    if (v > 0.005) {
+      g += '<rect class="' + cls + '" x="' + (x - bw / 2) + '" y="' + (T + ph - hv) + '" width="' + bw + '" height="' + hv + '" rx="2"><title>' + nm + ' · ' + lbl + ' · เดินเครื่อง ' + nf(v, 1) + ' ชม.</title></rect>';
+      const t = nf(v, 1), inside = hv >= (rot ? 26 : 16);   // แท่งสูงพอ: ใส่ตัวเลขในแท่ง (ขาว) · ไม่พอ: ไว้เหนือแท่ง
+      const ty = inside ? (rot ? T + ph - 3 : T + ph - hv + 12) : T + ph - hv - hpTop - 3;   // แคบ (มือถือ): หมุนตัวเลข วางที่ฐานแท่ง
+      g += rot ? '<text class="' + (inside ? 'vi' : 'vl') + '" transform="translate(' + (x + 3.5) + ',' + ty + ') rotate(-90)" text-anchor="start">' + t + '</text>'
+        : '<text class="' + (inside ? 'vi' : 'vl') + '" x="' + x + '" y="' + ty + '" text-anchor="middle">' + t + '</text>';
+    }
+    if (n <= 16 || dd % 2 === 1 || dd === n) g += '<text x="' + x + '" y="' + (H - 7) + '" text-anchor="middle">' + dd + '</text>';
+  });
+  return '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="ชั่วโมงเดินเครื่อง ' + nm + ' รายวัน">' + g + '</svg>';
+}
+const sumOk = () => !!(S.session && S.session.me && S.session.me.is_admin);   // สรุปรายวัน: เฉพาะ Hub Admin เห็น
+const SUMK = ['ext', 'coat', 'pack'];   // 1 ส่วน = 1 RPC (hub_sum_ext / hub_sum_coat / hub_sum_pack) แต่ละส่วนโหลด/ล้มเหลวแยกกัน
+function sumFresh() { return { month: '', cache: { ext: {}, coat: {}, pack: {} }, busy: {}, err: {} }; }   // function declaration: ใช้ได้ก่อนบรรทัดนี้ (S ตั้งต้น)
+function sumSec(k, m, body) {   // ส่วนที่ยังไม่มีข้อมูล: แสดงกำลังโหลด/ข้อผิดพลาดของส่วนนั้นเท่านั้น
+  const M = S.sum; return M.err[k] ? '<div class="err">' + esc(M.err[k]) + '</div>' : '<div class="muted">กำลังโหลด…</div>';
+}
+function sumHtml() {
+  if (!sumOk()) return '';
+  const M = S.sum, m = M.month || (S.sumNow || ''), E = M.cache.ext[m], C = M.cache.coat[m], P = M.cache.pack[m];
+  const head = '<div class="hd"><h2>สรุปรายวัน</h2><button data-act="sumMo" data-arg="-1"' + (m && S.sumNow && m <= monthShift(S.sumNow, -1) ? ' disabled' : '') + ' title="เดือนก่อน">◀</button><span class="mo">' + (m ? monthLbl(m) : '…') + '</span>'
+    + '<button data-act="sumMo" data-arg="1"' + (m && m >= (S.sumNow || m) ? ' disabled' : '') + ' title="เดือนถัดไป">▶</button><button data-act="sumReload" title="โหลดใหม่">↻</button></div>';
+  const sum = (D, k) => D.days.reduce((a, r) => a + (+r[k] || 0), 0), cnt = (D, k) => D.days.filter((r) => +r[k] > 0).length, avg = (D, k) => cnt(D, k) ? sum(D, k) / cnt(D, k) : null;
+  let h = '<div class="muted small">ชั่วโมงเดินเครื่อง Extruder รายวัน (วันผลิต 08:00–07:59) · สีในแท่ง: เดินเครื่อง · <span style="color:#dc2626">■</span> เครื่องเสีย (Machine) · <span style="color:var(--amber)">■</span> หยุดจาก PD (รอวัตถุดิบ/ปัญหากระบวนการ) · <span style="color:var(--muted)">■</span> หยุดตามแผน · ช่องว่าง = ยังไม่มีบันทึก/ยังมาไม่ถึง</div>';
+  if (!E) h += sumSec('ext');
+  else [['1', 'c1', 'var(--blue)', 'EXT-1'], ['2', 'c2', 'var(--ok)', 'EXT-2']].forEach(([n, cls, col, nm]) => {
+    const run = sum(E, 'e' + n), pl = sum(E, 'p' + n), av = sum(E, 'c' + n) - pl, pct = av > 0 ? run / av * 100 : null, dn = cnt(E, 'e' + n);
+    h += '<h4>' + nm + '</h4><div class="lg"><span><i style="background:' + col + '"></i>เดินเครื่อง <b>' + nf(run, 1) + '</b> ชม. จากเวลาที่ไม่ได้หยุดตามแผน <b>' + nf(av, 1) + '</b> ชม. = <b>' + (pct == null ? '–' : nf(pct, 1) + '%') + '</b> · เฉลี่ย <b>' + (pct == null ? '–' : nf(pct * 0.24, 1)) + '</b> ชม./วัน</span>'
+      + '<span><i class="k" style="background:#dc2626"></i>เครื่องเสีย <b>' + nf(sum(E, 'md' + n), 1) + '</b></span><span><i class="k" style="background:var(--amber)"></i>PD <b>' + nf(sum(E, 'pd' + n), 1) + '</b></span><span><i class="k" style="background:var(--line2)"></i>หยุดตามแผน <b>' + nf(pl, 1) + '</b> ชม. · เดิน ' + dn + ' วัน</span></div>' + sumChart(E.days, 'e' + n, n, cls, nm);
+  });
+  h += '<h3>ยอดรายวัน · Coater / Packing (kg)</h3>';
+  if (!C || !P) h += sumSec(!C ? 'coat' : 'pack');
+  else {
+    const T = C.today, pk = {}; P.days.forEach((r) => { pk[r.d] = r; });
+    const rows = C.days.map((r) => { const q = pk[r.d] || {}; return '<tr class="' + (r.d === T ? 'td' : (r.coat == null && q.pack == null ? 'off' : '')) + '"><td>' + (+r.d.slice(8)) + '/' + (+r.d.slice(5, 7)) + (r.d === T ? ' <span class="tag">วันนี้</span>' : '') + '</td>'
+      + '<td class="n">' + nf(r.coat) + '</td><td class="n">' + nf(q.pack) + '</td></tr>'; }).join('');
+    const wip = sum(P, 'wip');
+    h += '<div class="tw"><table><thead><tr><th>วันที่</th><th class="n">Coater</th><th class="n">Packing</th></tr></thead><tbody>' + rows + '</tbody>'
+      + '<tfoot><tr><td>รวม</td><td class="n">' + nf(sum(C, 'coat')) + '</td><td class="n">' + nf(sum(P, 'pack')) + '</td></tr>'
+      + '<tr class="av"><td>เฉลี่ย/วัน</td><td class="n">' + nf(sum(C, 'coat_sh') ? sum(C, 'coat') / sum(C, 'coat_sh') * 3 : null) + '</td><td class="n">' + nf(sum(P, 'pack_sh') ? sum(P, 'pack') / sum(P, 'pack_sh') * 3 : null) + '</td></tr>'
+      + '</tfoot></table></div>'
+      + '<div class="note">Coater = น้ำหนักที่ลงเครื่อง (ผลต่างตาชั่งสะสมต่อ lot) · Packing = Output ไม่ยกเลิก ไม่รวม WIP' + (wip > 0 ? ' (WIP เดือนนี้ ' + nf(wip) + ' kg แยกไว้)' : '') + ' · เฉลี่ย/วัน = ค่าเฉลี่ยต่อวันผลิตเต็ม คิดจากกะที่มีบันทึกเท่านั้น (กะที่หยุดตามแผนไม่ถูกนับ) · อัปเดต '
+      + new Date(Math.max(new Date(C.at), new Date(P.at))).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) + '</div>';
+  }
+  return '<div class="card sum">' + head + h + '</div>';
+}
+async function loadSumPart(k, m, force) {
+  const M = S.sum, c = M.cache[k][m || S.sumNow || ''];
+  if (M.busy[k] || (c && !force && Date.now() - c.got < 5 * 60e3)) return;
+  if (M.err[k] && !force && !c) return;   // ล้มเหลวแล้ว: ไม่ลองซ้ำเองทุกครั้งที่วาดหน้า รอกด ↻ หรือเปลี่ยนเดือน
+  M.busy[k] = true; M.err[k] = '';
+  try {
+    const r = await rpc('hub_sum_' + k, { p_token: tok(), p_month: m || null });
+    if (!r.ok) { if (r.error === 'AUTH') return expired(); throw new Error(r.error === 'ADMIN' ? 'เฉพาะ Admin' : (r.error || 'โหลดสรุปไม่สำเร็จ')); }
+    r.got = Date.now(); S.sumNow = S.sumNow || r.month; S.sumToday = r.today; if (!M.month) M.month = r.month; M.cache[k][r.month] = r;
+  } catch (e) { M.err[k] = e.message; } finally { M.busy[k] = false; if (S.tab === 'home') render(); }
+}
+function loadSum(force) { if (!sumOk()) return; const m = S.sum.month || ''; SUMK.forEach((k) => loadSumPart(k, m, force)); }
+
+/* ---------- actions ---------- */
+const ACT = {
+  sumMo(k) { const M = S.sum; if (!S.sumNow) return; M.err = {}; M.month = monthShift(M.month || S.sumNow, +k); const lo = monthShift(S.sumNow, -1);   // เฉพาะเดือนปัจจุบัน + เดือนก่อนหน้า 1 เดือน
+    if (M.month > S.sumNow) M.month = S.sumNow; if (M.month < lo) M.month = lo; render(); loadSum(); },
+  sumReload() { loadSum(true); },
+  theme() { S.theme = S.theme === 'dark' ? 'light' : 'dark'; LS.set('hub-theme', S.theme); document.documentElement.dataset.theme = S.theme; render(); },
+  shared(el) { S.shared = el.checked; LS.set('hub-shared', S.shared); },
+  pick(id) { S.pick = S.names.find((u) => u.id === id); S.pin = ''; go('pin'); },
+  back() { S.pick = null; S.pin = ''; go('login'); },
+  clr() { S.pin = ''; render(); },
+  del() { S.pin = S.pin.slice(0, -1); render(); },
+  async key(d) {
+    if (S.busy || S.pin.length >= 4) return; S.pin += d; S.err = ''; render();
+    if (S.pin.length < 4) return;
+    S.busy = true;
+    try {
+      if (S.view === 'pin') {
+        const r = await rpc('hub_login', { p_id: S.pick.id, p_pin: S.pin, p_shared: S.shared });
+        if (!r.ok) throw new Error(r.error);
+        S.session = { token: r.token, exp: r.exp, me: r.me, shared: S.shared }; LS.set('hub-session', S.session);
+        S.pin = ''; if (r.me.must_change) { S.oldPin = ''; S.pin1 = ''; return go('newpin'); }
+        await enter();
+      } else if (S.view === 'setup') {
+        if (!S.pin1) { S.pin1 = S.pin; S.pin = ''; return render(); }
+        if (S.pin1 !== S.pin) { S.pin1 = ''; S.pin = ''; throw new Error('PIN 2 ครั้งไม่ตรงกัน — กดตั้งใหม่อีกครั้ง'); }
+        const r = await rpc('hub_setup', { p_name: S.setupName, p_pin: S.pin });
+        if (!r.ok) { S.pin1 = ''; S.pin = ''; throw new Error(r.error); }
+        S.pin1 = ''; S.pin = ''; S.setupName = ''; toast('ตั้ง Admin แล้ว — แตะชื่อแล้วกด PIN เพื่อเข้าใช้งาน'); start();
+      } else if (S.view === 'newpin') {
+        if (!S.oldPin) { S.oldPin = S.pin; S.pin = ''; return render(); }
+        if (!S.pin1) { S.pin1 = S.pin; S.pin = ''; return render(); }
+        if (S.pin1 !== S.pin) { S.pin1 = ''; S.pin = ''; throw new Error('PIN ใหม่ 2 ครั้งไม่ตรงกัน ตั้งใหม่อีกครั้ง'); }
+        const r = await rpc('hub_change_pin', { p_token: tok(), p_old: S.oldPin, p_new: S.pin });
+        if (!r.ok) { S.oldPin = ''; S.pin1 = ''; S.pin = ''; throw new Error(r.error); }
+        S.session.me.must_change = false; LS.set('hub-session', S.session); S.oldPin = ''; S.pin1 = ''; S.pin = ''; toast('ตั้ง PIN แล้ว'); await enter();
+      }
+    } catch (e) { S.pin = ''; S.err = e.message; render(); }
+    finally { S.busy = false; }
+  },
+  setupName() {
+    const n = document.getElementById('sn').value.trim(); S.setupDraft = n;
+    if (n.length < 2) { S.err = 'ใส่ชื่อ (อย่างน้อย 2 ตัวอักษร)'; return render(); }
+    S.setupName = n; S.pin = ''; S.pin1 = ''; S.err = ''; render();
+  },
+  setupBack() { S.setupName = ''; S.pin = ''; S.pin1 = ''; S.err = ''; render(); },
+  // temporary PIN in the user form: number pad, digits shown so the Admin can tell the user
+  tkey(d) { if (!S.edit) return; S.edit.pin = String(S.edit.pin || ''); if (S.edit.pin.length < 4) S.edit.pin += d; S.err = ''; render(); },
+  tdel() { if (S.edit) { S.edit.pin = String(S.edit.pin || '').slice(0, -1); render(); } },
+  tclr() { if (S.edit) { S.edit.pin = ''; render(); } },
+  async logout() { const t = tok(); clearSession(); if (t) rpc('hub_logout', { p_token: t }).catch(() => {}); start(); },
+  async tab(k) {
+    S.tab = k; S.edit = null; render();
+    if (k === 'admin') { await loadAdmin(); return; }
+    if (k === 'md') { await mdLoadList(); return; }
+    if (k !== 'home') await openApp(k).catch((e) => toast(e.message, true));
+  },
+  // some apps (e.g. ones that need a Google sign-in) may not open inside a frame on every phone → open in a new tab, signed in the same way
+  async popout() {
+    const a = S.apps.find((x) => x.key === S.tab); if (!a || !a.url) return;
+    const w = window.open('about:blank', '_blank'); let url = a.url;
+    if (a.sso) { const r = await rpc('hub_ticket', { p_token: tok(), p_app: a.key }); if (!r.ok) { if (w) w.close(); return toast(r.error, true); } url += (url.indexOf('?') >= 0 ? '&' : '?') + 'hub=' + r.ticket; }
+    if (w) w.location.href = url; else location.href = url;
+  },
+  async reload() { if (!PAGES.includes(S.tab)) await openApp(S.tab, true).catch((e) => toast(e.message, true)); },
+  newUser() { S.edit = { name: '', dept: '', apps: {}, is_admin: false, active: true, pin: '' }; S.err = ''; render(); },
+  editUser(id) { const u = S.admin.users.find((x) => x.id === id); S.edit = Object.assign({ pin: '' }, JSON.parse(JSON.stringify(u))); S.err = ''; render(); },
+  cancelEdit() { S.edit = null; S.err = ''; render(); },
+  async saveUser() {
+    const e = S.edit, p = { id: e.id || '', name: e.name, dept: e.dept, is_admin: !!e.is_admin, active: e.id ? !!e.active : true, apps: e.apps || {}, pin: e.pin || '' };
+    const r = await rpc('hub_user_save', { p_token: tok(), p }); if (!r.ok) { S.err = r.error; return render(); }
+    toast(e.pin ? 'บันทึกแล้ว · แจ้ง PIN ชั่วคราวให้ผู้ใช้' : 'บันทึกแล้ว'); S.edit = null; await loadAdmin();
+  },
+  async mdTab(t) { S.md.tab = t; S.md.data = null; S.md.edit = null; S.err = ''; render(); await mdLoad(); },
+  mdNew() { S.md.edit = { k: '', d: {}, orig: {} }; S.err = ''; render(); },
+  mdEdit(k) {
+    const r = S.md.data.rows.find((x) => x.k === k), c = S.md.data.cfg; if (!r) return;
+    const d = {}; c.key.concat(c.edit).forEach((x) => { d[x] = mdEditVal(c, x, r.d[x]); }); d[c.flag] = r.d[c.flag];   // edited as text (minutes, TRUE/FALSE) · the flag as stored
+    S.md.edit = { k: r.k, d: d, orig: Object.assign({}, d) }; S.err = ''; render();
+  },
+  mdBack() { S.md.edit = null; S.err = ''; render(); },
+  async mdSave() {
+    const M = S.md, c = M.data.cfg, e = M.edit, cols = (e.k ? [] : c.key).concat(c.edit, [c.flag]), p = {};
+    cols.forEach((x) => { if (!(x in e.d)) return; const v = e.d[x], o = e.orig[x];
+      if (typeof v === 'object' && v !== null) return;   // dates are never edited here
+      if (!e.k ? v !== '' && v != null : String(v == null ? '' : v) !== String(o == null ? '' : typeof o === 'object' ? mdVal(o) : o)) p[x] = v; });
+    if (e.k && !Object.keys(p).length) { S.err = 'ยังไม่ได้แก้อะไร'; return render(); }
+    S.busy = true; render();
+    try {
+      const r = await rpc('md_save', { p_token: tok(), p_tab: M.tab, p_k: e.k || null, p_d: p });
+      toast('บันทึกแล้ว · ' + r.k + ' (ชีตได้สำเนาภายใน ~15 นาที)'); M.edit = null; S.err = ''; await mdLoad();
+    } catch (er) { if (er.message === 'AUTH') return expired(); S.err = er.message; }
+    finally { S.busy = false; render(); }
+  },
+  async saveUrl(k) {
+    const r = await rpc('hub_app_save', { p_token: tok(), p: { key: k, url: document.getElementById('url_' + k).value.trim() } });
+    if (!r.ok) return toast(r.error, true);
+    toast('บันทึกลิงก์แล้ว'); await loadApps(); await loadAdmin();
+  },
+};
+async function loadAdmin() { const r = await rpc('hub_user_list', { p_token: tok() }); if (!r.ok) { if (r.error === 'AUTH') return expired(); return toast(r.error, true); } S.admin = r; render(); }
+async function mdLoadList() {
+  try { const r = await rpc('md_list', { p_token: tok() }); S.md.list = r.tabs; if (!S.md.tab && r.tabs.length) S.md.tab = (r.tabs.find((t) => t.ready) || r.tabs[0]).tab; render(); if (S.md.tab) await mdLoad(); }
+  catch (e) { if (e.message === 'AUTH') return expired(); toast(e.message, true); }
+}
+async function mdLoad() {
+  const t = S.md.tab;
+  try { const r = await rpc('md_get', { p_token: tok(), p_tab: t }); if (S.md.tab !== t) return; S.md.data = r;
+    const L = S.md.list && S.md.list.find((x) => x.tab === t); if (L && r.ok) { L.n = r.rows.length; L.ready = true; } render(); }
+  catch (e) { if (e.message === 'AUTH') return expired(); S.md.data = { ok: false, error: e.message }; render(); }
+}
+async function loadApps() { const r = await rpc('hub_apps', { p_token: tok() }); if (!r.ok) return expired(); S.apps = r.apps; }
+async function enter() { await loadApps(); S.tab = 'home'; go('app'); setTimeout(warmApps, 1500); }
+/* GitHub Pages apps (user 10 Nov 2026): after login, quietly fetch each app's page into this browser (same store gas/boot.js reads,
+ * gasp-page-<app>) and wake its Apps Script, so the first tap on an app does not wait ~2 s for the page or a cold script.
+ * One app at a time; an app whose page has not changed costs one small request. */
+let warming = false;
+async function warmApps() {
+  if (warming) return; warming = true;
+  const base = new URL('../', location.href).href;
+  try {
+    for (const a of S.apps) {
+      if (!a.url || a.url.indexOf(base) !== 0) continue;
+      try {
+        const html = await (await fetch(a.url.split('?')[0], { cache: 'no-cache' })).text();
+        const key = (/data-key="([^"]+)"/.exec(html) || [])[1], exec = (/data-exec="([^"]+)"/.exec(html) || [])[1];
+        if (!key || !exec) continue;
+        const lsk = 'gasp-page-' + key; let old = null; try { old = JSON.parse(localStorage.getItem(lsk) || 'null'); } catch (e) {}
+        const r = await fetch(exec, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ fn: '__page', hash: old && old.hash }) });
+        const j = await r.json();
+        if (j.ok && j.v && j.v.html) { try { localStorage.setItem(lsk, JSON.stringify({ hash: j.v.hash, html: j.v.html, at: Date.now() })); } catch (e) {} }
+        // apps with a read cache (Production) fill it now, while nobody waits; the others answer "no such function"
+        fetch(exec, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ fn: '__warm' }) }).catch(() => {});
+      } catch (e) { /* the app still loads its page itself when opened */ }
+    }
+  } finally { warming = false; }
+}
+
+document.addEventListener('click', (ev) => {
+  const el = ev.target.closest('[data-act]'); if (!el || el.tagName === 'INPUT') return;
+  const f = ACT[el.dataset.act]; if (f) Promise.resolve(f(el.dataset.arg)).catch((e) => toast(e.message, true));
+});
+document.addEventListener('change', (ev) => {
+  const el = ev.target;
+  if (el.dataset.act === 'shared') return ACT.shared(el);
+  if (el.dataset.md && S.md.edit) { const c = S.md.data.cfg;
+    if (el.dataset.md === '__flag') S.md.edit.d[c.flag] = c.flagYN ? (el.checked ? 'Y' : 'N') : el.checked; else S.md.edit.d[el.dataset.md] = el.value; return; }
+  if (el.dataset.in && S.edit) { const k = el.dataset.in, v = el.type === 'checkbox' ? el.checked : el.value;
+    if (k.indexOf('app_') === 0) { S.edit.apps = S.edit.apps || {}; S.edit.apps[k.slice(4)] = v; } else S.edit[k] = v; }
+});
+document.addEventListener('input', (ev) => { const el = ev.target;
+  if (el.id === 'mdq') { const q = el.value.trim().toLowerCase(); document.querySelectorAll('.md tr[data-q]').forEach((tr) => { tr.style.display = !q || tr.dataset.q.indexOf(q) >= 0 ? '' : 'none'; }); return; }
+  if (el.dataset.md && S.md.edit && el.type !== 'checkbox') { S.md.edit.d[el.dataset.md] = el.value; return; } if (el.dataset.in && S.edit && el.type !== 'checkbox' && el.tagName !== 'SELECT') { const k = el.dataset.in; if (k.indexOf('app_') === 0) { S.edit.apps[k.slice(4)] = el.value; } else S.edit[k] = el.value; } });
+document.addEventListener('keydown', (ev) => { const padView = S.view === 'pin' || S.view === 'newpin' || (S.view === 'setup' && S.setupName); if (!padView) return; if (/^\d$/.test(ev.key)) ACT.key(ev.key); else if (ev.key === 'Backspace') ACT.del(); });
+// shared device: end of shift → back to the login screen (checked every 30 s)
+setInterval(() => { if (S.session && S.session.exp && Date.now() > S.session.exp) expired(); }, 30000);
+
+async function start() {
+  S.view = 'loading'; render();
+  try {
+    if (S.session && S.session.token) {
+      const r = await rpc('hub_me', { p_token: S.session.token });
+      if (r.ok) { S.session.me = r.me; S.session.exp = r.exp; LS.set('hub-session', S.session); if (r.me.must_change) { S.oldPin = ''; S.pin1 = ''; return go('newpin'); } return enter(); }
+      clearSession();
+    }
+    const st = await rpc('hub_status');
+    if (!st.has_admin) return go('setup');
+    S.names = await rpc('hub_login_list'); go('login');
+  } catch (e) { S.view = 'login'; S.names = []; S.err = e.message; render(); }
+}
+start();
+</script>
+</body>
+</html>
