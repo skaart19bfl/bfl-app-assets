@@ -69,7 +69,7 @@
   setTimeout(check, 4000);
   setInterval(function () { if (!document.hidden) check(); }, 60 * 60e3);   // F1: hourly (every gated call is checked anyway)
   document.addEventListener('visibilitychange', function () { if (!document.hidden && Date.now() - G.last > 30 * 60e3) check(); });
-})('hub', 2026112502);</script>
+})('hub', 2026112503);</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>BFL Production Hub</title>
 <link rel="icon" type="image/png" sizes="64x64" href="favicon-64.png">
@@ -143,6 +143,7 @@
   .sum .lg { display:flex; gap:14px; flex-wrap:wrap; font-size:13px; margin:2px 0 6px; } .sum .lg i { display:inline-block; width:12px; height:12px; border-radius:3px; margin-right:5px; vertical-align:-1px; }
   .sum .lg b { font-family:'IBM Plex Mono',monospace; font-weight:600; }
   .sum svg { width:100%; height:auto; display:block; } .sum svg text { fill:var(--muted); font-size:12px; font-family:'IBM Plex Mono',monospace; }
+  .sum .pr { display:grid; grid-template-columns:minmax(0,1.3fr) minmax(0,2fr) auto; gap:4px 8px; align-items:center; font-size:12px; margin:3px 0; } .sum .pr .nm { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; } .sum .pr .bar { height:12px; background:var(--line); border-radius:3px; display:flex; overflow:hidden; } .sum .pr .bar i { display:block; height:100%; } .sum .pr .v { font-family:'IBM Plex Mono',monospace; font-size:11px; text-align:right; white-space:nowrap; }
   .sum .c1 { fill:var(--blue); } .sum .c2 { fill:var(--ok); } .sum .pl { fill:var(--line2); } .sum .pd { fill:var(--amber); } .sum .md { fill:#dc2626; } .sum .lg i.k { width:10px; height:10px; border-radius:2px; } .sum svg text.vl { fill:var(--text); font-size:9px; } .sum svg text.vi { fill:#fff; font-size:9px; font-weight:600; } .sum h4 { margin:12px 0 2px; font-size:14px; } .sum .gl { stroke:var(--line); stroke-width:1; } .sum .td { fill:var(--blue-weak); }
   .sum .tw { overflow:auto; max-height:70vh; margin-top:10px; border:1px solid var(--line); border-radius:12px; }
   .sum table { font-variant-numeric:tabular-nums; } .sum th { position:sticky; top:0; background:var(--card); z-index:1; white-space:nowrap; } .sum td.n, .sum th.n { text-align:right; font-family:'IBM Plex Mono',monospace; }
@@ -430,6 +431,15 @@ function sumFresh() { return { month: '', cache: { ext: {}, coat: {}, pack: {} }
 function sumSec(k, m, body) {   // ส่วนที่ยังไม่มีข้อมูล: แสดงกำลังโหลด/ข้อผิดพลาดของส่วนนั้นเท่านั้น
   const M = S.sum; return M.err[k] ? '<div class="err">' + esc(M.err[k]) + '</div>' : '<div class="muted">กำลังโหลด…</div>';
 }
+function sumPareto(E, ty, ttl, col) {   // Pareto ชม.หยุดตามเหตุผล · แท่งแยก EXT-1(น้ำเงิน)/EXT-2(เขียว) · % สะสม
+  const L = (E.pareto || []).filter((r) => r.ty === ty).map((r) => ({ n: String(r.pr || '').replace(/^(EX|MC)-/, ''), a: +r.h1 || 0, b: +r.h2 || 0, c: r.n })).sort((x, y) => (y.a + y.b) - (x.a + x.b));
+  const tot = L.reduce((a, r) => a + r.a + r.b, 0), mx = L.length ? L[0].a + L[0].b : 0;
+  if (!tot) return '<h4>' + ttl + '</h4><div class="muted small">ไม่มีข้อมูลเดือนนี้</div>';
+  let cum = 0;
+  return '<h4><span style="color:' + col + '">■</span> ' + ttl + ' · รวม ' + nf(tot, 1) + ' ชม.</h4>' + L.map((r) => { const t = r.a + r.b; cum += t;
+    return '<div class="pr"><span class="nm" title="' + esc(r.n) + '">' + esc(r.n) + '</span><span class="bar" style="width:' + (t / mx * 100).toFixed(1) + '%"><i style="width:' + (t ? r.a / t * 100 : 0).toFixed(1) + '%;background:var(--blue)"></i><i style="width:' + (t ? r.b / t * 100 : 0).toFixed(1) + '%;background:var(--ok)"></i></span><span class="v">' + nf(t, 1) + ' ชม. · ' + (cum / tot * 100).toFixed(0) + '%</span></div>'; }).join('')
+    + '<div class="muted small">แท่ง: <span style="color:var(--blue)">■</span> EXT-1 <span style="color:var(--ok)">■</span> EXT-2 · % = สะสม (เรียงมาก→น้อย)</div>';
+}
 function sumHtml() {
   if (!sumOk()) return '';
   const M = S.sum, m = M.month || (S.sumNow || ''), E = M.cache.ext[m], C = M.cache.coat[m], P = M.cache.pack[m];
@@ -443,6 +453,7 @@ function sumHtml() {
     h += '<h4>' + nm + '</h4><div class="lg"><span><i style="background:' + col + '"></i>เดินเครื่อง <b>' + nf(run, 1) + '</b> ชม. จากเวลาที่ไม่ได้หยุดตามแผน <b>' + nf(av, 1) + '</b> ชม. = <b>' + (pct == null ? '–' : nf(pct, 1) + '%') + '</b> · เฉลี่ย <b>' + (pct == null ? '–' : nf(pct * 0.24, 1)) + '</b> ชม./วัน</span>'
       + '<span><i class="k" style="background:#dc2626"></i>เครื่องเสีย <b>' + nf(sum(E, 'md' + n), 1) + '</b></span><span><i class="k" style="background:var(--amber)"></i>PD <b>' + nf(sum(E, 'pd' + n), 1) + '</b></span><span><i class="k" style="background:var(--line2)"></i>หยุดตามแผน <b>' + nf(pl, 1) + '</b> ชม. · เดิน ' + dn + ' วัน</span></div>' + sumChart(E.days, 'e' + n, n, cls, nm);
   });
+  if (E) h += '<h3>Pareto เวลาหยุดเครื่อง Extruder</h3>' + sumPareto(E, 'PD-Downtime', 'PD (รอวัตถุดิบ/แพค/ปัญหากายภาพ)', 'var(--amber)') + sumPareto(E, 'Machine-Downtime', 'Machine (เครื่องเสีย)', '#dc2626');
   h += '<h3>ยอดรายวัน · Coater / Packing (kg)</h3>';
   if (!C || !P) h += sumSec(!C ? 'coat' : 'pack');
   else {
