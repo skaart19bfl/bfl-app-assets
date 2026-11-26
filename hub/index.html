@@ -69,7 +69,7 @@
   setTimeout(check, 4000);
   setInterval(function () { if (!document.hidden) check(); }, 60 * 60e3);   // F1: hourly (every gated call is checked anyway)
   document.addEventListener('visibilitychange', function () { if (!document.hidden && Date.now() - G.last > 30 * 60e3) check(); });
-})('hub', 2026112602);</script>
+})('hub', 2026112603);</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>BFL Production Hub</title>
 <link rel="icon" type="image/png" sizes="64x64" href="favicon-64.png">
@@ -119,16 +119,28 @@
   .top .who { flex:1; min-width:0; } .top .who b { display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; } .top .who small { color:#C3D1E2; font-size:12px; }
   .top button { min-height:38px; padding:6px 10px; font-size:14px; background:transparent; border-color:var(--bar-line); color:#fff; }
   .top .logo { width:38px; height:38px; border-radius:10px; border-color:transparent; padding:1px; }
-  /* tab bar (26 Nov 2026): flat tabs on a card strip · icon + label · active = tinted tab with a blue underline */
-  .tabs { display:flex; gap:2px; padding:6px 10px 0; background:var(--card); border-bottom:1px solid var(--line); overflow-x:auto; scrollbar-width:none; box-shadow:0 2px 6px rgba(15,39,68,.06); }
-  .tabs::-webkit-scrollbar { display:none; }
-  .tabs button { position:relative; white-space:nowrap; display:inline-flex; align-items:center; gap:7px; min-height:46px; padding:0 14px; border:0; background:transparent; color:var(--muted); font-weight:600; font-size:15px; border-radius:10px 10px 0 0; transition:background .15s,color .15s; }
-  .tabs button svg { width:18px; height:18px; flex:none; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; opacity:.85; }
-  .tabs button:hover { background:var(--blue-weak); color:var(--ink); }
-  .tabs button.on { background:var(--blue-weak); color:var(--blue); font-weight:700; }
-  .tabs button.on svg { opacity:1; }
-  .tabs button.on::after { content:''; position:absolute; left:8px; right:8px; bottom:0; height:3px; border-radius:3px 3px 0 0; background:var(--blue); }
-  @media (max-width:520px) { .tabs button { padding:0 11px; font-size:14px; gap:6px; } }
+  /* tab bar (26 Nov 2026): ONE menu button (current tab) → click opens a panel with every tab + detail · "จัดลำดับ" reorders (saved per device) */
+  .tabs { position:relative; display:flex; align-items:center; gap:8px; padding:6px 10px; background:var(--card); border-bottom:1px solid var(--line); box-shadow:0 2px 6px rgba(15,39,68,.06); z-index:20; }
+  .tabs svg { width:20px; height:20px; flex:none; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+  .tabs .tabbtn { display:inline-flex; align-items:center; gap:9px; min-height:46px; padding:0 14px; border:1.5px solid var(--line2); border-radius:12px; background:var(--blue-weak); color:var(--blue); font-weight:700; font-size:16px; max-width:100%; }
+  .tabs .tabbtn .nm { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .tabs .tabbtn .chev { width:16px; height:16px; transition:transform .15s; } .tabs .tabbtn.open { border-color:var(--blue); } .tabs .tabbtn.open .chev { transform:rotate(180deg); }
+  .tabs .tabbtn .cnt { font-size:12px; font-weight:700; color:var(--muted); background:var(--card); border-radius:99px; padding:1px 8px; }
+  .tabscrim { position:fixed; inset:0; z-index:30; background:rgba(8,20,36,.28); }
+  .tabmenu { position:absolute; z-index:31; left:10px; top:calc(100% + 6px); width:min(560px, calc(100vw - 20px)); max-height:min(70vh, 560px); overflow:auto; background:var(--card); border:1px solid var(--line2); border-radius:16px; box-shadow:0 12px 32px rgba(8,20,36,.28); padding:10px; }
+  .tabmenu .mh { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:2px 4px 8px; font-weight:700; }
+  .tabmenu .mh button { min-height:34px; padding:4px 12px; font-size:13px; }
+  .tabmenu .mh button.on { background:var(--blue); border-color:var(--blue); color:#fff; }
+  .tabmenu .mg { display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:6px; }
+  .tabmenu .it { display:flex; align-items:center; gap:10px; min-height:56px; padding:8px 10px; border:1.5px solid var(--line); border-radius:12px; background:var(--card); text-align:left; font-weight:600; width:100%; }
+  .tabmenu .it:hover { background:var(--blue-weak); }
+  .tabmenu .it.on { background:var(--blue-weak); border-color:var(--blue); color:var(--blue); }
+  .tabmenu .it .ic { width:36px; height:36px; border-radius:10px; display:grid; place-items:center; background:var(--bg); color:var(--blue); flex:none; } .tabmenu .it.on .ic { background:var(--blue); color:#fff; }
+  .tabmenu .it .tx { min-width:0; flex:1; } .tabmenu .it .tx b { display:block; font-size:15px; } .tabmenu .it .tx small { display:block; color:var(--muted); font-weight:500; font-size:12px; }
+  .tabmenu .it .st { width:8px; height:8px; border-radius:50%; background:var(--ok); flex:none; }
+  .tabmenu .row2 { display:flex; align-items:center; gap:6px; }
+  .tabmenu .row2 .it { flex:1; cursor:default; } .tabmenu .mv { min-height:40px; min-width:40px; padding:0; display:grid; place-items:center; font-size:16px; }
+  .tabmenu .mv:disabled { opacity:.3; }
   .tabs button .dot { display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--amber); margin-left:6px; vertical-align:middle; }
   .stage { flex:1; position:relative; min-height:0; }
   .stage iframe { position:absolute; inset:0; width:100%; height:100%; border:0; background:var(--bg); }
@@ -172,7 +184,7 @@ const LS = { get(k, d) { try { const v = localStorage.getItem(k); return v == nu
   set(k, v) { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} } };
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const S = { view: 'loading', theme: LS.get('hub-theme', 'light'), shared: LS.get('hub-shared', false), session: LS.get('hub-session', null),
-  names: [], pick: null, pin: '', pin1: '', oldPin: '', err: '', apps: [], open: {}, tab: 'home', admin: null, edit: null, busy: false,
+  names: [], pick: null, pin: '', pin1: '', oldPin: '', err: '', apps: [], open: {}, menu: false, sort: false, tab: 'home', admin: null, edit: null, busy: false,
   md: { list: null, tab: '', data: null, edit: null }, sum: sumFresh() };
 const PAGES = ['home', 'admin', 'md'];   // Hub pages (not apps)
 document.documentElement.dataset.theme = S.theme;
@@ -249,6 +261,28 @@ function tabIcon(t) {
   else if (/prod|ผลิต/.test(k + n)) g = 'prod';
   return '<svg viewBox="0 0 24 24" aria-hidden="true">' + TABI[g] + '</svg>';
 }
+const TABD = { home: 'สรุปรายวัน · ทางลัดไปแอปต่างๆ', admin: 'จัดการผู้ใช้และสิทธิ์', md: 'แก้ไขข้อมูลหลัก' };
+const CHEV = '<svg class="chev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>';
+function tabOrder(tabs) {   // saved order (per device) · tabs not in the list keep default order at the end
+  const o = LS.get('hub-tab-order', []), ix = (k) => { const i = o.indexOf(k); return i < 0 ? 999 : i; };
+  return tabs.map((t, i) => [t, i]).sort((a, b) => (ix(a[0].key) - ix(b[0].key)) || (a[1] - b[1])).map((x) => x[0]);
+}
+function tabsBar(tabs) {
+  const L = tabOrder(tabs), cur = L.find((t) => t.key === S.tab) || L[0];
+  const detail = (t) => TABD[t.key] || (t.frame === false ? 'เปิดเป็นแท็บใหม่ ↗' : (document.querySelector('iframe[data-app="' + t.key + '"]') ? 'เปิดอยู่ · สลับได้ทันที' : 'แตะเพื่อเปิด'));
+  const live = (t) => !TABD[t.key] && t.frame !== false && document.querySelector('iframe[data-app="' + t.key + '"]');
+  let h = '<div class="tabs"><button class="tabbtn' + (S.menu ? ' open' : '') + '" data-act="menu" aria-expanded="' + !!S.menu + '">' + tabIcon(cur) + '<span class="nm">' + esc(cur.name) + '</span><span class="cnt">' + L.length + ' เมนู</span>' + CHEV + '</button>';
+  if (S.menu) {
+    h += '<div class="tabscrim" data-act="menu"></div><div class="tabmenu"><div class="mh"><span>' + (S.sort ? 'จัดลำดับเมนู' : 'เมนูทั้งหมด') + '</span><button data-act="sort" class="' + (S.sort ? 'on' : '') + '">' + (S.sort ? '✓ เสร็จ' : '⇅ จัดลำดับ') + '</button></div><div class="mg">'
+      + L.map((t, i) => {
+        const body = '<span class="ic">' + tabIcon(t) + '</span><span class="tx"><b>' + esc(t.name) + '</b><small>' + esc(detail(t)) + '</small></span>' + (live(t) ? '<span class="st" title="เปิดอยู่"></span>' : '');
+        return S.sort
+          ? '<div class="row2"><div class="it' + (S.tab === t.key ? ' on' : '') + '">' + body + '</div><button class="mv" data-act="mv" data-arg="' + esc(t.key) + ',-1"' + (i === 0 ? ' disabled' : '') + ' title="เลื่อนขึ้น">▲</button><button class="mv" data-act="mv" data-arg="' + esc(t.key) + ',1"' + (i === L.length - 1 ? ' disabled' : '') + ' title="เลื่อนลง">▼</button></div>'
+          : '<button class="it' + (S.tab === t.key ? ' on' : '') + '" data-act="tab" data-arg="' + esc(t.key) + '">' + body + '</button>';
+      }).join('') + '</div></div>';
+  }
+  return h + '</div>';
+}
 V.app = () => {
   const me = S.session.me, tabs = [{ key: 'home', name: 'หน้าแรก' }].concat(S.apps).concat(me.is_admin ? [{ key: 'admin', name: 'ผู้ใช้' }, { key: 'md', name: 'ข้อมูลหลัก' }] : []);
   return '<div id="shell"><div class="top"><img class="logo" src="logo-128.png" alt="BFL Production">'
@@ -256,7 +290,7 @@ V.app = () => {
     + (!PAGES.includes(S.tab) ? '<button data-act="reload" title="โหลดแอปนี้ใหม่">↻<span class="hide-sm"> โหลดใหม่</span></button><button data-act="popout" title="เปิดแอปนี้ในแท็บใหม่">↗<span class="hide-sm"> แท็บใหม่</span></button>' : '')
     + '<button data-act="theme">' + (S.theme === 'dark' ? '☀︎' : '☾') + '</button>'
     + '<button data-act="logout">' + (S.session.shared ? 'เปลี่ยนผู้ใช้' : 'ออก') + '</button></div>'
-    + '<div class="tabs">' + tabs.map((t) => '<button class="' + (S.tab === t.key ? 'on' : '') + '" data-act="tab" data-arg="' + t.key + '">' + tabIcon(t) + esc(t.name) + '</button>').join('') + '</div>'
+    + tabsBar(tabs)
     + '<div class="stage" id="stage"></div></div>';
 };
 function homeHtml() {
@@ -568,8 +602,12 @@ const ACT = {
   tdel() { if (S.edit) { S.edit.pin = String(S.edit.pin || '').slice(0, -1); render(); } },
   tclr() { if (S.edit) { S.edit.pin = ''; render(); } },
   async logout() { const t = tok(); clearSession(); if (t) rpc('hub_logout', { p_token: t }).catch(() => {}); start(); },
+  menu() { S.menu = !S.menu; if (!S.menu) S.sort = false; render(); },
+  sort() { S.sort = !S.sort; render(); },
+  mv(a) { const [k, d] = String(a).split(','), me = S.session.me, all = [{ key: 'home' }].concat(S.apps).concat(me.is_admin ? [{ key: 'admin' }, { key: 'md' }] : []);
+    const L = tabOrder(all).map((t) => t.key), i = L.indexOf(k), j = i + (+d); if (i < 0 || j < 0 || j >= L.length) return; [L[i], L[j]] = [L[j], L[i]]; LS.set('hub-tab-order', L); render(); },
   async tab(k) {
-    S.tab = k; S.edit = null; render();
+    S.menu = false; S.sort = false; S.tab = k; S.edit = null; render();
     if (k === 'admin') { await loadAdmin(); return; }
     if (k === 'md') { await mdLoadList(); return; }
     if (k !== 'home') await openApp(k).catch((e) => toast(e.message, true));
