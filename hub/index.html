@@ -69,7 +69,7 @@
   setTimeout(check, 4000);
   setInterval(function () { if (!document.hidden) check(); }, 60 * 60e3);   // F1: hourly (every gated call is checked anyway)
   document.addEventListener('visibilitychange', function () { if (!document.hidden && Date.now() - G.last > 30 * 60e3) check(); });
-})('hub', 2026112601);</script>
+})('hub', 2026112602);</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>BFL Production Hub</title>
 <link rel="icon" type="image/png" sizes="64x64" href="favicon-64.png">
@@ -119,9 +119,16 @@
   .top .who { flex:1; min-width:0; } .top .who b { display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; } .top .who small { color:#C3D1E2; font-size:12px; }
   .top button { min-height:38px; padding:6px 10px; font-size:14px; background:transparent; border-color:var(--bar-line); color:#fff; }
   .top .logo { width:38px; height:38px; border-radius:10px; border-color:transparent; padding:1px; }
-  .tabs { display:flex; gap:6px; padding:8px 12px; background:var(--bg); border-bottom:1px solid var(--line); overflow-x:auto; }
-  .tabs button { white-space:nowrap; min-height:42px; font-weight:600; border:2px solid var(--line2); }
-  .tabs button.on { background:var(--blue); border-color:var(--blue); color:#fff; }
+  /* tab bar (26 Nov 2026): flat tabs on a card strip · icon + label · active = tinted tab with a blue underline */
+  .tabs { display:flex; gap:2px; padding:6px 10px 0; background:var(--card); border-bottom:1px solid var(--line); overflow-x:auto; scrollbar-width:none; box-shadow:0 2px 6px rgba(15,39,68,.06); }
+  .tabs::-webkit-scrollbar { display:none; }
+  .tabs button { position:relative; white-space:nowrap; display:inline-flex; align-items:center; gap:7px; min-height:46px; padding:0 14px; border:0; background:transparent; color:var(--muted); font-weight:600; font-size:15px; border-radius:10px 10px 0 0; transition:background .15s,color .15s; }
+  .tabs button svg { width:18px; height:18px; flex:none; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; opacity:.85; }
+  .tabs button:hover { background:var(--blue-weak); color:var(--ink); }
+  .tabs button.on { background:var(--blue-weak); color:var(--blue); font-weight:700; }
+  .tabs button.on svg { opacity:1; }
+  .tabs button.on::after { content:''; position:absolute; left:8px; right:8px; bottom:0; height:3px; border-radius:3px 3px 0 0; background:var(--blue); }
+  @media (max-width:520px) { .tabs button { padding:0 11px; font-size:14px; gap:6px; } }
   .tabs button .dot { display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--amber); margin-left:6px; vertical-align:middle; }
   .stage { flex:1; position:relative; min-height:0; }
   .stage iframe { position:absolute; inset:0; width:100%; height:100%; border:0; background:var(--bg); }
@@ -216,6 +223,32 @@ V.newpin = () => {
     + pinDots(S.pin.length) + errBox() + pad() + '<button class="ghost" data-act="logout">ยกเลิก</button></div></div>';
 };
 
+const TABI = {   // tab icons (inline SVG, 24x24 stroke) — picked by app key/name; unknown → dot
+  home: '<path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/>',
+  prod: '<path d="M3 20V9l6 4V9l6 4V5h6v15z"/>',
+  coat: '<path d="M12 3c3 4 6 6.5 6 10a6 6 0 0 1-12 0c0-3.5 3-6 6-10z"/>',
+  ncp: '<path d="M12 3l9 16H3z"/><path d="M12 10v4"/><path d="M12 17h.01"/>',
+  raw: '<path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M12 12l8-4.5M12 12L4 7.5M12 12v9"/>',
+  ext: '<rect x="3" y="8" width="18" height="8" rx="2"/><path d="M7 8V5h4v3M16 12h.01M12 12h.01"/>',
+  pack: '<path d="M4 8l8-4 8 4v9l-8 4-8-4z"/><path d="M4 8l8 4 8-4M12 12v9"/>',
+  qc: '<circle cx="12" cy="12" r="9"/><path d="M8 12.5l3 3 5-6"/>',
+  wh: '<path d="M3 10l9-6 9 6v10H3z"/><path d="M8 20v-7h8v7M8 16h8"/>',
+  admin: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.5-4 3-6 6.5-6s6 2 6.5 6"/><path d="M17 5a3 3 0 0 1 0 6M19 14c1.5.7 2.3 2.4 2.5 5"/>',
+  md: '<ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v6c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/>',
+  dot: '<circle cx="12" cy="12" r="3"/>' };
+function tabIcon(t) {
+  const k = String(t.key || '').toLowerCase(), n = String(t.name || '').toLowerCase(); let g = 'dot';
+  if (TABI[k]) g = k;
+  else if (/ncp|nonconform|ไม่ตรง/.test(k + n)) g = 'ncp';
+  else if (/coat/.test(k + n)) g = 'coat';
+  else if (/ext|เอ็กซ์/.test(k + n)) g = 'ext';
+  else if (/pack|แพค/.test(k + n)) g = 'pack';
+  else if (/qc|quality|คุณภาพ/.test(k + n)) g = 'qc';
+  else if (/raw|rm|วัตถุดิบ/.test(k + n)) g = 'raw';
+  else if (/คลัง|stock|wh|ware/.test(k + n)) g = 'wh';
+  else if (/prod|ผลิต/.test(k + n)) g = 'prod';
+  return '<svg viewBox="0 0 24 24" aria-hidden="true">' + TABI[g] + '</svg>';
+}
 V.app = () => {
   const me = S.session.me, tabs = [{ key: 'home', name: 'หน้าแรก' }].concat(S.apps).concat(me.is_admin ? [{ key: 'admin', name: 'ผู้ใช้' }, { key: 'md', name: 'ข้อมูลหลัก' }] : []);
   return '<div id="shell"><div class="top"><img class="logo" src="logo-128.png" alt="BFL Production">'
@@ -223,7 +256,7 @@ V.app = () => {
     + (!PAGES.includes(S.tab) ? '<button data-act="reload" title="โหลดแอปนี้ใหม่">↻<span class="hide-sm"> โหลดใหม่</span></button><button data-act="popout" title="เปิดแอปนี้ในแท็บใหม่">↗<span class="hide-sm"> แท็บใหม่</span></button>' : '')
     + '<button data-act="theme">' + (S.theme === 'dark' ? '☀︎' : '☾') + '</button>'
     + '<button data-act="logout">' + (S.session.shared ? 'เปลี่ยนผู้ใช้' : 'ออก') + '</button></div>'
-    + '<div class="tabs">' + tabs.map((t) => '<button class="' + (S.tab === t.key ? 'on' : '') + '" data-act="tab" data-arg="' + t.key + '">' + esc(t.name) + '</button>').join('') + '</div>'
+    + '<div class="tabs">' + tabs.map((t) => '<button class="' + (S.tab === t.key ? 'on' : '') + '" data-act="tab" data-arg="' + t.key + '">' + tabIcon(t) + esc(t.name) + '</button>').join('') + '</div>'
     + '<div class="stage" id="stage"></div></div>';
 };
 function homeHtml() {
