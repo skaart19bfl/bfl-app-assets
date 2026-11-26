@@ -4129,8 +4129,8 @@ async function pyPrintPfF04(doc) {
     for (let j = 0; j < 21; j++) { const x = chunk[j]; const kg = x ? Number(x.kg) : 0;
       trs.push(x ? `<tr><td class="c">✓</td><td></td><td class="s">${esc(x.item)}</td><td class="s">${esc(x.lot)}</td><td class="c">${x.n}</td><td class="n">${fkg(kg)}</td><td class="n">${fkg(Math.round(kg * x.n * 1000) / 1000)}</td><td class="c">${esc(X.prod_lot || '')}</td><td class="k pn">${esc(X.prodn || X.product_id || '')}</td><td></td><td></td><td></td></tr>`
         : '<tr>' + '<td></td>'.repeat(12) + '</tr>'); }
-    pages.push(`<div class="pg landscape" style="position:relative">${css}${X.status === 'VOID' ? '<div class="xfv">ยกเลิก</div>' : ''}${pyHdrCo(pyCo('BFL'), 'ใบเบิก-คืนสารเสริม/ชุดสารเสริม', 'F-WI04-PSS01-01 Rev.00')}
-      <div class="meta"><span><span class="k">วันที่</span> <span class="fill">${dfull(X.day)}</span></span><span><span class="k">หน่วยงาน</span> <span class="fill">โค้ทติ้ง</span></span></div>
+    pages.push(`<div class="pg landscape" style="position:relative">${css}${X.status === 'VOID' ? '<div class="xfv">ยกเลิก</div>' : ''}${pyHdrCo(pyCo('BFL'), 'ใบเบิก-คืนสารเสริม/ชุดสารเสริม', 'F-WI04-PSS01-01 Rev.01')}
+      <div class="meta"><span><span class="k">วันที่</span> <span class="fill" style="min-width:42mm">${dfull(X.day)}</span><span class="k" style="margin-left:24mm">เวลา</span> <span class="fill" style="min-width:42mm">${hm(X.created_at)}</span></span><span><span class="k">หน่วยงาน</span> <span class="fill">โค้ทติ้ง</span></span></div>
       <table class="f4"><colgroup><col style="width:10mm"><col style="width:10mm"><col style="width:50mm"><col style="width:42mm"><col style="width:13mm"><col style="width:14mm"><col style="width:15mm"><col style="width:22mm"><col style="width:32mm"><col style="width:24mm"><col style="width:24mm"><col style="width:19mm"></colgroup>
       <tr><th>เบิก</th><th>คืน</th><th>รหัสสารเสริม/ชื่อชุดจัดเตรียมสารเสริม</th><th>Lot No. สารเสริม/Lot No.<br>ผลิตชุดเสริมเสริม</th><th>จำนวน</th><th>น้ำหนัก<br>ต่อชุด</th><th>รวม (Kg)</th><th>Lot การผลิต</th><th>เบอร์อาหาร</th><th>ผู้สั่งเบิก</th><th>ผู้เบิก</th><th>ผู้จ่าย</th></tr>${trs.join('')}</table>
       <div class="f4r">หมายเหตุ <span class="fill" style="min-width:250mm"></span></div>
@@ -4215,7 +4215,7 @@ function viewPyForms() {
     + `<div class="card" style="display:flex;flex-direction:column;gap:8px"><h2 style="margin:0">หัวเอกสาร</h2>
       ${dc ? sw('f04', b04, 'F-WI04 ใบเบิก-คืนชุดสารเสริม') + sw('f07', b07, 'F-WI07 บันทึกการเทสารผสม') : '<p class="muted smt" style="margin:0">กำลังโหลด…</p>'}
       <span class="muted smt">ใช้ในการผลิต BFL ใช้เอกสาร BFL เป็นหลัก · หัว BFL-PC ใช้เฉพาะใบจ่ายออก PY-PC → BFL-PC (หน้า "จ่ายออก PY-PC") · ${dc && dc.can ? 'แตะเพื่อเปิด-ปิด มีผลทุกเครื่อง' : 'Control / admin เป็นผู้เปิด-ปิด'}</span></div>
-    <div class="card" style="display:flex;flex-direction:column;gap:10px"><h2 style="margin:0">F-WI04-PSS01-01 Rev.00 ใบเบิก-คืนสารเสริม/ชุดสารเสริม</h2>
+    <div class="card" style="display:flex;flex-direction:column;gap:10px"><h2 style="margin:0">F-WI04-PSS01-01 Rev.01 ใบเบิก-คืนสารเสริม/ชุดสารเสริม</h2>
       <div class="chips">รอบวัน <input type="date" data-bind="py.fm.from" value="${esc(F.from)}"> ถึง <input type="date" data-bind="py.fm.to" value="${esc(F.to)}">
         ${b04 ? '' : `<span>เอกสาร</span>${[['', 'ทั้งหมด'], ['BFL', 'BFL'], ['BFL-PC', 'BFL-PC']].map(([v, t]) => `<button type="button" class="tg" aria-pressed="${(F.co || '') === v}" data-set="py.fm.co" data-val="${v}">${t}</button>`).join('')}`}
         <button type="button" data-py="f04">🖨 พิมพ์ F-WI04 (A4 แนวนอน)</button></div><span class="muted smt">1 แถว = รหัส + Lot เดียวกันในใบสั่งเดียวกัน · เบิก = สแกนเบิก · คืน = สแกนส่งคืน · แยกแผ่นตามรอบวัน (08:00–07:59)${b04 ? ' · หัว บริษัท บลูฟาโล่ จำกัด ทุกแผ่น' : ' และตามเอกสารระบบของ Lot (BFL = บริษัท บลูฟาโล่ จำกัด · BFL-PC = บริษัท บลูฟาโล่ เพ็ทแคร์ จำกัด)'}</span></div>
@@ -4390,7 +4390,7 @@ async function pyPrintBag(bag) {
   pyOpenLetter('ป้ายบ่งชี้จำนวนชุดสารเสริม ' + B.bag_no, 'landscape', PY_L5_CSS, [page]);
 }
 
-// ---------- F-WI04-PSS01-01 Rev.00 ใบเบิก-คืนสารเสริม/ชุดสารเสริม (A4 แนวนอน · 21 แถว) ----------
+// ---------- F-WI04-PSS01-01 Rev.01 ใบเบิก-คืนสารเสริม/ชุดสารเสริม (A4 แนวนอน · 21 แถว) ----------
 async function pyPrintF04() {
   const F = S.py.fm; let r; try { r = await rpc('rm_py_log', { p_token: S.tok, p: { from: F.from, to: F.to, types: ['ISSUE', 'RETURN'] } }); } catch (e) { S.toast = e.message; S.toastErr = true; render(); return; }
   const bfl = (await pyDocCfg()).f04; const fco = bfl ? '' : F.co; // สวิตช์เปิด = หัว BFL ทุกแถว (ผู้ใช้ 25 พ.ย.)
@@ -4405,8 +4405,8 @@ async function pyPrintF04() {
     for (let j = 0; j < 21; j++) { const x = chunk[j];
       trs.push(x ? `<tr><td class="c">${x.type === 'ISSUE' ? '✓' : ''}</td><td class="c">${x.type === 'RETURN' ? '✓' : ''}</td><td class="s">${esc(x.item)}</td><td class="s">${esc(x.lot)}</td><td class="c">${x.n}</td><td class="n">${fkg(x.kg)}</td><td class="n">${fkg(Math.round(x.kg * x.n * 1000) / 1000)}</td><td class="c">${esc(x.plot || '')}</td><td class="k pn">${esc(x.prod || '')}</td><td></td><td></td><td></td></tr>`
         : '<tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>'); }
-    pages.push(`<div class="pg landscape">${css}${pyHdrCo(pyCo(co), 'ใบเบิก-คืนสารเสริม/ชุดสารเสริม', 'F-WI04-PSS01-01 Rev.00')}
-      <div class="meta"><span><span class="k">วันที่</span> <span class="fill">${dfull(dy)}</span></span><span><span class="k">หน่วยงาน</span> <span class="fill">เทพรีมิกซ์</span></span></div>
+    pages.push(`<div class="pg landscape">${css}${pyHdrCo(pyCo(co), 'ใบเบิก-คืนสารเสริม/ชุดสารเสริม', 'F-WI04-PSS01-01 Rev.01')}
+      <div class="meta"><span><span class="k">วันที่</span> <span class="fill" style="min-width:42mm">${dfull(dy)}</span><span class="k" style="margin-left:24mm">เวลา</span> <span class="fill" style="min-width:42mm"></span></span><span><span class="k">หน่วยงาน</span> <span class="fill">เทพรีมิกซ์</span></span></div>
       <table class="f4"><colgroup><col style="width:10mm"><col style="width:10mm"><col style="width:50mm"><col style="width:42mm"><col style="width:13mm"><col style="width:14mm"><col style="width:15mm"><col style="width:22mm"><col style="width:32mm"><col style="width:24mm"><col style="width:24mm"><col style="width:19mm"></colgroup>
       <tr><th>เบิก</th><th>คืน</th><th>รหัสสารเสริม/ชื่อชุดจัดเตรียมสารเสริม</th><th>Lot No. สารเสริม/Lot No.<br>ผลิตชุดเสริมเสริม</th><th>จำนวน</th><th>น้ำหนัก<br>ต่อชุด</th><th>รวม (Kg)</th><th>Lot การผลิต</th><th>เบอร์อาหาร</th><th>ผู้สั่งเบิก</th><th>ผู้เบิก</th><th>ผู้จ่าย</th></tr>${trs.join('')}</table>
       <div class="f4r">หมายเหตุ <span class="fill" style="min-width:250mm"></span></div>
