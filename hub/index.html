@@ -69,7 +69,7 @@
   setTimeout(check, 4000);
   setInterval(function () { if (!document.hidden) check(); }, 60 * 60e3);   // F1: hourly (every gated call is checked anyway)
   document.addEventListener('visibilitychange', function () { if (!document.hidden && Date.now() - G.last > 30 * 60e3) check(); });
-})('hub', 2026112503);</script>
+})('hub', 2026112601);</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>BFL Production Hub</title>
 <link rel="icon" type="image/png" sizes="64x64" href="favicon-64.png">
@@ -146,6 +146,7 @@
   .sum .pr { display:grid; grid-template-columns:minmax(0,1.3fr) minmax(0,2fr) auto; gap:4px 8px; align-items:center; font-size:12px; margin:3px 0; } .sum .pr .nm { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; } .sum .pr .bar { height:12px; background:var(--line); border-radius:3px; display:flex; overflow:hidden; } .sum .pr .bar i { display:block; height:100%; } .sum .pr .v { font-family:'IBM Plex Mono',monospace; font-size:11px; text-align:right; white-space:nowrap; }
   .sum .c1 { fill:var(--blue); } .sum .c2 { fill:var(--ok); } .sum .pl { fill:var(--line2); } .sum .pd { fill:var(--amber); } .sum .md { fill:#dc2626; } .sum .lg i.k { width:10px; height:10px; border-radius:2px; } .sum svg text.vl { fill:var(--text); font-size:9px; } .sum svg text.vi { fill:#fff; font-size:9px; font-weight:600; } .sum h4 { margin:12px 0 2px; font-size:14px; } .sum .gl { stroke:var(--line); stroke-width:1; } .sum .td { fill:var(--blue-weak); }
   .sum .tw { overflow:auto; max-height:70vh; margin-top:10px; border:1px solid var(--line); border-radius:12px; }
+  .sum td.sub, .sum th.sub { color:var(--muted); font-size:11px; } .sum .tw th, .sum .tw td { padding-left:6px; padding-right:6px; } @media (max-width:480px) { .sum .tw th, .sum .tw td { padding-left:2px; padding-right:2px; font-size:11px; } .sum td.sub, .sum th.sub { font-size:10.5px; } }
   .sum table { font-variant-numeric:tabular-nums; } .sum th { position:sticky; top:0; background:var(--card); z-index:1; white-space:nowrap; } .sum td.n, .sum th.n { text-align:right; font-family:'IBM Plex Mono',monospace; }
   .sum tr.td td { background:var(--blue-weak); } .sum tr.off td { color:var(--muted); } .sum tfoot td { font-weight:700; border-top:2px solid var(--line2); background:var(--card); position:sticky; bottom:0; }
   .sum tfoot tr.av td { font-weight:400; color:var(--muted); position:static; border-top:0; } .sum .note { font-size:12px; color:var(--muted); margin-top:6px; }
@@ -458,14 +459,15 @@ function sumHtml() {
   if (!C || !P) h += sumSec(!C ? 'coat' : 'pack');
   else {
     const T = C.today, pk = {}; P.days.forEach((r) => { pk[r.d] = r; });
+    const cx = [['coat1', 'E1'], ['coat2', 'E2'], ['coat12', '1+2']].filter((c) => c[0] !== 'coat12' || sum(C, 'coat12') > 0), cav = (k) => sum(C, 'coat_sh') ? sum(C, k) / sum(C, 'coat_sh') * 3 : null;
     const rows = C.days.map((r) => { const q = pk[r.d] || {}; return '<tr class="' + (r.d === T ? 'td' : (r.coat == null && q.pack == null ? 'off' : '')) + '"><td>' + (+r.d.slice(8)) + '/' + (+r.d.slice(5, 7)) + (r.d === T ? ' <span class="tag">วันนี้</span>' : '') + '</td>'
-      + '<td class="n">' + nf(r.coat) + '</td><td class="n">' + nf(q.pack) + '</td></tr>'; }).join('');
+      + '<td class="n">' + nf(r.coat) + '</td>' + cx.map((c) => '<td class="n sub">' + nf(r[c[0]]) + '</td>').join('') + '<td class="n">' + nf(q.pack) + '</td></tr>'; }).join('');
     const wip = sum(P, 'wip');
-    h += '<div class="tw"><table><thead><tr><th>วันที่</th><th class="n">Coater</th><th class="n">Packing</th></tr></thead><tbody>' + rows + '</tbody>'
-      + '<tfoot><tr><td>รวม</td><td class="n">' + nf(sum(C, 'coat')) + '</td><td class="n">' + nf(sum(P, 'pack')) + '</td></tr>'
-      + '<tr class="av"><td>เฉลี่ย/วัน</td><td class="n">' + nf(sum(C, 'coat_sh') ? sum(C, 'coat') / sum(C, 'coat_sh') * 3 : null) + '</td><td class="n">' + nf(sum(P, 'pack_sh') ? sum(P, 'pack') / sum(P, 'pack_sh') * 3 : null) + '</td></tr>'
+    h += '<div class="tw"><table><thead><tr><th>วันที่</th><th class="n">Coater</th>' + cx.map((c) => '<th class="n sub">' + c[1] + '</th>').join('') + '<th class="n">Packing</th></tr></thead><tbody>' + rows + '</tbody>'
+      + '<tfoot><tr><td>รวม</td><td class="n">' + nf(sum(C, 'coat')) + '</td>' + cx.map((c) => '<td class="n sub">' + nf(sum(C, c[0])) + '</td>').join('') + '<td class="n">' + nf(sum(P, 'pack')) + '</td></tr>'
+      + '<tr class="av"><td>เฉลี่ย/วัน</td><td class="n">' + nf(cav('coat')) + '</td>' + cx.map((c) => '<td class="n sub">' + nf(cav(c[0])) + '</td>').join('') + '<td class="n">' + nf(sum(P, 'pack_sh') ? sum(P, 'pack') / sum(P, 'pack_sh') * 3 : null) + '</td></tr>'
       + '</tfoot></table></div>'
-      + '<div class="note">Coater = น้ำหนักที่ลงเครื่อง (ผลต่างตาชั่งสะสมต่อ lot) · Packing = Output ไม่ยกเลิก ไม่รวม WIP' + (wip > 0 ? ' (WIP เดือนนี้ ' + nf(wip) + ' kg แยกไว้)' : '') + ' · เฉลี่ย/วัน = ค่าเฉลี่ยต่อวันผลิตเต็ม คิดจากกะที่มีบันทึกเท่านั้น (กะที่หยุดตามแผนไม่ถูกนับ) · อัปเดต '
+      + '<div class="note">Coater = น้ำหนักที่ลงเครื่อง (แยกตามสาย Extruder ที่บันทึก · E1/E2 = EXT-1/EXT-2 · 1+2 = lot ที่บันทึกว่าใช้ 2 สายร่วมกัน) (ผลต่างตาชั่งสะสมต่อ lot) · Packing = Output ไม่ยกเลิก ไม่รวม WIP' + (wip > 0 ? ' (WIP เดือนนี้ ' + nf(wip) + ' kg แยกไว้)' : '') + ' · เฉลี่ย/วัน = ค่าเฉลี่ยต่อวันผลิตเต็ม คิดจากกะที่มีบันทึกเท่านั้น (กะที่หยุดตามแผนไม่ถูกนับ) · อัปเดต '
       + new Date(Math.max(new Date(C.at), new Date(P.at))).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) + '</div>';
   }
   return '<div class="card sum">' + head + h + '</div>';
