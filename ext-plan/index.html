@@ -168,8 +168,8 @@ th{font-size:12px;color:var(--mut);font-weight:600;background:var(--bg)}td.n{tex
 <section id="vBat" hidden>
   <div class="card" id="bcard">
     <div class="tool" style="margin:0" data-html2canvas-ignore>
-      <div class="grp"><label for="bs" style="margin:0;white-space:nowrap">Batch size เริ่มต้น</label><input id="bs" type="number" min="0.1" step="0.05" value="1.2" style="width:90px"><span>ตัน/batch</span></div>
-      <span class="note" style="margin:0">ลากหัวการ์ด = สลับลำดับ/ย้ายเครื่อง · แก้ในช่องได้เลย · Batch size ต่างกันตามสูตร กรอกต่อการ์ด (ว่าง = ใช้ค่าเริ่มต้น) · PLAN ว่าง = FG ÷ Batch size · พิมพ์ "15 + 5" ได้ (รวม 20) · "ก่อนงานนี้ = หยุด + เคลียร์" แสดงเป็นช่องว่างคั่นรอบ</span>
+      <div class="grp"><label for="bs" style="margin:0;white-space:nowrap">Batch size เริ่มต้น</label><input id="bs" type="number" min="100" step="any" value="1200" style="width:100px"><span>kg/batch</span></div>
+      <span class="note" style="margin:0">ลากหัวการ์ด = สลับลำดับ/ย้ายเครื่อง · แก้ในช่องได้เลย · Batch size (kg) ต่างกันตามสูตร กรอกต่อการ์ด (ว่าง = ใช้ค่าเริ่มต้น) · PLAN ว่าง = FG (kg) ÷ Batch size · พิมพ์ "15 + 5" ได้ (รวม 20) · "ก่อนงานนี้ = หยุด + เคลียร์" แสดงเป็นช่องว่างคั่นรอบ</span>
       <div class="sp"></div><span id="dirty2"></span><button class="btn g" id="xB">ส่งออกรูป</button><button class="btn s" id="save2">บันทึกแผน</button>
     </div>
     <div id="bl"></div>
@@ -214,8 +214,8 @@ const fdt=t=>fd(t)+" "+ft(t),fhm=m=>{m=Math.round(m);return Math.floor(m/60)+":"
 const snap=t=>Math.round(t/(15*MN))*15*MN,uid=()=>"b"+(++S.idn);
 const short=p=>p.replace(/^EX-/,""),cls=p=>/เคลียร์/.test(p)?"cl":/แจ้งระบบพร้อม/.test(p)?"rd":!RM[p]||RM[p][2]==="std"?"":RM[p]&&RM[p][2]==="pd"?"pdc":RM[p]&&RM[p][2]==="md"?"mdc":"gy";
 const dur=b=>b.k==="P"?Math.round(b.q/b.cap*60):b.d,end=b=>b.s+dur(b)*MN;
-const S={vs:(()=>{const d=new Date(Date.now()-8*36e5);d.setHours(8,0,0,0);return d.getTime()-24*36e5})(),days:3,pxh:44,sel:null,dirty:0,hist:[],net:{n:0,kb:0},W:{},tok:null,ro:true,me:"",act:null,mode:{ext:"EXT-1",k:"P",start:"tail",pk:""},idn:0,bs:1.2,std:true};
-const CO="EX-หยุดเครื่อง-จบเบอร์",RDY="EX-แจ้งระบบพร้อมเดินเครื่อง",CLR="EX-เคลียร์ระบบลำเลียง",CHG="EX-หยุดเครื่อง-เปลี่ยนสี",c97=id=>id.replace(/^98-/,"97-"),nsum=v=>(String(v||"").match(/\d+(\.\d+)?/g)||[]).reduce((a,x)=>a+ +x,0),bsz=b=>b.bs||S.bs,bt=b=>nsum(b.pl)||Math.round(b.q/bsz(b));
+const S={vs:(()=>{const d=new Date(Date.now()-8*36e5);d.setHours(8,0,0,0);return d.getTime()-24*36e5})(),days:3,pxh:44,sel:null,dirty:0,hist:[],net:{n:0,kb:0},W:{},tok:null,ro:true,me:"",act:null,mode:{ext:"EXT-1",k:"P",start:"tail",pk:""},idn:0,bs:1200,std:true};
+const CO="EX-หยุดเครื่อง-จบเบอร์",RDY="EX-แจ้งระบบพร้อมเดินเครื่อง",CLR="EX-เคลียร์ระบบลำเลียง",CHG="EX-หยุดเครื่อง-เปลี่ยนสี",c97=id=>id.replace(/^98-/,"97-"),nsum=v=>(String(v||"").match(/\d+(\.\d+)?/g)||[]).reduce((a,x)=>a+ +x,0),bsz=b=>(b.bs||S.bs)/1000,bt=b=>nsum(b.pl)||Math.round(b.q/bsz(b));
 const TR={co:"หยุดเครื่อง-จบเบอร์ (std)",run:"เปลี่ยนเบอร์ต่อเนื่อง ไม่หยุด",clr:"หยุด + เคลียร์ระบบ (เริ่มรอบใหม่)"};
 let B=[];
 // ---- ตัวอย่างแผน (ลำดับตามรูป Plan Batch) ----
@@ -264,7 +264,7 @@ function enc(b,w){const r={x:EX.indexOf(b.ext)+1,t:Math.round((b.s-w)/MN)};
   else Object.assign(r,{r:b.r,p:b.r&&b.proc===DEF[b.r]?undefined:b.proc,d:b.r&&RM[DEF[b.r]]&&b.d===RM[DEF[b.r]][1]?undefined:b.d});
   Object.keys(r).forEach(k=>{if(r[k]==null||r[k]===""||r[k]===false||r[k]===0&&k==="pk")delete r[k]});return r}
 function dec(r,w){const ext=EX[(r.x||1)-1],s=w+(r.t||0)*MN;
-  if(r.c)return {id:uid(),ext,k:"P",pid:r.c,q:+r.q||1,cap:+r.cp||mcap(r.c)||3,pk:r.pk?"PACK-"+r.pk:"",bs:r.bs||null,pl:r.pl||"",bd:r.bd||"",wo:r.wo||"",nt:r.nt||"",tr:r.tr||"co",s};
+  if(r.c)return {id:uid(),ext,k:"P",pid:r.c,q:+r.q||1,cap:+r.cp||mcap(r.c)||3,pk:r.pk?"PACK-"+r.pk:"",bs:r.bs?(r.bs<50?r.bs*1000:r.bs):null,pl:r.pl||"",bd:r.bd||"",wo:r.wo||"",nt:r.nt||"",tr:r.tr||"co",s};
   const proc=r.p||(r.r?DEF[r.r]:"EX-ตามแผน-รอระบุ");return {id:uid(),ext,k:"D",r:r.r,proc,d:+r.d||(RM[proc]?RM[proc][1]:60),s}}
 const docW=w=>B.filter(b=>wkOf(b.s)===w&&!isDef(b)).sort((a,b)=>a.s-b.s).map(b=>enc(b,w));
 function changed(){const ks=new Set(Object.keys(S.W));B.forEach(b=>ks.add(wkKey(wkOf(b.s))));
@@ -335,7 +335,7 @@ function side(){const b=S.sel&&B.find(x=>x.id===S.sel),m=b?{ext:b.ext,k:b.k,pk:b
     <div class="row2"><div><label for="fQ">FG ต้องการ (ตัน)</label><input id="fQ" type="number" min="0.5" step="0.5" value="${b?b.q:20}"></div>
     <div><label for="fC">Std Cap (ตัน/ชม.)</label><input id="fC" type="number" min="0.5" step="0.1" value="${cap}"></div></div>
     <div class="hint"><span></span><span id="fM"></span></div>
-    <div class="row2"><div><label for="fB">Batch size (ตัน)</label><input id="fB" type="number" min="0.1" step="0.05" value="${b&&b.bs?b.bs:""}" placeholder="${S.bs}"></div>
+    <div class="row2"><div><label for="fB">Batch size (kg)</label><input id="fB" type="number" min="100" step="any" value="${b&&b.bs?b.bs:""}" placeholder="${S.bs}"></div>
     <div><label for="fT">ก่อนงานนี้</label><select id="fT">${trOpts(b?b.tr:"co")}</select></div></div>
     <label>สายแพค (ไม่บังคับ)</label>${seg("fPk",[["","ไม่ระบุ"],["PACK-3","Pack 3"],["PACK-4","Pack 4"]],m.pk||"")}`
   :`<label for="fR">Runtime type</label><select id="fR">${rtOpts(proc)}</select>
@@ -351,7 +351,7 @@ function vals(){const g=id=>$(id),on=id=>g(id)&&g(id).querySelector(".on").datas
   return {ext:g("#fE")?on("#fE"):b.ext,k:g("#fP")?"P":"D",pid:g("#fP")&&g("#fP").value,q:g("#fQ")&&+g("#fQ").value,cap:g("#fC")&&+g("#fC").value,pk:on("#fPk"),proc:g("#fR")&&g("#fR").value,d:g("#fD")&&Math.round(+g("#fD").value*60),
     bs:g("#fB")&&(+g("#fB").value||null),tr:g("#fT")&&g("#fT").value,s:!g("#fS")?b.s:g("#fS").disabled?tailOf(on("#fE")):snap(new Date(g("#fS").value).getTime())}}
 function preview(){const v=vals(),m=v.k==="P"?(v.q>0&&v.cap>0?Math.round(v.q/v.cap*60):0):v.d;
-  $("#fPv").innerHTML=m?`ใช้เวลา <b>${fhm(m)} ชม.</b>${v.k==="P"?` (${v.q} t ÷ ${v.cap} t/hr) · ≈ ${Math.round(v.q/(v.bs||S.bs))} batch`:""}<br>เริ่ม ${fdt(v.s)} → จบ <b>${fdt(v.s+m*MN)}</b>`:`<span class="bd">กรอกจำนวนและ Std Cap ให้มากกว่า 0</span>`}
+  $("#fPv").innerHTML=m?`ใช้เวลา <b>${fhm(m)} ชม.</b>${v.k==="P"?` (${v.q} t ÷ ${v.cap} t/hr) · ≈ ${Math.round(v.q*1000/(v.bs||S.bs))} batch`:""}<br>เริ่ม ${fdt(v.s)} → จบ <b>${fdt(v.s+m*MN)}</b>`:`<span class="bd">กรอกจำนวนและ Std Cap ให้มากกว่า 0</span>`}
 function bindSide(b){
   document.querySelectorAll("#side .seg").forEach(sg=>sg.addEventListener("click",ev=>{const bt=ev.target.closest("button");if(!bt)return;
     sg.querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===bt));const v=bt.dataset.v;
@@ -413,16 +413,16 @@ document.addEventListener("keydown",ev=>{if(S.ro||/INPUT|SELECT/.test(document.a
   if(ev.key==="Escape"){S.sel=null;side();gantt()}});
 // ---- Plan Batch ----
 const BC={"EXT-1":["#F58220","#FFE2C6"],"EXT-2":["#F5B800","#FFF3CF"]};let dragId=null;
-const ROWS=["รหัสสูตร","สินค้า","FG ต้องการ (t)","Batch size (t)","PLAN (batch)","แบทแล้ว","WO","หมายเหตุ","ก่อนงานนี้","เวลา Extruder"];
+const ROWS=["รหัสสูตร","สินค้า","FG ต้องการ (t)","Batch size (kg)","PLAN (batch)","แบทแล้ว","WO","หมายเหตุ","ก่อนงานนี้","เวลา Extruder"];
 function batch(){let h="";EX.forEach(e=>{const L=lane(e).filter(b=>b.k==="P"),[hc,cb]=BC[e];
   h+=`<div class="bl-lane"><div class="bl-h"><b>${e}</b><span>${L.length} งาน · FG ${L.reduce((a,b)=>a+b.q,0)} ตัน · PLAN ${L.reduce((a,b)=>a+bt(b),0)} batch · แบทแล้ว ${L.reduce((a,b)=>a+nsum(b.bd),0)}</span><span class="sp"></span><span>${L.length?fdt(L[0].s)+" → "+fdt(end(L[L.length-1])):"ยังไม่มีงาน"}</span></div>
   <div class="bl-row" data-ext="${e}" style="--hc:${hc};--cb:${cb}"><div class="bl-side">${ROWS.map(r=>`<div>${r}</div>`).join("")}</div>`
   +L.map((b,i)=>{const pl=bt(b),dn=nsum(b.bd),pc=dn?(dn>=pl?"ok2":"pt2"):"";return `<div class="bc${i&&b.tr==="clr"?" nr":""}" data-id="${b.id}"><div class="bc-h" title="ลากเพื่อย้าย">${esc(c97(b.pid))}<button class="x" data-del="${b.id}" aria-label="ลบงาน">×</button></div><div class="bc-n" title="${esc(name(b))}">${esc(name(b))}</div>
-    <input data-f="q" type="number" min="0.5" step="0.5" value="${b.q}" aria-label="FG ต้องการ"><input data-f="bs" type="number" min="0.1" step="0.05" value="${b.bs||""}" placeholder="${S.bs}" aria-label="batch size">
+    <input data-f="q" type="number" min="0.5" step="0.5" value="${b.q}" aria-label="FG ต้องการ"><input data-f="bs" type="number" min="100" step="any" value="${b.bs||""}" placeholder="${S.bs}" aria-label="batch size">
     <input data-f="pl" maxlength="20" value="${esc(b.pl||"")}" placeholder="${Math.round(b.q/bsz(b))}" aria-label="PLAN batch"><input data-f="bd" class="${pc}" maxlength="20" value="${esc(b.bd||"")}" placeholder="—" aria-label="แบทแล้ว">
     <input data-f="wo" maxlength="20" value="${esc(b.wo||"")}" placeholder="—" aria-label="WO"><input data-f="nt" maxlength="60" value="${esc(b.nt||"")}" placeholder="—" aria-label="หมายเหตุ">
     <select data-f="tr" aria-label="ก่อนงานนี้" ${i?"":"disabled"}>${i?trOpts(b.tr):`<option>เริ่มรอบ</option>`}</select><div class="bc-t">${fd(b.s)} ${ft(b.s)}–${ft(end(b))}</div></div>`}).join("")
-  +`<div class="bc add"><div class="bc-h">+ เพิ่มงาน</div><div style="grid-row:span 2;display:flex;flex-direction:column;justify-content:center;padding:0 6px"><input class="ppq" data-a="pq" autocomplete="off" placeholder="พิมพ์ชื่อ/รหัส" aria-label="สินค้า" style="min-height:34px;font-size:13px;text-align:left;border:1px solid var(--line);border-radius:6px;background:var(--card)"><input type="hidden" data-a="p"></div><input data-a="q" type="number" min="0.5" step="0.5" placeholder="FG ตัน" aria-label="FG ตัน"><input data-a="bs" type="number" min="0.1" step="0.05" placeholder="batch size ${S.bs}" aria-label="batch size"><button data-add="${e}">เพิ่มท้ายคิว</button></div></div></div>`});
+  +`<div class="bc add"><div class="bc-h">+ เพิ่มงาน</div><div style="grid-row:span 2;display:flex;flex-direction:column;justify-content:center;padding:0 6px"><input class="ppq" data-a="pq" autocomplete="off" placeholder="พิมพ์ชื่อ/รหัส" aria-label="สินค้า" style="min-height:34px;font-size:13px;text-align:left;border:1px solid var(--line);border-radius:6px;background:var(--card)"><input type="hidden" data-a="p"></div><input data-a="q" type="number" min="0.5" step="0.5" placeholder="FG ตัน" aria-label="FG ตัน"><input data-a="bs" type="number" min="100" step="any" placeholder="batch kg ${S.bs}" aria-label="batch size"><button data-add="${e}">เพิ่มท้ายคิว</button></div></div></div>`});
   $("#bl").innerHTML=h;if(S.ro)$("#bl").querySelectorAll("input,select").forEach(x=>x.disabled=true)}
 const laneKey=()=>JSON.stringify(EX.map(e=>lane(e).map(b=>[b.id,b.s,dur(b)])));
 function commitLanes(sn,k0){fix();if(laneKey()===k0){B=JSON.parse(sn);return gantt()}S.hist.push(sn);S.dirty++;gantt()}
