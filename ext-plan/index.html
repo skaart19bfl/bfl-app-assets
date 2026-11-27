@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>แผนเดินเครื่อง BFL</title><meta name="theme-color" content="#162C9A">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* VOICE: งานหน้างาน ตรงไปตรงมา อ่านง่ายบน PC ห้อง Control
+   IDEA: ตาราง Gantt แบบ Excel ที่ PD ใช้อยู่ (แถบเขียว Cap/Pack + แถบเหลืองชื่อสินค้า) แต่ลากได้
+   PICTURE: Gantt 2 เครื่อง (EXT-1/EXT-2) เต็มความกว้าง เป็นตัวงานหลัก
+   COLOUR/TYPE: Bluefalo #162C9A แถบบน, #268AFA ปุ่ม, #FAAA20 เส้นเวลาปัจจุบัน · IBM Plex Sans Thai
+   LAYOUT: แผงซ้าย 320px (เพิ่ม/แก้งาน) + Gantt ขวา · แท็บ 2: สรุป Plan vs Actual */
+:root{--navy:#162C9A;--blue:#268AFA;--amber:#FAAA20;--ink:#2E2E2E;--bg:#F3F5FA;--card:#fff;--line:#DDE2EE;--mut:#6B7385;
+--lane:#FFF6DF;--laneB:#F6E9C6;--gP:#A9D08E;--yP:#FFF04D;--red:#E53935;--dred:#A3100F;--gray:#9AA3B5;--ok:#1E9E5A;--warn:#E08A00;--bad:#D32F2F}
+:root[data-theme=dark]{--ink:#E8ECF7;--bg:#0E1736;--card:#16224A;--line:#2A3866;--mut:#9AA6C8;--lane:#1D2A57;--laneB:#26346A;--gP:#7FA866;--yP:#E6D63C;--gray:#5D6888}
+*{box-sizing:border-box;min-width:0}[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 "IBM Plex Sans Thai",system-ui,sans-serif;overflow-x:clip}
+header{background:var(--navy);color:#fff;display:flex;align-items:center;gap:14px;padding:0 18px;height:56px}
+header .logo{width:32px;height:32px;border-radius:8px;background:#fff;color:var(--navy);display:grid;place-items:center;font-weight:700;font-size:18px}
+header h1{font-size:18px;margin:0;font-weight:600}header .sp{flex:1}
+header button{background:transparent;border:1px solid #ffffff66;color:#fff;border-radius:8px;padding:6px 12px;font:inherit;cursor:pointer}
+.tabs{display:flex;gap:4px;padding:10px 18px 0;background:var(--card);border-bottom:1px solid var(--line)}
+.tabs button{border:0;background:none;font:inherit;font-weight:600;color:var(--mut);padding:10px 16px;border-bottom:3px solid transparent;cursor:pointer}
+.tabs button.on{color:var(--blue);border-color:var(--blue)}
+main{padding:14px 18px 40px}
+.plan{display:grid;grid-template-columns:320px minmax(0,1fr);gap:14px;align-items:start}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
+.card h2{font-size:16px;margin:0 0 10px;display:flex;align-items:center;gap:8px}
+label{display:block;font-size:13px;color:var(--mut);margin:10px 0 4px}
+input,select{width:100%;font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);min-height:40px}
+input:focus,select:focus,button:focus-visible{outline:2px solid var(--blue);outline-offset:1px}
+.seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{flex:1;border:0;background:none;font:inherit;padding:8px 6px;cursor:pointer;color:var(--ink);min-height:40px}
+.seg button.on{background:var(--blue);color:#fff;font-weight:600}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.hint{font-size:12px;color:var(--mut);margin-top:3px;display:flex;justify-content:space-between;gap:6px}
+.hint a{color:var(--blue);cursor:pointer;text-decoration:underline}
+.chk{display:flex;gap:8px;align-items:flex-start;font-size:13px;margin-top:10px;color:var(--ink)}.chk input{width:18px;min-height:18px;margin-top:2px}
+.prev{margin-top:12px;background:var(--bg);border-radius:8px;padding:10px;font-size:13px}.prev b{font-size:16px}
+.btn{border:0;border-radius:8px;padding:10px 14px;font:inherit;font-weight:600;cursor:pointer;min-height:42px}
+.btn.p{background:var(--blue);color:#fff;width:100%;margin-top:12px}.btn.g{background:var(--bg);color:var(--ink);border:1px solid var(--line)}
+.btn.d{background:none;color:var(--bad);border:1px solid var(--bad)}
+.btn.s{background:var(--amber);color:#2E2E2E}
+.tool{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}
+.tool .grp{display:flex;gap:4px;align-items:center}.tool .btn{min-height:36px;padding:6px 10px}
+.tool .rng{font-weight:600;padding:0 6px;white-space:nowrap}.tool .sp{flex:1}
+.dirty{color:var(--warn);font-size:13px;font-weight:600}.saved{color:var(--ok);font-size:13px}
+.gwrap{display:grid;grid-template-columns:96px minmax(0,1fr);border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--card)}
+.glab{border-right:1px solid var(--line)}
+.glab .hd{height:50px;background:var(--laneB);display:grid;grid-template-rows:26px 24px;font-size:12px;font-weight:600}
+.glab .hd div{display:flex;align-items:center;justify-content:center;border-bottom:1px solid var(--line)}
+.glab .ex{height:66px;display:grid;grid-template-columns:44px 1fr;border-bottom:1px solid var(--line)}
+.glab .ex b{display:grid;place-items:center;background:#BDD7EE;color:#162C9A;font-size:14px}
+.glab .ex span{font-size:11px;display:grid;grid-template-rows:1fr 1fr;align-items:center;padding-left:6px;color:var(--mut)}
+.gscroll{overflow-x:auto;overflow-y:hidden}
+#g{position:relative;user-select:none;touch-action:pan-y}
+.dh,.hh{position:absolute;display:flex;align-items:center;font-size:12px;border-right:1px solid var(--line);white-space:nowrap}
+.dh{top:0;height:26px;background:var(--laneB);font-weight:700;padding-left:6px}
+.hh{top:26px;height:24px;justify-content:center;color:var(--mut);background:var(--card);border-bottom:1px solid var(--line)}
+.lane{position:absolute;left:0;height:66px;background:var(--lane);border-bottom:1px solid var(--line)}
+.vl{position:absolute;top:50px;bottom:0;width:1px;background:var(--line)}.vl.sh{background:#B9C2D6}.vl.pd{background:var(--navy);opacity:.45;width:2px}
+.now{position:absolute;top:0;bottom:0;width:2px;background:var(--amber);z-index:5;pointer-events:none}
+.now::after{content:"ตอนนี้";position:absolute;top:2px;left:4px;font-size:11px;background:var(--amber);color:#2E2E2E;padding:0 4px;border-radius:4px;white-space:nowrap}
+.blk{position:absolute;height:62px;border-radius:4px;overflow:hidden;cursor:grab;display:grid;grid-template-rows:1fr 1fr;font-size:12px;color:#1d1d1d;box-shadow:0 1px 0 #0002;z-index:2}
+.blk:active{cursor:grabbing}
+.blk .t{background:var(--gP);padding:2px 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.blk .t i{font-style:normal;color:#0B4FBF;font-weight:700;margin-left:6px}
+.blk .b{background:var(--yP);padding:2px 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600}
+.blk.D{display:flex;align-items:center;justify-content:center;background:var(--red);color:#fff;font-weight:600;text-align:center;line-height:1.15;padding:2px}
+.blk.D.cl{background:var(--dred);color:#FFE45C}.blk.D.rd{background:#2E7D32;color:#fff}.blk.D.gy{background:var(--gray);color:#fff}
+.blk.sel{outline:3px solid var(--blue);outline-offset:1px;z-index:4}.blk.ov{outline:3px dashed var(--bad);outline-offset:1px}
+.blk .rs{position:absolute;right:0;top:0;bottom:0;width:7px;cursor:ew-resize;background:#0002;grid-row:1/3}
+.tip{position:fixed;z-index:20;background:#1d2440;color:#fff;font-size:12px;padding:6px 8px;border-radius:6px;pointer-events:none;display:none;white-space:nowrap}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:12px;color:var(--mut);margin-top:8px}.legend i{display:inline-block;width:14px;height:10px;border-radius:2px;margin-right:4px;vertical-align:-1px}
+.stat{display:flex;flex-wrap:wrap;gap:16px;font-size:12px;color:var(--mut);margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}
+.stat b{color:var(--ink)}
+details{margin-top:10px;font-size:13px}pre{background:var(--bg);padding:10px;border-radius:8px;overflow-x:auto;font-size:12px;max-height:220px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-bottom:14px}
+.kpi .v{font-size:30px;font-weight:700;line-height:1.1;white-space:nowrap}.kpi .l{font-size:13px;color:var(--mut)}.kpi .tg{font-size:12px;margin-top:4px}
+.ok{color:var(--ok)}.wn{color:var(--warn)}.bd{color:var(--bad)}
+.ov2{position:relative}.ov2 .r{position:relative;height:22px;margin:3px 0;background:var(--bg);border-radius:4px}
+.ov2 .r span{position:absolute;top:2px;bottom:2px;border-radius:3px;font-size:11px;white-space:nowrap;overflow:hidden;padding:0 4px;line-height:18px}
+.ov2 .pl{border:2px solid var(--navy);background:transparent;color:var(--ink)}.ov2 .ac{color:#fff}
+.ov2 .lbl{font-size:12px;font-weight:600;margin-top:8px}.ov2 .tk{position:relative;height:16px;font-size:11px;color:var(--mut)}.ov2 .tk span{position:absolute;transform:translateX(-50%);white-space:nowrap}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13px}th,td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+th{font-size:12px;color:var(--mut);font-weight:600;background:var(--bg)}td.n{text-align:right}
+.chip{display:inline-block;padding:1px 8px;border-radius:10px;font-size:12px;font-weight:600;color:#fff}
+.note{font-size:12px;color:var(--mut);margin:8px 0 0}
+.ro #save,.ro #save2,.ro .bc.add,.ro .bc-h .x,.ro .blk .rs,.ro #undo{display:none!important}.ro .blk{cursor:pointer}
+.chip.warn2{background:#7B1FA2}.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#1d2440;color:#fff;padding:10px 16px;border-radius:8px;font-size:14px;display:none;z-index:30}
+.stdbar{font-size:12px;color:var(--mut);margin-top:6px}.stdbar b{color:var(--ink);font-weight:600}
+.captitle{font-size:18px;font-weight:700;color:var(--navy);margin:0 0 10px}:root[data-theme=dark] .captitle{color:#fff}
+.exc>h2{display:flex;align-items:center}.xbtn{min-height:34px;padding:4px 12px;font-size:13px}
+.modal{position:fixed;inset:0;background:#0009;z-index:40;display:grid;place-items:center;padding:20px}.modal[hidden]{display:none}
+.mbox{background:var(--card);border-radius:12px;padding:14px;max-width:min(1200px,96vw);max-height:92vh;display:flex;flex-direction:column;gap:6px}
+.mh{display:flex;gap:8px;align-items:center}.mimg{overflow:auto;border:1px solid var(--line);border-radius:8px}.mimg img{display:block;max-width:100%}
+/* Plan Batch */
+.bl-lane{border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-top:12px}
+.bl-h{display:flex;flex-wrap:wrap;gap:14px;align-items:center;padding:8px 12px;background:#5B3A9B;color:#fff;font-size:14px}.bl-h b{font-size:16px}.bl-h .sp{flex:1}
+.bl-row{display:flex;overflow-x:auto;background:var(--card)}
+.bl-side,.bc{display:grid;grid-template-rows:36px 26px repeat(7,34px) 28px;flex:none}
+.bc.nr{margin-left:22px;border-left:1px solid #0003}.bc input.ok2{background:#C8E6C9}.bc input.pt2{background:#FFE0A3}
+.bc select[data-f=tr]{font-size:12px;text-align:left}.blk.cont{border-left:3px dashed #162C9A}.blk.D.pdc{background:#E08A00}.blk.D.mdc{background:#7B1FA2}
+.bl-side{width:96px;font-size:12px;color:var(--mut);border-right:1px solid var(--line);position:sticky;left:0;background:var(--card);z-index:1}
+.bl-side div{display:flex;align-items:center;padding-left:8px;border-bottom:1px solid var(--line)}
+.bc{width:172px;background:var(--cb);border-right:1px solid #0003;color:#1d1d1d}
+.bc-h{background:var(--hc);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:14px;cursor:grab;position:relative;border-bottom:1px solid #0003;padding:0 28px 0 6px;font-size:13px;white-space:nowrap}
+.bc-h .x{position:absolute;right:2px;top:4px;width:28px;height:28px;border:0;background:none;font-size:18px;cursor:pointer;color:#0008;border-radius:6px}.bc-h .x:hover{background:#0001}
+.bc-n{font-size:11px;padding:0 6px;display:block;line-height:26px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-bottom:1px solid #0002}
+.bc input,.bc select{border:0;border-bottom:1px solid #0002;border-radius:0;background:transparent;text-align:center;min-height:36px;padding:4px;color:#1d1d1d;font-size:15px}
+.bc input::placeholder{color:#555;font-style:italic}.bc input[data-f=nt]{font-size:13px}
+.bc-t{font-size:11px;display:flex;align-items:center;justify-content:center;color:#444}
+.bc.add{background:var(--bg);color:var(--ink)}.bc.add .bc-h{background:var(--line);cursor:default}.bc.add select,.bc.add input{color:var(--ink);font-size:13px}
+.bc.add button{margin:4px 8px;border:0;border-radius:6px;background:var(--blue);color:#fff;font:inherit;font-weight:600;cursor:pointer}
+.bc.ins{box-shadow:inset 5px 0 0 var(--blue)}.bc.drag{opacity:.4}
+/* สรุปแยกเครื่อง + Pareto */
+.exc{margin-bottom:14px}.exc>h2{font-size:18px}.exg{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:18px;margin-top:6px}
+.exg h3{font-size:14px;margin:0 0 6px}.kpis.sm .kpi{padding:10px}.kpis.sm .v{font-size:22px}
+.par{display:grid;grid-template-columns:20px minmax(0,1.7fr) minmax(0,1fr) 46px 40px 44px;gap:6px;align-items:center;font-size:12px;padding:4px 0;border-bottom:1px solid var(--line)}
+.par.hd{color:var(--mut);font-weight:600}.par .bar{height:14px;border-radius:3px}.par .n{text-align:right;white-space:nowrap}.par.vf{font-weight:700}
+.par .ty{display:inline-block;font-size:10px;color:#fff;border-radius:6px;padding:0 5px;margin-left:4px;font-weight:600}
+.par .lb{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media(max-width:1100px){.exg{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:900px){.plan{grid-template-columns:minmax(0,1fr)}}
+@media(prefers-reduced-motion:no-preference){.blk{transition:outline-color .15s}}
+</style>
+</head>
+<body>
+<header><div class="logo">B</div><h1>แผนเดินเครื่อง BFL · Extruder</h1><div class="sp"></div><span id="who" style="font-size:13px;opacity:.9"></span><button id="theme">โหมดมืด</button></header>
+<div class="tabs"><button data-t="plan" class="on">แผนเดินเครื่อง</button><button data-t="bat">Plan Batch</button><button data-t="sum">สรุป Plan vs Actual</button></div>
+<main>
+<section id="vPlan" class="plan">
+  <div class="card" id="side"></div>
+  <div>
+    <div class="card" id="gcard">
+      <div class="tool" data-html2canvas-ignore>
+        <div class="grp"><button class="btn g" id="prev" aria-label="ก่อนหน้า">◀</button><span class="rng" id="rng"></span><button class="btn g" id="next" aria-label="ถัดไป">▶</button></div>
+        <div class="seg" style="width:120px"><button data-d="3">3 วัน</button><button data-d="7">7 วัน</button></div>
+        <div class="grp"><button class="btn g" id="zo">−</button><button class="btn g" id="zi">+</button></div>
+        <label class="chk" style="margin:0" title="ยืด/หด/ลบ/ย้ายงานแล้ว งานตามหลังดึงมาต่อทันที"><input type="checkbox" id="rip" checked>ต่องานติดกัน</label>
+        <label class="chk" style="margin:0" title="แจ้งพร้อมเดิน 0:15 → เดินเครื่อง → หยุดเครื่อง 0:45 → เคลียร์ระบบลำเลียง 1:00"><input type="checkbox" id="std" checked>ลำดับมาตรฐาน</label>
+        <button class="btn g" id="undo">↶ ย้อนกลับ</button>
+        <div class="sp"></div>
+        <span id="dirty"></span>
+        <button class="btn g" id="xG">ส่งออกรูป</button><button class="btn s" id="save">บันทึกแผน</button>
+      </div>
+      <div class="gwrap">
+        <div class="glab"><div class="hd"><div>วันที่</div><div>เวลา</div></div>
+          <div class="ex"><b>Ext.1</b><span><em>Cap/Hr.</em><em>Product</em></span></div>
+          <div class="ex"><b>Ext.2</b><span><em>Cap/Hr.</em><em>Product</em></span></div></div>
+        <div class="gscroll" id="gs"><div id="g"></div></div>
+      </div>
+      <div class="legend"><span><i style="background:var(--gP)"></i>Cap / Pack</span><span><i style="background:var(--yP)"></i>สินค้า (จำนวน)</span><span><i style="background:#2E7D32"></i>แจ้งพร้อมเดิน</span><span><i style="background:var(--red)"></i>หยุดเครื่อง (จบเบอร์/เปลี่ยนสี)</span><span><i style="background:var(--dred)"></i>เคลียร์ระบบลำเลียง</span><span><i style="background:var(--gray)"></i>หยุดตามแผนอื่น</span><span><i style="border-left:3px dashed #162C9A;background:var(--yP)"></i>เปลี่ยนเบอร์ต่อเนื่อง</span><span><i style="background:var(--amber)"></i>เวลาปัจจุบัน</span></div>
+      <div class="legend" data-html2canvas-ignore><span>ลากบล็อก = เปลี่ยนลำดับ/ย้ายเครื่อง · ลากงานแรกของเครื่อง = เลื่อนทั้งเครื่อง · ลากขอบขวา = ยืด/หด (สินค้า = ปรับตัน) · คลิก = แก้ · Delete = ลบ · ←/→ = สลับลำดับ (งานแรก = เลื่อน 15 นาที)</span></div>
+      <div class="stdbar">ลำดับมาตรฐานต่อรอบเดิน: <b>แจ้งพร้อมเดิน 0:15</b> → <b>เดินเครื่อง</b> (ระหว่างสินค้า = หยุดเครื่อง-จบเบอร์ 0:45 หรือเลือก "ต่อเนื่อง ไม่หยุด") → <b>หยุดเครื่อง 0:45</b> → <b>เคลียร์ระบบลำเลียง 1:00</b> · หยุดตามแผนอื่น (วันหยุด/ซ่อมบำรุง/…) = ปิดรอบ · คลิกบล็อกมาตรฐานเพื่อเลือกประเภทเอง (manual)</div>
+      <div class="stat" id="stat" data-html2canvas-ignore></div>
+      <details data-html2canvas-ignore><summary>ข้อมูลที่บันทึกใน Supabase (สัปดาห์ที่กำลังดู)</summary><pre id="doc"></pre></details>
+    </div>
+  </div>
+</section>
+<section id="vBat" hidden>
+  <div class="card" id="bcard">
+    <div class="tool" style="margin:0" data-html2canvas-ignore>
+      <div class="grp"><label for="bs" style="margin:0;white-space:nowrap">Batch size เริ่มต้น</label><input id="bs" type="number" min="0.1" step="0.05" value="1.2" style="width:90px"><span>ตัน/batch</span></div>
+      <span class="note" style="margin:0">ลากหัวการ์ด = สลับลำดับ/ย้ายเครื่อง · แก้ในช่องได้เลย · Batch size ต่างกันตามสูตร กรอกต่อการ์ด (ว่าง = ใช้ค่าเริ่มต้น) · PLAN ว่าง = FG ÷ Batch size · พิมพ์ "15 + 5" ได้ (รวม 20) · "ก่อนงานนี้ = หยุด + เคลียร์" แสดงเป็นช่องว่างคั่นรอบ</span>
+      <div class="sp"></div><span id="dirty2"></span><button class="btn g" id="xB">ส่งออกรูป</button><button class="btn s" id="save2">บันทึกแผน</button>
+    </div>
+    <div id="bl"></div>
+    <p class="note">เป็นแผนเดียวกับหน้า "แผนเดินเครื่อง" — ย้าย/เพิ่ม/ลบในหน้านี้ ระบบจะเรียงงานของเครื่องนั้นต่อกันใหม่ตั้งแต่งานแรก และใส่ลำดับมาตรฐานให้อัตโนมัติ (เลือก "เปลี่ยนเบอร์ต่อเนื่อง ไม่หยุด" ได้ที่ช่อง "ก่อนงานนี้")</p>
+  </div>
+</section>
+<section id="vSum" hidden>
+  <div class="card" style="margin-bottom:14px" data-html2canvas-ignore>
+    <div class="tool" style="margin:0">
+      <div class="grp"><span>ช่วงวันผลิต</span><input type="date" id="sF" style="width:160px"><span>ถึง</span><input type="date" id="sT" style="width:160px"></div>
+      <button class="btn g" id="sLoad">ดึงข้อมูล Actual</button><button class="btn g" id="xS">ส่งออกรูปทั้งหน้า</button>
+      <span class="note" style="margin:0">เวลาจริง = ช่วงที่ Coater บันทึกของ lot (ยอด = Total_Weight ล่าสุด) · ชม.เดิน/DT = Extruder_Runtime ของเครื่องในช่วงนั้น · ช่วงไม่เกิน 31 วัน</span>
+    </div>
+  </div>
+  <h2 style="font-size:15px;margin:4px 0 8px">รวม 2 เครื่อง</h2><div class="kpis" id="kpis"></div>
+  <div id="exc"></div>
+  <p class="note">ตรงแผน = จบไม่เกิน ±2 ชม. จากแผน และยอด ≥ 95% · Rate จริง = ยอดจริง ÷ ชม.เดินจริง (ไม่รวม downtime) เทียบ Std Cap ที่ใช้วางแผน · Pareto นับ downtime ที่ไม่ได้วางแผน (เครื่องเสีย + PD) ในช่วงที่เลือก · "ตรวจข้อมูลเวลา" = ชม.เดินจาก Extruder_Runtime ไม่สอดคล้องกับยอด Coater (เช่น บันทึกผิดเครื่อง) ไม่นำไปคิด Rate</p>
+</section>
+</main>
+<div class="modal" id="imgm" hidden><div class="mbox"><div class="mh"><b>รูปที่ส่งออก</b><span class="sp" style="flex:1"></span><button class="btn g" id="imgCopy">คัดลอกรูป</button><button class="btn g" id="imgClose">ปิด</button></div>
+  <p class="note">ถ้าดาวน์โหลดไม่ได้ในหน้านี้: คลิกขวาที่รูป → บันทึกรูปภาพ หรือกด "คัดลอกรูป" แล้ววางใน LINE / Excel</p><div class="mimg"><img alt="รูปที่ส่งออก"></div></div></div>
+<div class="modal" id="gate"><div class="mbox" style="max-width:460px;text-align:center"><b style="font-size:18px">แผนเดินเครื่อง BFL</b><p id="gateT" class="note" style="font-size:15px">กำลังโหลด…</p></div></div>
+<div class="modal" id="cfm" hidden><div class="mbox" style="max-width:480px"><b id="cfT" style="font-size:16px"></b><p class="note" id="cfS"></p><div class="row2"><button class="btn g" id="cfN">ยกเลิก</button><button class="btn p" id="cfY" style="margin:0">ยืนยัน</button></div></div></div>
+<div class="tip" id="tip"></div><div class="toast" id="toast"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+{
+// ---- master (จาก Product_Detail / RuntimeType ใน Supabase, 27 พ.ย. 2026) ----
+let P=[],RT=[],PM={},RM={};
+const STDP={"EX-แจ้งระบบพร้อมเดินเครื่อง":15,"EX-หยุดเครื่อง-จบเบอร์":45,"EX-เคลียร์ระบบลำเลียง":60,"EX-หยุดเครื่อง-เปลี่ยนสี":45,"EX-เปิดระบบ":60};
+const RTG={std:"มาตรฐาน (std)",pl:"หยุดตามแผนอื่น — ปิดรอบเดิน",pd:"PD-Downtime (กรณีอื่น)",md:"Machine-Downtime (กรณีอื่น)"};
+function setMasters(m){P=m.p.map(x=>[x[0],x[1],+x[2]]);const g={"Planned-Downtime":"pl","PD-Downtime":"pd","Machine-Downtime":"md"};
+  RT=Object.entries(STDP).map(([p,d])=>[p,(m.rt.find(r=>r[0]===p)||[])[2]||d,"std"])
+    .concat(m.rt.filter(r=>!STDP[r[0]]&&g[r[1]]).map(r=>[r[0],r[2]||(/วันหยุด/.test(r[0])?1440:/หยุดตามแผนผลิต/.test(r[0])?480:/ซ่อมบำรุง/.test(r[0])?240:60),g[r[1]]]));
+  PM=Object.fromEntries(P.map(p=>[p[0],p]));RM=Object.fromEntries(RT.map(r=>[r[0],r]))}
+const mcap=pid=>PM[pid]?PM[pid][2]/1000:null;
+const EX=["EXT-1","EXT-2"],H=36e5,MN=6e4,GH=66,HD=50,TM=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
+const $=s=>document.querySelector(s),esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const pad=n=>String(n).padStart(2,"0"),fd=t=>{const d=new Date(t);return d.getDate()+"-"+TM[d.getMonth()]},ft=t=>{const d=new Date(t);return d.getHours()+":"+pad(d.getMinutes())};
+const fdt=t=>fd(t)+" "+ft(t),fhm=m=>{m=Math.round(m);return Math.floor(m/60)+":"+pad(m%60)},dl=t=>{const d=new Date(t);return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate())+"T"+pad(d.getHours())+":"+pad(d.getMinutes())};
+const snap=t=>Math.round(t/(15*MN))*15*MN,uid=()=>"b"+(++S.idn);
+const short=p=>p.replace(/^EX-/,""),cls=p=>/เคลียร์/.test(p)?"cl":/แจ้งระบบพร้อม/.test(p)?"rd":!RM[p]||RM[p][2]==="std"?"":RM[p]&&RM[p][2]==="pd"?"pdc":RM[p]&&RM[p][2]==="md"?"mdc":"gy";
+const dur=b=>b.k==="P"?Math.round(b.q/b.cap*60):b.d,end=b=>b.s+dur(b)*MN;
+const S={vs:(()=>{const d=new Date(Date.now()-8*36e5);d.setHours(8,0,0,0);return d.getTime()-24*36e5})(),days:3,pxh:44,sel:null,dirty:0,hist:[],net:{n:0,kb:0},W:{},tok:null,ro:true,me:"",act:null,mode:{ext:"EXT-1",k:"P",start:"tail",pk:""},idn:0,bs:1.2,std:true};
+const CO="EX-หยุดเครื่อง-จบเบอร์",RDY="EX-แจ้งระบบพร้อมเดินเครื่อง",CLR="EX-เคลียร์ระบบลำเลียง",CHG="EX-หยุดเครื่อง-เปลี่ยนสี",c97=id=>id.replace(/^98-/,"97-"),nsum=v=>(String(v||"").match(/\d+(\.\d+)?/g)||[]).reduce((a,x)=>a+ +x,0),bsz=b=>b.bs||S.bs,bt=b=>nsum(b.pl)||Math.round(b.q/bsz(b));
+const TR={co:"หยุดเครื่อง-จบเบอร์ (std)",run:"เปลี่ยนเบอร์ต่อเนื่อง ไม่หยุด",clr:"หยุด + เคลียร์ระบบ (เริ่มรอบใหม่)"};
+let B=[];
+// ---- ตัวอย่างแผน (ลำดับตามรูป Plan Batch) ----
+const lane=e=>B.filter(b=>b.ext===e).sort((a,b)=>a.s-b.s);
+// ลำดับมาตรฐาน: แจ้งพร้อมเดิน → เดินเครื่อง (ระหว่างสินค้า = หยุดเครื่อง-จบเบอร์ หรือตามที่เลือกในงานถัดไป) → หยุดเครื่อง → เคลียร์ระบบลำเลียง
+// บล็อกมาตรฐานมีบทบาท r = rdy/co/end/clr · ใช้บล็อกเดิมซ้ำตามลำดับ (เก็บประเภท/เวลาที่เลือกเอง) · หยุดตามแผนอื่น (วันหยุด/ซ่อมบำรุง/…) = ปิดรอบ
+const DEF={rdy:RDY,co:CO,end:CO,clr:CLR};
+function norm(a0){const pool={rdy:[],co:[],end:[],clr:[]};a0.forEach(x=>{if(x.r)pool[x.r].push(x)});
+  const take=(r,e)=>pool[r].shift()||{id:uid(),ext:e,k:"D",r,proc:DEF[r],d:RM[DEF[r]][1],s:null},o=[];let run=false;
+  const close=e=>{if(run){o.push(take("end",e),take("clr",e));run=false}};
+  a0.filter(x=>!x.r).forEach(x=>{
+    if(x.k==="P"){if(run&&x.tr==="clr")close(x.ext);if(!run){o.push(take("rdy",x.ext));run=true}else if(o[o.length-1].k==="P"&&x.tr!=="run")o.push(take("co",x.ext));o.push(x)}
+    else if(RM[x.proc]&&RM[x.proc][2]==="pl"){close(x.ext);o.push(x)}else o.push(x)});
+  close(a0.length?a0[0].ext:"");return o}
+const nm=a=>S.std?norm(a):a;
+function retime(a,s){a.forEach(x=>{x.s=s;s=end(x)});return a}
+function setLane(e,a){a.forEach(x=>x.ext=e);B=B.filter(x=>x.ext!==e).concat(a)}
+const name=b=>b.k==="P"?(PM[b.pid]?PM[b.pid][1]:b.pid):short(b.proc);
+const toast=m=>{const t=$("#toast");t.textContent=m;t.style.display="block";clearTimeout(t._h);t._h=setTimeout(()=>t.style.display="none",2600)};
+const push=()=>{S.hist.push(JSON.stringify(B));if(S.hist.length>40)S.hist.shift();S.dirty++};
+// ต่องานติดกัน: เรียงตามเวลาเริ่ม แล้ววางต่อกันตั้งแต่งานแรกของเครื่อง → ยืด/หด/ลบ/ย้ายแล้ว งานตามหลังดึงมาต่อทันที
+function fix(){for(const e of EX){let a=lane(e);if(!a.length)continue;
+  if($("#rip").checked){const s0=a[0].s;a=retime(nm(a),s0);a.forEach(x=>x.ov=false);setLane(e,a)}
+  else a.forEach((b,i)=>b.ov=!!(i&&b.s<end(a[i-1])))}}
+function tailOf(e){const L=B.filter(b=>b.ext===e);return L.length?Math.max(...L.map(end)):snap(Date.now())}
+// ---- Gantt ----
+function gantt(){
+  const hrs=S.days*24,W=hrs*S.pxh,ve=S.vs+hrs*H,g=$("#g");let h="";
+  g.style.width=W+"px";g.style.height=HD+GH*2+"px";
+  for(let t=S.vs;t<ve;){const d=new Date(t);d.setHours(24,0,0,0);const e=Math.min(d.getTime(),ve);h+=`<div class="dh" style="left:${(t-S.vs)/H*S.pxh}px;width:${(e-t)/H*S.pxh}px">${fd(t)}</div>`;t=e}
+  for(let i=0;i<hrs;i++){const hr=new Date(S.vs+i*H).getHours();h+=`<div class="hh" style="left:${i*S.pxh}px;width:${S.pxh}px">${S.pxh>=30||hr%2==0?hr+":00":""}</div>`;
+    h+=`<div class="vl ${hr==8?"pd":hr%8==0?"sh":""}" style="left:${i*S.pxh}px"></div>`}
+  EX.forEach((e,i)=>h+=`<div class="lane" style="top:${HD+i*GH}px;width:${W}px"></div>`);
+  for(const b of B){if(end(b)<=S.vs||b.s>=ve)continue;const x=(b.s-S.vs)/H*S.pxh,w=Math.max(dur(b)/60*S.pxh,6),y=HD+EX.indexOf(b.ext)*GH+2,c=(S.sel===b.id?" sel":"")+(b.ov?" ov":"");
+    h+=b.k==="P"?`<div class="blk${c}${b.tr==="run"?" cont":""}" data-id="${b.id}" style="left:${x}px;width:${w}px;top:${y}px"><div class="t">Cap ${b.cap} t/hr · ${bt(b)} B${b.pk?`<i>${b.pk.replace("PACK-","Pack ")}</i>`:""}</div><div class="b">${esc(name(b))} (${b.q} t)</div>${w>=20?'<div class="rs"></div>':""}</div>`
+    :`<div class="blk D ${cls(b.proc)}${c}" data-id="${b.id}" style="left:${x}px;width:${w}px;top:${y}px">${w>40?esc(short(b.proc)):""}${w>=20?'<div class="rs"></div>':""}</div>`}
+  const n=Date.now();if(n>S.vs&&n<ve)h+=`<div class="now" style="left:${(n-S.vs)/H*S.pxh}px"></div>`;
+  g.innerHTML=h;$("#rng").textContent=fdt(S.vs)+" – "+fd(ve-1);
+  document.querySelectorAll(".seg [data-d]").forEach(x=>x.classList.toggle("on",+x.dataset.d===S.days));
+  status();if(!$("#vBat").hidden)batch()}
+const wkOf=t=>{const d=new Date(t-8*H);d.setHours(0,0,0,0);d.setDate(d.getDate()-((d.getDay()+6)%7));return d.getTime()+8*H};
+const wkKey=w=>{const d=new Date(w);return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate())},wkT=k=>new Date(k+"T08:00:00").getTime();
+const isDef=b=>b.r&&S.std&&b.proc===DEF[b.r]&&RM[DEF[b.r]]&&b.d===RM[DEF[b.r]][1];
+function enc(b,w){const r={x:EX.indexOf(b.ext)+1,t:Math.round((b.s-w)/MN)};
+  if(b.k==="P")Object.assign(r,{c:b.pid,q:b.q,cp:b.cap,pk:b.pk&&+b.pk.slice(-1),bs:b.bs,pl:b.pl,bd:b.bd,wo:b.wo,nt:b.nt,tr:b.tr!=="co"&&b.tr});
+  else Object.assign(r,{r:b.r,p:b.r&&b.proc===DEF[b.r]?undefined:b.proc,d:b.r&&RM[DEF[b.r]]&&b.d===RM[DEF[b.r]][1]?undefined:b.d});
+  Object.keys(r).forEach(k=>{if(r[k]==null||r[k]===""||r[k]===false||r[k]===0&&k==="pk")delete r[k]});return r}
+function dec(r,w){const ext=EX[(r.x||1)-1],s=w+(r.t||0)*MN;
+  if(r.c)return {id:uid(),ext,k:"P",pid:r.c,q:+r.q||1,cap:+r.cp||mcap(r.c)||3,pk:r.pk?"PACK-"+r.pk:"",bs:r.bs||null,pl:r.pl||"",bd:r.bd||"",wo:r.wo||"",nt:r.nt||"",tr:r.tr||"co",s};
+  const proc=r.p||(r.r?DEF[r.r]:"EX-ตามแผน-รอระบุ");return {id:uid(),ext,k:"D",r:r.r,proc,d:+r.d||(RM[proc]?RM[proc][1]:60),s}}
+const docW=w=>B.filter(b=>wkOf(b.s)===w&&!isDef(b)).sort((a,b)=>a.s-b.s).map(b=>enc(b,w));
+function changed(){const ks=new Set(Object.keys(S.W));B.forEach(b=>ks.add(wkKey(wkOf(b.s))));
+  return [...ks].sort().filter(k=>JSON.stringify(docW(wkT(k)))!==((S.W[k]&&S.W[k].js)||"[]"))}
+function ingest(plans,a,b){(plans||[]).forEach(p=>{if(S.W[p.wk])return;S.W[p.wk]={ver:p.ver,by:p.by,at:p.at,js:null};const w=wkT(p.wk);((p.doc&&p.doc.b)||[]).forEach(r=>B.push(dec(r,w)))});
+  for(let w=wkT(a);w<=wkT(b);w+=7*24*H){const k=wkKey(w);if(!S.W[k])S.W[k]={ver:0,js:null}}}
+const baseline=()=>Object.entries(S.W).forEach(([k,v])=>{if(v.js===null)v.js=JSON.stringify(docW(wkT(k)))});
+const rangeW=(f,t)=>[wkKey(wkOf(f)-7*24*H),wkKey(wkOf(t)+7*24*H)];
+async function ensure(f,t){const [a,b]=rangeW(f,t);let need=false;for(let w=wkT(a);w<=wkT(b);w+=7*24*H)if(!S.W[wkKey(w)])need=true;if(!need)return;
+  const r=await rpc("ext_plan_get",{p_tok:S.tok,p_from:a,p_to:b});if(!r.ok)return toast("โหลดแผนไม่สำเร็จ: "+r.error);ingest(r.plans,a,b);fix();baseline();gantt()}
+function status(){const cw=wkOf(S.vs),js=JSON.stringify({wk:wkKey(cw),b:docW(cw)}),kb=(new Blob([js]).size/1024).toFixed(1),ov=B.filter(b=>b.ov).length,ch=S.ro?[]:changed(),wv=S.W[wkKey(cw)];
+  const tot=EX.map(e=>e.replace("EXT-","Ext.")+" "+B.filter(b=>b.ext===e&&b.k==="P").reduce((a,b)=>a+b.q,0)+" t").join(" · ");
+  $("#stat").innerHTML=`<span>แผน: <b>${B.filter(b=>b.k==="P").length}</b> งานสินค้า · ${tot}</span><span>ขนาดข้อมูลแผน: <b>${kb} KB</b></span>${ov?`<span class="bd">⚠ งานซ้อนเวลา ${ov} จุด</span>`:""}${wv&&wv.by?`<span>บันทึกล่าสุด: <b>${esc(wv.by)}</b> ${fdt(new Date(wv.at).getTime())} (ver ${wv.ver})</span>`:""}<span>Supabase: <b>${S.net.n}</b> คำขอ · ~<b>${S.net.kb.toFixed(1)} KB</b></span>`;
+  $("#doc").textContent=js.replace(/\],\[/g,"],\n  [").replace('"b":[[','"b":[\n  [');
+  S.dirty=ch.length;$("#dirty").innerHTML=$("#dirty2").innerHTML=S.ro?`<span class="note">ดูอย่างเดียว</span>`:ch.length?`<span class="dirty">● ยังไม่บันทึก (${ch.length} สัปดาห์)</span>`:`<span class="saved">บันทึกแล้ว</span>`}
+// ---- ลาก / ย่อขยาย ----
+let drag=null;const tip=$("#tip"),rip=()=>$("#rip").checked;
+const place=b=>{const el=document.querySelector(`.blk[data-id="${b.id}"]`);if(!el)return;el.style.left=(b.s-S.vs)/H*S.pxh+"px";el.style.top=HD+EX.indexOf(b.ext)*GH+2+"px";el.style.width=Math.max(dur(b)/60*S.pxh,6)+"px";
+  if(b.k==="P"){el.querySelector(".t").firstChild.textContent=`Cap ${b.cap} t/hr · ${bt(b)} B`;el.querySelector(".b").textContent=`${name(b)} (${b.q} t)`}};
+const showTip=(ev,t)=>{tip.style.display="block";tip.style.left=ev.clientX+12+"px";tip.style.top=ev.clientY+12+"px";tip.textContent=t};
+$("#g").addEventListener("pointerdown",ev=>{const el=ev.target.closest(".blk");if(!el)return;if(S.ro){S.sel=el.dataset.id;side();gantt();return}const b=B.find(x=>x.id===el.dataset.id),L=lane(b.ext);
+  drag={b,el,x0:ev.clientX,s0:b.s,d0:dur(b),e0:b.ext,rs:ev.target.classList.contains("rs"),mv:false,sn:JSON.stringify(B),first:L[0]===b,ls:L.map(x=>[x,x.s])};el.setPointerCapture(ev.pointerId)});
+$("#g").addEventListener("pointermove",ev=>{const el=ev.target.closest(".blk");
+  if(!drag){if(el){const b=B.find(x=>x.id===el.dataset.id);showTip(ev,`${b.ext} · ${name(b)} · ${fdt(b.s)} → ${fdt(end(b))} (${fhm(dur(b))} ชม.)`)}else tip.style.display="none";return}
+  const dx=ev.clientX-drag.x0;if(Math.abs(dx)>3)drag.mv=true;if(!drag.mv)return;const b=drag.b,dt=dx/S.pxh*H;
+  if(drag.rs){const nd=Math.max(15,Math.round((drag.d0*MN+dt)/(15*MN))*15);                    // ยืด/หด
+    if(b.k==="P")b.q=Math.max(0.5,Math.round(nd/60*b.cap*2)/2);else b.d=nd;
+    if(rip()){fix();B.forEach(place)}else place(b);showTip(ev,`${name(b)} · ${fhm(dur(b))} ชม.${b.k==="P"?" · "+b.q+" t":""} · จบ ${fdt(end(b))}`);return}
+  const r=$("#g").getBoundingClientRect(),gi=Math.floor((ev.clientY-r.top-HD)/GH),ne=gi>=0&&gi<2?EX[gi]:b.ext;
+  if(drag.first&&rip()&&ne===drag.e0){const d=snap(drag.s0+dt)-drag.s0;drag.ls.forEach(([x,s0])=>{x.s=s0+d;place(x)});showTip(ev,`เลื่อนทั้ง ${b.ext}: เริ่ม ${fdt(b.s)}`);return}
+  if(drag.first)drag.ls.forEach(([x,s0])=>{if(x!==b){x.s=s0;place(x)}});
+  b.ext=ne;b.s=snap(drag.s0+dt);place(b);showTip(ev,`${b.ext} · วางที่ ${fdt(b.s)}`)});
+$("#g").addEventListener("pointerup",()=>{if(!drag)return;const d=drag;drag=null;tip.style.display="none";
+  if(d.mv){S.hist.push(d.sn);S.dirty++;fix();if(S.sel===d.b.id)side()}else{S.sel=d.b.id;side()}gantt()});
+$("#g").addEventListener("pointerleave",()=>{if(!drag)tip.style.display="none"});
+// ---- แผงซ้าย: เพิ่ม / แก้ ----
+function prodOpts(sel){const gs={Dog:[],Cat:[],Fish:[],Koi:[],Bird:[]};P.forEach(p=>{const k=Object.keys(gs).find(k=>p[1].toLowerCase().startsWith(k.toLowerCase()))||"Fish";gs[k].push(p)});
+  return Object.entries(gs).map(([k,a])=>`<optgroup label="${k}">`+a.map(p=>`<option value="${p[0]}"${p[0]===sel?" selected":""}>${esc(p[1])}</option>`).join("")+"</optgroup>").join("")}
+const rtOpts=sel=>Object.entries(RTG).map(([g,l])=>`<optgroup label="${l}">`+RT.filter(r=>r[2]===g).map(r=>`<option value="${r[0]}"${r[0]===sel?" selected":""}>${short(r[0])}${g==="std"?" ("+fhm(r[1])+")":""}</option>`).join("")+"</optgroup>").join("");
+const seg=(id,opts,v)=>`<div class="seg" id="${id}">`+opts.map(([k,l])=>`<button type="button" data-v="${k}" class="${k===v?"on":""}">${l}</button>`).join("")+"</div>";
+const trOpts=v=>Object.entries(TR).map(([k,l])=>`<option value="${k}"${k===(v||"co")?" selected":""}>${l}</option>`).join("");
+const RL={rdy:"แจ้งพร้อมเดิน (เริ่มรอบ)",co:"เปลี่ยนเบอร์ระหว่างสินค้า",end:"หยุดเครื่อง (จบรอบ)",clr:"เคลียร์ระบบลำเลียง (จบรอบ)"};
+function side(){const b=S.sel&&B.find(x=>x.id===S.sel),m=b?{ext:b.ext,k:b.k,pk:b.pk||"",start:"set"}:S.mode,k=m.k,auto=b&&b.r&&S.std;
+  const pid=b&&b.k==="P"?b.pid:($("#fP")&&!b?$("#fP").value:(P[0]||[""])[0]),cap=b&&b.k==="P"?b.cap:(mcap(pid)||3),proc=b&&b.k==="D"?b.proc:((RT.find(r=>r[2]==="pl")||RT[0])[0]);
+  if(S.ro&&!b){$("#side").innerHTML=`<h2>ดูอย่างเดียว</h2><p class="note">บัญชีนี้ดูแผนได้อย่างเดียว · คลิกบล็อกเพื่อดูรายละเอียด · ขอสิทธิ์แก้ไขจาก Admin (Hub → ผู้ใช้ → แผนเดินเครื่อง = แก้ไขแผนได้)</p>`;return}
+  $("#side").innerHTML=`<h2>${b?(S.ro?"รายละเอียด":auto?"บล็อกมาตรฐาน":"แก้ไขงาน"):"เพิ่มงานลงแผน"}</h2>
+  ${auto?`<p class="note" style="margin:0">ตำแหน่ง: <b>${RL[b.r]}</b> · ระบบวางให้ตามลำดับมาตรฐาน — เลือกประเภท/เวลาเองได้ (manual)</p>`:`<label>เครื่อง</label>${seg("fE",[["EXT-1","EXT-1"],["EXT-2","EXT-2"]],m.ext)}`}
+  ${b?"":`<label>ประเภท</label>${seg("fK",[["P","สินค้า"],["D","Runtime type"]],k)}`}
+  ${k==="P"?`<label for="fP">สินค้า</label><select id="fP">${prodOpts(pid)}</select><div class="hint"><span id="fId">${c97(pid)} / ${pid}</span></div>
+    <div class="row2"><div><label for="fQ">FG ต้องการ (ตัน)</label><input id="fQ" type="number" min="0.5" step="0.5" value="${b?b.q:20}"></div>
+    <div><label for="fC">Std Cap (ตัน/ชม.)</label><input id="fC" type="number" min="0.5" step="0.1" value="${cap}"></div></div>
+    <div class="hint"><span></span><span id="fM"></span></div>
+    <div class="row2"><div><label for="fB">Batch size (ตัน)</label><input id="fB" type="number" min="0.1" step="0.05" value="${b&&b.bs?b.bs:""}" placeholder="${S.bs}"></div>
+    <div><label for="fT">ก่อนงานนี้</label><select id="fT">${trOpts(b?b.tr:"co")}</select></div></div>
+    <label>สายแพค (ไม่บังคับ)</label>${seg("fPk",[["","ไม่ระบุ"],["PACK-3","Pack 3"],["PACK-4","Pack 4"]],m.pk||"")}`
+  :`<label for="fR">Runtime type</label><select id="fR">${rtOpts(proc)}</select>
+    <label for="fD">ระยะเวลา (ชม.)</label><input id="fD" type="number" min="0.25" step="0.25" value="${(b?b.d:RM[proc][1])/60}">`}
+  ${auto?"":`<label>เวลาเริ่ม</label>${b?"":seg("fSt",[["tail","ต่อท้ายงานล่าสุด"],["set","กำหนดเอง"]],m.start)}
+  <input id="fS" type="datetime-local" step="900" value="${dl(b?b.s:tailOf(m.ext))}" ${!b&&m.start==="tail"?"disabled":""} style="margin-top:6px">`}
+  <div class="prev" id="fPv"></div>
+  ${b?`<div class="row2" style="margin-top:12px">${auto&&b.r!=="co"?`<button class="btn g" id="fStd">คืนค่า std</button>`:`<button class="btn d" id="fDel">${auto?"ไม่หยุด":"ลบงานนี้"}</button>`}<button class="btn g" id="fOk">เสร็จ</button></div>`:`<button class="btn p" id="fAdd">เพิ่มลงแผน</button>`}`;
+  bindSide(b);capHint();preview();if(S.ro)$("#side").querySelectorAll("input,select,button:not(#fOk),.seg button").forEach(x=>x.disabled=true)}
+function capHint(){const p=$("#fP"),c=$("#fC");if(!p)return;const ms=mcap(p.value),v=+c.value;if(ms==null){$("#fM").textContent="ไม่มีใน master";return}
+  $("#fM").innerHTML=`master ${ms} t/hr`+(v>0&&v!==ms?` · <a id="fRs">ใช้ค่า master</a> · ${S.ro?"":`<a id="fUp">อัปเดต master เป็น ${v}</a>`}`:"")}
+function vals(){const g=id=>$(id),on=id=>g(id)&&g(id).querySelector(".on").dataset.v,b=S.sel&&B.find(x=>x.id===S.sel);
+  return {ext:g("#fE")?on("#fE"):b.ext,k:g("#fP")?"P":"D",pid:g("#fP")&&g("#fP").value,q:g("#fQ")&&+g("#fQ").value,cap:g("#fC")&&+g("#fC").value,pk:on("#fPk"),proc:g("#fR")&&g("#fR").value,d:g("#fD")&&Math.round(+g("#fD").value*60),
+    bs:g("#fB")&&(+g("#fB").value||null),tr:g("#fT")&&g("#fT").value,s:!g("#fS")?b.s:g("#fS").disabled?tailOf(on("#fE")):snap(new Date(g("#fS").value).getTime())}}
+function preview(){const v=vals(),m=v.k==="P"?(v.q>0&&v.cap>0?Math.round(v.q/v.cap*60):0):v.d;
+  $("#fPv").innerHTML=m?`ใช้เวลา <b>${fhm(m)} ชม.</b>${v.k==="P"?` (${v.q} t ÷ ${v.cap} t/hr) · ≈ ${Math.round(v.q/(v.bs||S.bs))} batch`:""}<br>เริ่ม ${fdt(v.s)} → จบ <b>${fdt(v.s+m*MN)}</b>`:`<span class="bd">กรอกจำนวนและ Std Cap ให้มากกว่า 0</span>`}
+function bindSide(b){
+  document.querySelectorAll("#side .seg").forEach(sg=>sg.addEventListener("click",ev=>{const bt=ev.target.closest("button");if(!bt)return;
+    sg.querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===bt));const v=bt.dataset.v;
+    if(sg.id==="fK"){S.mode.k=v;S.mode.ext=vals().ext;return side()}
+    if(sg.id==="fSt"){S.mode.start=v;$("#fS").disabled=v==="tail";$("#fS").value=dl(tailOf(vals().ext))}
+    if(sg.id==="fE"&&!b){S.mode.ext=v;if($("#fS").disabled)$("#fS").value=dl(tailOf(v))}
+    if(sg.id==="fPk"&&!b)S.mode.pk=v;
+    if(b)apply(b);preview()}));
+  const p=$("#fP");if(p)p.addEventListener("change",()=>{$("#fC").value=PM[p.value][2]/1000;$("#fId").textContent=c97(p.value)+" / "+p.value;capHint();if(b)apply(b);preview()});
+  $("#side").addEventListener("click",ev=>{if(ev.target.id==="fRs"){$("#fC").value=PM[$("#fP").value][2]/1000;capHint();if(b)apply(b);preview()}
+    if(ev.target.id==="fUp"){const pid=$("#fP").value,v=+$("#fC").value;
+      ask(`อัปเดต Std Cap ของ ${PM[pid][1]} (${pid}) จาก ${PM[pid][2]/1000} เป็น ${v} t/hr ใน Product_Detail?`,"มีผลกับการวางแผนครั้งต่อไปของทุกคน · งานที่อยู่ในแผนแล้วไม่เปลี่ยน","ยืนยันอัปเดต").then(async a=>{if(a!=="y")return;
+        const r=await rpc("ext_plan_cap",{p_tok:S.tok,p_product:pid,p_cap:Math.round(v*1000)});if(!r.ok)return toast("อัปเดตไม่สำเร็จ: "+r.error);
+        PM[pid][2]=Math.round(v*1000);try{localStorage.removeItem("ep_m")}catch(e){}capHint();status();toast(`อัปเดต master แล้ว: ${pid} = ${v} t/hr`)})}});
+  const r=$("#fR");if(r)r.addEventListener("change",()=>{$("#fD").value=RM[r.value][1]/60;if(b)apply(b);preview()});
+  ["#fQ","#fC","#fD","#fS","#fB"].forEach(id=>{const e=$(id);if(e){e.addEventListener("input",()=>{preview();if(id==="#fC")capHint()});if(b)e.addEventListener("change",()=>apply(b))}});
+  const t=$("#fT");if(t&&b)t.addEventListener("change",()=>apply(b));
+  if(b){const d=$("#fDel");if(d)d.onclick=()=>delBlock(b);const st=$("#fStd");if(st)st.onclick=()=>{push();b.proc=DEF[b.r];b.d=RM[b.proc][1];fix();side();gantt()};$("#fOk").onclick=()=>{S.sel=null;side();gantt()}}
+  else $("#fAdd").onclick=add}
+function delBlock(b){if(S.ro)return;if(b.r&&S.std){if(b.r==="co"){const L=lane(b.ext),nx=L.slice(L.indexOf(b)+1).find(x=>x.k==="P");if(nx){push();nx.tr="run";S.sel=null;fix();side();gantt();toast("เปลี่ยนเป็น 'เปลี่ยนเบอร์ต่อเนื่อง ไม่หยุด'")}}
+  else toast("บล็อกมาตรฐานลบไม่ได้ — เปลี่ยนประเภท/เวลาเองได้ หรือปิด 'ลำดับมาตรฐาน'");return}
+  push();B=B.filter(x=>x!==b);S.sel=null;fix();side();gantt()}
+function apply(b){if(S.ro)return;const v=vals();if(v.k==="P"&&!(v.q>0&&v.cap>0))return;push();const L=lane(b.ext),first=rip()&&L[0]===b&&v.ext===b.ext,d=v.s-b.s;
+  Object.assign(b,v.k==="P"?{ext:v.ext,pid:v.pid,q:v.q,cap:v.cap,pk:v.pk,bs:v.bs,tr:v.tr}:{ext:v.ext,proc:v.proc,d:v.d});if(first)L.forEach(x=>x.s+=d);else b.s=v.s;fix();gantt()}
+function add(){if(S.ro)return;const v=vals();if(v.k==="P"&&!(v.q>0&&v.cap>0))return toast("กรอกจำนวนและ Std Cap ก่อน");push();
+  const nb=v.k==="P"?{id:uid(),ext:v.ext,k:"P",pid:v.pid,q:v.q,cap:v.cap,pk:v.pk,nt:"",pl:"",bd:"",wo:"",bs:v.bs,tr:v.tr,s:v.s+1}:{id:uid(),ext:v.ext,k:"D",proc:v.proc,d:v.d,s:v.s+1};B.push(nb);fix();
+  if(nb.s<S.vs||nb.s>S.vs+S.days*24*H)S.vs=new Date(nb.s).setHours(8,0,0,0);$("#fS").value=dl(tailOf(v.ext));gantt();preview();toast(`เพิ่ม ${name(nb)} → ${v.ext} เริ่ม ${fdt(nb.s)} จบ ${fdt(end(nb))}`)}
+let askFn=null;function ask(t,sub,yes,no){$("#cfT").textContent=t;$("#cfS").textContent=sub;$("#cfY").textContent=yes||"ยืนยัน";$("#cfN").textContent=no||"ยกเลิก";$("#cfm").hidden=false;return new Promise(r=>askFn=r)}
+$("#cfm").addEventListener("click",ev=>{const v=ev.target.id==="cfY"?"y":ev.target.id==="cfN"?"n":ev.target.id==="cfm"?null:undefined;if(v===undefined)return;$("#cfm").hidden=true;if(askFn){const f=askFn;askFn=null;f(v)}});
+// ---- toolbar ----
+$("#prev").onclick=()=>{S.vs-=S.days*24*H;gantt();ensure(S.vs,S.vs+S.days*24*H)};$("#next").onclick=()=>{S.vs+=S.days*24*H;gantt();ensure(S.vs,S.vs+S.days*24*H)};
+document.querySelectorAll(".seg [data-d]").forEach(x=>x.onclick=()=>{S.days=+x.dataset.d;S.pxh=S.days===7?22:44;gantt();ensure(S.vs,S.vs+S.days*24*H)});
+$("#zi").onclick=()=>{S.pxh=Math.min(90,S.pxh+8);gantt()};$("#zo").onclick=()=>{S.pxh=Math.max(14,S.pxh-8);gantt()};
+$("#rip").onchange=()=>{if(S.ro)return;push();fix();gantt()};$("#std").onchange=()=>{push();S.std=$("#std").checked;fix();gantt()};
+const undo=()=>{if(!S.hist.length)return toast("ไม่มีรายการให้ย้อน");B=JSON.parse(S.hist.pop());S.dirty=Math.max(0,S.dirty-1);S.sel=null;fix();side();gantt()};$("#undo").onclick=undo;
+async function save(){if(S.ro)return;if(B.some(b=>b.ov))return toast("มีงานซ้อนเวลา — แก้ก่อนบันทึก");const ks=changed();if(!ks.length)return toast("ไม่มีการเปลี่ยนแปลง");
+  $("#save").disabled=$("#save2").disabled=true;let n=0;
+  try{for(const k of ks){const w=wkT(k);let doc={b:docW(w)},ver=(S.W[k]&&S.W[k].ver)||0;
+    for(let tries=0;tries<2;tries++){const r=await rpc("ext_plan_put",{p_tok:S.tok,p_wk:k,p_doc:doc,p_ver:ver});
+      if(r.ok){S.W[k]={ver:r.ver,by:S.me,at:new Date().toISOString(),js:JSON.stringify(doc.b)};n++;break}
+      if(r.error!=="CONFLICT"){toast("บันทึกไม่สำเร็จ: "+r.error);return}
+      const a=await ask(`สัปดาห์ ${fd(w)} มีคนบันทึกไว้ก่อน (${r.by||"?"} ${r.at?fdt(new Date(r.at).getTime()):""})`,"บันทึกทับ = ใช้แผนของคุณแทน · โหลดของล่าสุด = ทิ้งการแก้ของคุณในสัปดาห์นี้","บันทึกทับ","โหลดของล่าสุด");
+      if(a==="y"){ver=r.ver;continue}
+      if(a==="n"){push();B=B.filter(b=>wkOf(b.s)!==w);((r.doc&&r.doc.b)||[]).forEach(x=>B.push(dec(x,w)));fix();S.W[k]={ver:r.ver,by:r.by,at:r.at,js:JSON.stringify(docW(w))}}
+      break}}}
+  finally{$("#save").disabled=$("#save2").disabled=false;gantt()}
+  if(n)toast(`บันทึกแผนแล้ว ${n} สัปดาห์`)}
+$("#save").onclick=$("#save2").onclick=save;
+window.addEventListener("beforeunload",ev=>{if(!S.ro&&changed().length){ev.preventDefault();ev.returnValue=""}});
+document.addEventListener("keydown",ev=>{if(S.ro||/INPUT|SELECT/.test(document.activeElement.tagName))return;
+  if((ev.ctrlKey||ev.metaKey)&&ev.key==="z"){ev.preventDefault();return undo()}const b=S.sel&&B.find(x=>x.id===S.sel);if(!b)return;
+  if(ev.key==="Delete")delBlock(b);
+  if(ev.key==="ArrowLeft"||ev.key==="ArrowRight"){ev.preventDefault();const dir=ev.key==="ArrowLeft"?-1:1,L=lane(b.ext);push();
+    if(!rip())b.s+=dir*15*MN;else if(L[0]===b)L.forEach(x=>x.s+=dir*15*MN);                        // งานแรก = เลื่อนทั้งเครื่อง
+    else if(b.k==="P"){const Pl=L.filter(x=>x.k==="P"),o=Pl[Pl.indexOf(b)+dir];if(o){const i=L.indexOf(b),j=L.indexOf(o);[L[i],L[j]]=[L[j],L[i]];retime(L,L[0].s)}}   // สลับลำดับ
+    fix();side();gantt()}
+  if(ev.key==="Escape"){S.sel=null;side();gantt()}});
+// ---- Plan Batch ----
+const BC={"EXT-1":["#F58220","#FFE2C6"],"EXT-2":["#F5B800","#FFF3CF"]};let dragId=null;
+const ROWS=["รหัสสูตร","สินค้า","FG ต้องการ (t)","Batch size (t)","PLAN (batch)","แบทแล้ว","WO","หมายเหตุ","ก่อนงานนี้","เวลา Extruder"];
+function batch(){let h="";EX.forEach(e=>{const L=lane(e).filter(b=>b.k==="P"),[hc,cb]=BC[e];
+  h+=`<div class="bl-lane"><div class="bl-h"><b>${e}</b><span>${L.length} งาน · FG ${L.reduce((a,b)=>a+b.q,0)} ตัน · PLAN ${L.reduce((a,b)=>a+bt(b),0)} batch · แบทแล้ว ${L.reduce((a,b)=>a+nsum(b.bd),0)}</span><span class="sp"></span><span>${L.length?fdt(L[0].s)+" → "+fdt(end(L[L.length-1])):"ยังไม่มีงาน"}</span></div>
+  <div class="bl-row" data-ext="${e}" style="--hc:${hc};--cb:${cb}"><div class="bl-side">${ROWS.map(r=>`<div>${r}</div>`).join("")}</div>`
+  +L.map((b,i)=>{const pl=bt(b),dn=nsum(b.bd),pc=dn?(dn>=pl?"ok2":"pt2"):"";return `<div class="bc${i&&b.tr==="clr"?" nr":""}" data-id="${b.id}"><div class="bc-h" title="ลากเพื่อย้าย">${esc(c97(b.pid))}<button class="x" data-del="${b.id}" aria-label="ลบงาน">×</button></div><div class="bc-n" title="${esc(name(b))}">${esc(name(b))}</div>
+    <input data-f="q" type="number" min="0.5" step="0.5" value="${b.q}" aria-label="FG ต้องการ"><input data-f="bs" type="number" min="0.1" step="0.05" value="${b.bs||""}" placeholder="${S.bs}" aria-label="batch size">
+    <input data-f="pl" maxlength="20" value="${esc(b.pl||"")}" placeholder="${Math.round(b.q/bsz(b))}" aria-label="PLAN batch"><input data-f="bd" class="${pc}" maxlength="20" value="${esc(b.bd||"")}" placeholder="—" aria-label="แบทแล้ว">
+    <input data-f="wo" maxlength="20" value="${esc(b.wo||"")}" placeholder="—" aria-label="WO"><input data-f="nt" maxlength="60" value="${esc(b.nt||"")}" placeholder="—" aria-label="หมายเหตุ">
+    <select data-f="tr" aria-label="ก่อนงานนี้" ${i?"":"disabled"}>${i?trOpts(b.tr):`<option>เริ่มรอบ</option>`}</select><div class="bc-t">${fd(b.s)} ${ft(b.s)}–${ft(end(b))}</div></div>`}).join("")
+  +`<div class="bc add"><div class="bc-h">+ เพิ่มงาน</div><select data-a="p" aria-label="สินค้า" style="grid-row:span 2">${prodOpts("")}</select><input data-a="q" type="number" min="0.5" step="0.5" placeholder="FG ตัน" aria-label="FG ตัน"><input data-a="bs" type="number" min="0.1" step="0.05" placeholder="batch size ${S.bs}" aria-label="batch size"><button data-add="${e}">เพิ่มท้ายคิว</button></div></div></div>`});
+  $("#bl").innerHTML=h;if(S.ro)$("#bl").querySelectorAll("input,select").forEach(x=>x.disabled=true)}
+const laneKey=()=>JSON.stringify(EX.map(e=>lane(e).map(b=>[b.id,b.s,dur(b)])));
+function commitLanes(sn,k0){fix();if(laneKey()===k0){B=JSON.parse(sn);return gantt()}S.hist.push(sn);S.dirty++;gantt()}
+function moveJob(id,te,idx){const sn=JSON.stringify(B),k0=laneKey(),b=B.find(x=>x.id===id),se=b.ext,tgt=lane(te).filter(x=>x!==b),Pl=tgt.filter(x=>x.k==="P");
+  const s0=tgt.length?tgt[0].s:snap(Date.now());tgt.splice(idx<Pl.length?tgt.indexOf(Pl[idx]):Pl.length?tgt.indexOf(Pl[Pl.length-1])+1:tgt.length,0,b);
+  if(se!==te){const src=lane(se).filter(x=>x!==b);setLane(se,src)}setLane(te,retime(tgt,s0));commitLanes(sn,k0)}
+function delJob(id){const sn=JSON.stringify(B),k0=laneKey();B=B.filter(x=>x.id!==id);if(S.sel===id){S.sel=null;side()}commitLanes(sn,k0)}
+function addTo(e,pid,q,bs){if(!(q>0))return toast("กรอกจำนวนตันก่อน");const sn=JSON.stringify(B),k0=laneKey();
+  B.push({id:uid(),ext:e,k:"P",pid,q,cap:mcap(pid)||3,pk:"",nt:"",pl:"",bd:"",wo:"",bs:bs>0?bs:null,tr:"co",s:tailOf(e)+1});commitLanes(sn,k0);toast(`เพิ่ม ${c97(pid)} ${q} t → ${e}`)}
+function changeDur(b,fn){push();fn();fix();gantt()}
+{const bl=$("#bl");
+bl.addEventListener("change",ev=>{const f=ev.target.dataset.f;if(!f)return;const b=B.find(x=>x.id===ev.target.closest(".bc").dataset.id),v=ev.target.value.trim();
+  if(f==="q"){if(+v>0)changeDur(b,()=>b.q=+v);else gantt()}
+  if(f==="bs"){push();b.bs=+v>0?+v:null;gantt()}
+  if(["pl","bd","wo","nt"].includes(f)){push();b[f]=v.slice(0,f==="nt"?60:20);gantt()}
+  if(f==="tr"){push();b.tr=v;fix();gantt()}});
+bl.addEventListener("click",ev=>{const d=ev.target.dataset;if(d.del)delJob(d.del);if(d.add){const c=ev.target.closest(".bc");addTo(d.add,c.querySelector("[data-a=p]").value,+c.querySelector("[data-a=q]").value,+c.querySelector("[data-a=bs]").value)}});
+bl.addEventListener("pointerdown",ev=>{if(S.ro)return;const h=ev.target.closest(".bc-h");if(h&&!ev.target.closest("button")&&!h.closest(".add"))h.parentElement.draggable=true});
+bl.addEventListener("dragstart",ev=>{const c=ev.target.closest(".bc");if(!c)return;dragId=c.dataset.id;c.classList.add("drag");ev.dataTransfer.effectAllowed="move";ev.dataTransfer.setData("text/plain",dragId)});
+const spot=(row,x)=>{const cs=[...row.querySelectorAll(".bc:not(.add)")].filter(c=>c.dataset.id!==dragId);return [cs,cs.filter(c=>{const r=c.getBoundingClientRect();return r.left+r.width/2<x}).length]};
+bl.addEventListener("dragover",ev=>{const row=ev.target.closest(".bl-row");if(!row||!dragId)return;ev.preventDefault();const [cs,i]=spot(row,ev.clientX);
+  bl.querySelectorAll(".ins").forEach(c=>c.classList.remove("ins"));(cs[i]||row.querySelector(".add")).classList.add("ins")});
+bl.addEventListener("drop",ev=>{const row=ev.target.closest(".bl-row");if(!row||!dragId)return;ev.preventDefault();const id=dragId,i=spot(row,ev.clientX)[1];dragId=null;moveJob(id,row.dataset.ext,i)});
+bl.addEventListener("dragend",ev=>{const c=ev.target.closest(".bc");if(c){c.draggable=false;c.classList.remove("drag")}dragId=null;bl.querySelectorAll(".ins").forEach(c=>c.classList.remove("ins"))});
+$("#bs").addEventListener("change",ev=>{const v=+ev.target.value;if(v>0){S.bs=v;gantt()}})}
+// ---- ส่งออกเป็นรูปภาพ ----
+const dlP=window.claude&&claude.use?claude.use("downloads").catch(()=>null):Promise.resolve(null);
+async function exportImg(el,title,fname){if(!window.html2canvas)return toast("โหลดตัวสร้างรูปไม่สำเร็จ — ลองรีเฟรชหน้า");toast("กำลังสร้างรูป…");
+  const sc=[...el.querySelectorAll(".gscroll,.bl-row,.scroll")],old=sc.map(x=>x.style.overflow),extra=Math.max(0,...sc.map(x=>x.scrollWidth-x.clientWidth)),ow=el.style.width,W=el.offsetWidth+extra;
+  const cap=document.createElement("div");cap.className="captitle";cap.textContent=`${title} · ส่งออก ${fdt(Date.now())}`;el.prepend(cap);
+  sc.forEach(x=>x.style.overflow="visible");el.style.width=W+"px";let cv;
+  try{cv=await html2canvas(el,{scale:Math.min(2,14000/W),backgroundColor:getComputedStyle(document.body).backgroundColor,windowWidth:W+80,logging:false})}
+  catch(e){toast("สร้างรูปไม่สำเร็จ")}finally{cap.remove();sc.forEach((x,i)=>x.style.overflow=old[i]);el.style.width=ow}
+  if(!cv)return;const blob=await new Promise(r=>cv.toBlob(r,"image/png")),dlc=await dlP;
+  if(dlc){try{await dlc.save({filename:fname+".png",data:blob});return toast("บันทึกรูปแล้ว")}catch(e){if(e&&e.code==="declined")return toast("ยกเลิกการบันทึก")}}
+  else{try{const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=fname+".png";document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000);return toast("ดาวน์โหลดรูปแล้ว")}catch(e){}}
+  const m=$("#imgm"),u=URL.createObjectURL(blob);m.querySelector("img").src=u;m.hidden=false;m._blob=blob}
+$("#imgm").addEventListener("click",async ev=>{const m=$("#imgm");if(ev.target.id==="imgClose"||ev.target===m){m.hidden=true;URL.revokeObjectURL(m.querySelector("img").src)}
+  if(ev.target.id==="imgCopy"){try{await navigator.clipboard.write([new ClipboardItem({"image/png":m._blob})]);toast("คัดลอกรูปแล้ว — วางใน LINE/Excel ได้เลย")}catch(e){toast("คัดลอกไม่ได้ในหน้านี้ — คลิกขวาที่รูปแล้วเลือกคัดลอกรูปภาพ")}}});
+const wk=()=>fd(S.vs).replace(/\./g,"");
+$("#xG").onclick=()=>exportImg($("#gcard"),`แผนเดินเครื่อง Extruder ${fdt(S.vs)} – ${fd(S.vs+S.days*24*H-1)}`,`ExtPlan_Gantt_${wk()}`);
+$("#xB").onclick=()=>exportImg($("#bcard"),"Plan Batch Extruder",`ExtPlan_Batch_${wk()}`);
+$("#xS").onclick=()=>exportImg($("#vSum"),`สรุป Plan vs Actual ${$("#sF").value} ถึง ${$("#sT").value}`,`ExtPlan_Summary_${$("#sF").value}`);
+$("#exc").addEventListener("click",ev=>{const x=ev.target.dataset.xe;if(x)exportImg(ev.target.closest(".exc"),`สรุป Plan vs Actual ${x} ${$("#sF").value} ถึง ${$("#sT").value}`,`ExtPlan_${x}_${$("#sF").value}`)});
+// ---- สรุป Plan vs Actual (ข้อมูลจริงจาก ext_plan_actual) ----
+const TY={M:["เครื่องเสีย","var(--bad)"],PD:["PD","var(--warn)"]};
+function actual(b,lot){const now=Date.now();if(b.k==="D")return {st:"na",ev:[]};
+  if(!lot)return b.s>now?{st:"wait",ev:[]}:{st:"none",ev:[]};
+  const aq=lot.kg!=null?+(lot.kg/1000).toFixed(1):null,run=lot.run*60,dt=Math.round((lot.pd+lot.md)*60),rate=run>0&&aq!=null?aq/(run/60):null;
+  return {st:lot.last||lot.src==="coater"&&lot.ae<now-2*H?"done":"run",as:lot.as,ae:lot.last?lot.ae:null,aq,run,dt,rate,lot:lot.lot,bad:run<=0||(rate!=null&&rate>b.cap*1.6),
+    ev:(lot.dt||[]).filter(d=>d[1]!=="Planned-Downtime").map(d=>[d[0],d[1]==="PD-Downtime"?"PD":"M",d[2]*60])}}
+function verdict(b,a){if(a.st==="na")return ["หยุดตามแผน","var(--gray)"];if(a.st==="wait")return ["ยังไม่เริ่ม","var(--gray)"];if(a.st==="none")return ["ไม่พบข้อมูลจริง","#8D6E63"];
+  if(a.st==="run")return ["กำลังเดิน","var(--blue)"];if(a.aq!=null&&a.aq<b.q*0.95)return ["ยอดไม่ถึง","var(--bad)"];if(a.ae&&a.ae-end(b)>2*H)return ["ล่าช้า","var(--warn)"];return ["ตรงแผน","var(--ok)"]}
+const parOf=xs=>(S.act&&S.act.f===S.cf&&S.act.t===S.ct?S.act.par:[]).filter(p=>xs.includes(p.x));
+function kpis(L,xs,f,t){const Pd=L.filter(x=>x.b.k==="P"),done=Pd.filter(x=>x.a.st==="done"),ok=done.filter(x=>verdict(x.b,x.a)[0]==="ตรงแผน").length;
+  const pq=Pd.reduce((s,x)=>s+x.b.q,0),aq=Pd.reduce((s,x)=>s+(x.a.aq||0),0),rr=Pd.filter(x=>x.a.rate!=null&&!x.a.bad),rate=rr.length?rr.reduce((s,x)=>s+x.a.rate/x.b.cap,0)/rr.length*100:0;
+  const pr=parOf(xs),dt=pr.filter(p=>p.ty!=="Planned-Downtime").reduce((s,p)=>s+p.h,0)*60,cA=pr.filter(p=>p.ty==="Planned-Downtime"&&STDP[p.pr]).reduce((s,p)=>s+p.h,0)*60;
+  const cP=L.filter(x=>x.b.k==="D"&&STDP[x.b.proc]).reduce((s,x)=>s+Math.max(0,(Math.min(end(x.b),t)-Math.max(x.b.s,f))/MN),0);
+  const sa=done.length?ok/done.length*100:0,k=(v,l,tg,c)=>`<div class="card kpi"><div class="l">${l}</div><div class="v ${c}">${v}</div><div class="tg">${tg}</div></div>`;
+  return k(done.length?sa.toFixed(0)+"%":"–","Schedule Adherence",`ตรงแผน ${ok}/${done.length} งานที่จบ · เป้า ≥ 95%`,sa>=95?"ok":done.length?"bd":"")
+    +k(aq.toFixed(1)+" t","ยอด Coater จริง / แผน",`แผน ${pq} t · ${pq?(aq/pq*100).toFixed(0):0}% (รวมงานที่กำลังเดิน)`,"")
+    +k(rate?rate.toFixed(0)+"%":"–","Rate จริง เทียบ Std Cap",`เฉลี่ย ${rr.length} lot (ตัด lot ที่ข้อมูลเวลาไม่สอดคล้อง) · เป้า ≥ 95%`,rate>=95?"ok":rate?"wn":"")
+    +k(fhm(dt)+" ชม.","Downtime ไม่ได้วางแผน","เครื่องเสีย + PD ในช่วงที่เลือก",dt>120?"wn":"ok")
+    +k(fhm(cA),"หยุดตามแผน std จริง",`แผน ${fhm(cP)} ชม. (แจ้งพร้อมเดิน/จบเบอร์/เคลียร์/เปลี่ยนสี)`,cA>cP*1.2?"wn":"ok")}
+function pareto(xs){const a=parOf(xs).filter(p=>p.ty!=="Planned-Downtime").map(p=>({p:p.pr,t:p.ty==="PD-Downtime"?"PD":"M",v:p.h*60,n:p.n})).reduce((m,x)=>{const k=m.find(y=>y.p===x.p);if(k){k.v+=x.v;k.n+=x.n}else m.push(x);return m},[]).sort((x,y)=>y.v-x.v);
+  const tot=a.reduce((s,x)=>s+x.v,0);if(!tot)return `<p class="note">ไม่มี downtime ในช่วงนี้${S.act?"":" — กด \"ดึงข้อมูล Actual\""}</p>`;let cum=0;
+  return `<div class="par hd"><span>#</span><span>สาเหตุ (RuntimeType)</span><span>เวลา</span><span class="n">ชม.</span><span class="n">ครั้ง</span><span class="n">สะสม</span></div>`+a.map((x,i)=>{const vf=cum<tot*0.8;cum+=x.v;
+    return `<div class="par${vf?" vf":""}"><span>${i+1}</span><span class="lb" title="${esc(x.p)}">${esc(short(x.p))}<i class="ty" style="background:${TY[x.t][1]}">${TY[x.t][0]}</i></span><span><div class="bar" style="width:${x.v/a[0].v*100}%;background:${TY[x.t][1]}"></div></span><span class="n">${fhm(x.v)}</span><span class="n">${x.n}</span><span class="n">${(cum/tot*100).toFixed(0)}%</span></div>`}).join("")
+    +`<p class="note">ตัวหนา = กลุ่มหลักที่รวมกันถึง 80% ของเวลา DT (ควรแก้ก่อน) · รวม ${fhm(tot)} ชม.</p>`}
+function timeline(L,f,t,extra){const X=v=>Math.max(0,Math.min(100,(v-f)/(t-f)*100)),R=L.filter(x=>x.b.k==="P");let o=`<div class="ov2"><div class="tk">`;
+  for(let x=f;x<=t;x+=12*H)o+=`<span style="left:${X(x)}%;transform:translateX(${x===f?0:x+12*H>t?-100:-50}%)">${fd(x)} ${ft(x)}</span>`;
+  o+=`</div><div class="lbl">แผน</div><div class="r">`+R.map(x=>`<span class="pl" style="left:${X(x.b.s)}%;width:${X(end(x.b))-X(x.b.s)}%" title="${esc(name(x.b))}">${esc(c97(x.b.pid))}</span>`).join("")
+  +`</div><div class="lbl">จริง (ช่วงที่ Coater บันทึก)</div><div class="r">`+R.filter(x=>x.a.as).map(x=>{const v=verdict(x.b,x.a);return `<span class="ac" style="left:${X(x.a.as)}%;width:${X(x.a.ae||Date.now())-X(x.a.as)}%;background:${v[1]}" title="${esc(name(x.b))} · ${v[0]}">${x.a.aq!=null?x.a.aq+" t":""}</span>`}).join("")
+  +`</div>`+(extra.length?`<div class="lbl">นอกแผน (มีผลิตจริงแต่ไม่อยู่ในแผน)</div><div class="r">`+extra.map(l=>`<span class="ac" style="left:${X(l.as)}%;width:${X(l.last?l.ae:Date.now())-X(l.as)}%;background:#8D6E63" title="${esc(PM[l.p]?PM[l.p][1]:l.p)} lot ${esc(l.lot||"")}">${esc(c97(l.p||""))}</span>`).join("")+`</div>`:"")+`</div>`
+  +`<div class="legend"><span><i style="border:2px solid var(--navy)"></i>แผน</span><span><i style="background:var(--ok)"></i>ตรงแผน</span><span><i style="background:var(--warn)"></i>ล่าช้า</span><span><i style="background:var(--bad)"></i>ยอดไม่ถึง</span><span><i style="background:var(--blue)"></i>กำลังเดิน</span><span><i style="background:#8D6E63"></i>นอกแผน</span></div>`;return o}
+function table(L,extra){return `<div class="scroll" style="margin-top:12px"><table><tr><th>งาน</th><th>แผน เริ่ม → จบ</th><th>จริง เริ่ม → จบ</th><th>Δ จบ</th><th>แผน (t)</th><th>Coater (t)</th><th>%</th><th>Rate จริง / Std</th><th>ชม.เดิน แผน / จริง</th><th>DT</th><th>สถานะ</th></tr>`
+  +L.map(({b,a})=>{const v=verdict(b,a),de=a.ae?Math.round((a.ae-end(b))/MN):null;return `<tr><td>${esc(b.k==="P"?c97(b.pid)+" · "+name(b):name(b))}${a.lot?` <span class="note">lot ${esc(a.lot)}</span>`:""}</td><td>${fdt(b.s)} → ${fdt(end(b))}</td><td>${a.as?fdt(a.as)+" → "+(a.ae?fdt(a.ae):"…"):"–"}</td>
+  <td class="n">${de===null?"–":(de>0?"+":de<0?"−":"")+fhm(Math.abs(de))}</td><td class="n">${b.k==="P"?b.q:"–"}</td><td class="n">${a.aq!=null?a.aq:"–"}</td><td class="n">${b.k==="P"&&a.aq!=null?(a.aq/b.q*100).toFixed(0)+"%":"–"}</td>
+  <td class="n">${a.rate!=null&&!a.bad?a.rate.toFixed(2)+" / "+b.cap:"–"}</td><td class="n">${b.k==="P"?fhm(dur(b))+" / "+(a.run!=null?fhm(a.run):"–"):fhm(b.d)+" / –"}</td><td class="n">${a.dt!=null?fhm(a.dt):"–"}</td>
+  <td><span class="chip" style="background:${v[1]}">${v[0]}</span>${a.bad?` <span class="chip warn2" title="ชม.เดินจาก Extruder_Runtime ไม่สอดคล้องกับยอด Coater — ตรวจ Extruder_Number/เวลาที่บันทึก">ตรวจข้อมูลเวลา</span>`:""}</td></tr>`}).join("")
+  +extra.map(l=>`<tr><td>${esc(c97(l.p||""))} · ${esc(PM[l.p]?PM[l.p][1]:l.p||"")} <span class="note">lot ${esc(l.lot||"")}</span></td><td>–</td><td>${fdt(l.as)} → ${l.last?fdt(l.ae):"…"}</td><td class="n">–</td><td class="n">–</td><td class="n">${l.kg!=null?(l.kg/1000).toFixed(1):"–"}</td><td class="n">–</td><td class="n">–</td><td class="n">– / ${fhm(l.run*60)}</td><td class="n">${fhm((l.pd+l.md)*60)}</td><td><span class="chip" style="background:#8D6E63">นอกแผน</span></td></tr>`).join("")+`</table></div>`}
+function sumRange(){const f=new Date($("#sF").value+"T08:00").getTime(),t=new Date($("#sT").value+"T08:00").getTime()+24*H;return [f,t]}
+function summary(){const [f,t]=sumRange();if(!(t>f))return;S.cf=f;S.ct=t;
+  const L=B.filter(b=>b.s<t&&end(b)>f).sort((a,b)=>a.s-b.s).map(b=>({b,a:null})),lots=S.act&&S.act.f===f&&S.act.t===t?S.act.lots.map(l=>Object.assign({used:false},l)):[];
+  L.filter(x=>x.b.k==="P").forEach(x=>{let best=null,bd=3*24*H;lots.forEach(l=>{if(l.used||l.x!==x.b.ext||l.p!==x.b.pid)return;const d=Math.abs(l.as-x.b.s);if(d<bd){bd=d;best=l}});if(best)best.used=true;x.lot=best});
+  L.forEach(x=>x.a=actual(x.b,x.lot));const extra=lots.filter(l=>!l.used);
+  $("#kpis").innerHTML=kpis(L,EX,f,t);
+  $("#exc").innerHTML=(S.act&&S.act.f===f&&S.act.t===t?"":`<p class="note" style="margin:0 0 10px">ยังไม่ได้ดึงข้อมูลจริงของช่วงนี้ — กด "ดึงข้อมูล Actual"</p>`)+EX.map(e=>{const l=L.filter(x=>x.b.ext===e),ex=extra.filter(x=>x.x===e);return `<div class="card exc"><h2>${e}<span class="sp" style="flex:1"></span><button class="btn g xbtn" data-xe="${e}" data-html2canvas-ignore>ส่งออกรูป</button></h2><div class="kpis sm">${kpis(l,[e],f,t)}</div>
+    <div class="exg"><div><h3>Plan vs Actual ตามเวลา</h3>${timeline(l,f,t,ex)}</div><div><h3>Pareto downtime ที่เกิด</h3>${pareto([e])}</div></div>${table(l,ex)}</div>`}).join("")}
+async function loadActual(){const [f,t]=sumRange();if(!(t>f)||t-f>32*24*H)return toast("เลือกช่วงไม่เกิน 31 วัน");$("#sLoad").disabled=true;toast("กำลังดึงข้อมูลจริง…");
+  try{await ensure(f,t);const r=await rpc("ext_plan_actual",{p_tok:S.tok,p_from:new Date(f).toISOString(),p_to:new Date(t).toISOString()});
+    if(!r.ok)return toast("ดึงข้อมูลไม่สำเร็จ: "+r.error);S.act={f,t,lots:r.lots||[],par:r.par||[]};summary();status();toast(`ดึงข้อมูลจริงแล้ว (${(r.lots||[]).length} lot)`)}finally{$("#sLoad").disabled=false}}
+{const d=x=>{const z=new Date(x-8*H);return z.getFullYear()+"-"+pad(z.getMonth()+1)+"-"+pad(z.getDate())};$("#sF").value=d(S.vs);$("#sT").value=d(Date.now())}
+$("#sLoad").onclick=loadActual;
+["#sF","#sT"].forEach(id=>$(id).onchange=summary);
+document.querySelectorAll(".tabs button").forEach(x=>x.onclick=()=>{document.querySelectorAll(".tabs button").forEach(y=>y.classList.toggle("on",y===x));
+  const t=x.dataset.t;$("#vPlan").hidden=t!=="plan";$("#vBat").hidden=t!=="bat";$("#vSum").hidden=t!=="sum";if(t==="sum"){summary();if(!S.act)loadActual()}if(t==="bat")batch()});
+$("#theme").onclick=()=>{const r=document.documentElement,d=r.dataset.theme!=="dark";r.dataset.theme=d?"dark":"light";$("#theme").textContent=d?"โหมดสว่าง":"โหมดมืด"};
+const SB={URL:"https://kdytxuufvigwjccebrki.supabase.co",KEY:"sb_publishable_IYCMIaN7tJleWINprA42CQ_dX10sXFF"};
+async function rpc(fn,body){let r;try{r=await fetch(SB.URL+"/rest/v1/rpc/"+fn,{method:"POST",cache:"no-store",headers:{apikey:SB.KEY,Authorization:"Bearer "+SB.KEY,"Content-Type":"application/json"},body:JSON.stringify(body||{})})}
+  catch(e){return {ok:false,error:"เชื่อมต่อไม่ได้ ตรวจสัญญาณเน็ต"}}
+  const t=await r.text();S.net.n++;S.net.kb+=new Blob([t]).size/1024;let j=null;try{j=JSON.parse(t)}catch(e){return {ok:false,error:"HTTP "+r.status}}
+  if(j&&j.error==="AUTH")gate("หมดเวลาใช้งาน — กลับไปที่ BFL Production Hub แล้วเปิด \"แผนเดินเครื่อง\" ใหม่");return j||{ok:false,error:"ไม่มีข้อมูลตอบกลับ"}}
+const gate=t=>{$("#gateT").textContent=t;$("#gate").hidden=false};
+async function start(){const q=new URLSearchParams(location.search),tk=q.get("hub");
+  if(tk){try{history.replaceState(null,"",location.pathname)}catch(e){}const r=await rpc("ep_open",{p_ticket:tk});
+    if(!r.ok)return gate(r.error==="ticket"?"ตั๋วเข้าใช้หมดอายุ — กลับไปที่ Hub แล้วกด \"แผนเดินเครื่อง\" ใหม่":r.error==="user"?"บัญชีนี้ยังไม่ได้รับสิทธิ์ใช้แผนเดินเครื่อง — แจ้ง Admin":"เปิดจาก Hub ไม่สำเร็จ: "+r.error);
+    S.tok=r.tok;try{sessionStorage.setItem("ep_tok",JSON.stringify({t:r.tok,exp:r.exp}))}catch(e){}}
+  else{try{const x=JSON.parse(sessionStorage.getItem("ep_tok")||"null");if(x&&x.exp>Date.now())S.tok=x.t}catch(e){}}
+  if(!S.tok)return gate("เปิดหน้านี้จาก BFL Production Hub (login ครั้งเดียว) → แอป \"แผนเดินเครื่อง\"");
+  let mc=null;try{mc=JSON.parse(localStorage.getItem("ep_m")||"null")}catch(e){}
+  const [a,b]=rangeW(S.vs,S.vs+S.days*24*H),r=await rpc("ep_boot",{p_tok:S.tok,p_have:mc?mc.h:"",p_from:a,p_to:b});
+  if(!r.ok)return r.error==="AUTH"?null:gate("โหลดไม่สำเร็จ: "+r.error);
+  const m=r.m||(mc&&mc.m);if(!m){try{localStorage.removeItem("ep_m")}catch(e){}return gate("โหลด master ไม่สำเร็จ — รีเฟรชหน้า")}
+  if(r.m){try{localStorage.setItem("ep_m",JSON.stringify({h:r.h,m:r.m}))}catch(e){}}
+  setMasters(m);S.me=r.name;S.ro=!r.edit;document.body.classList.toggle("ro",S.ro);$("#who").textContent=r.name+" · "+(S.ro?"ดูอย่างเดียว":"แก้ไขได้");
+  ingest(r.plans,a,b);fix();baseline();side();gantt();$("#gate").hidden=true}
+start();
+}
+</script>
+</body>
+</html>
