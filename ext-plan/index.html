@@ -69,6 +69,8 @@ input:focus,select:focus,button:focus-visible{outline:2px solid var(--blue);outl
 .blk .b{background:var(--yP);padding:2px 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600}
 .blk.D{display:flex;align-items:center;justify-content:center;background:var(--red);color:#fff;font-weight:600;text-align:center;line-height:1.15;padding:2px}
 .blk.D.cl{background:var(--dred);color:#FFE45C}.blk.D.rd{background:#2E7D32;color:#fff}.blk.D.gy{background:var(--gray);color:#fff}
+.blk.cutl{border-left:3px dashed #0007;border-top-left-radius:0;border-bottom-left-radius:0}.blk.cutr{border-right:3px dashed #0007;border-top-right-radius:0;border-bottom-right-radius:0}
+.exday{margin-bottom:14px}.exdh{font-size:15px;font-weight:700;margin:0 0 6px;color:var(--navy)}:root[data-theme=dark] .exdh{color:#fff}
 .blk.pin::before{content:"";position:absolute;left:0;top:0;border-top:12px solid #162C9A;border-right:12px solid transparent;z-index:1}.blk.late{outline:3px dashed var(--bad);outline-offset:1px}
 .bc input.pinned{background:#DCEBFF;font-weight:600}.bc input.autot{color:#8a8a8a}.bc input.firstt{outline:2px solid var(--blue);outline-offset:-2px;font-weight:600}.bc-e{font-size:11px;display:flex;align-items:center;justify-content:center;gap:4px;color:#444}.bc-e button{border:0;background:none;color:#0B4FBF;text-decoration:underline;font:inherit;font-size:11px;cursor:pointer;padding:0}
 .blk.sel{outline:3px solid var(--blue);outline-offset:1px;z-index:4}.blk.ov{outline:3px dashed var(--bad);outline-offset:1px}
@@ -218,6 +220,8 @@ const $=s=>document.querySelector(s),esc=s=>String(s).replace(/[&<>"']/g,c=>({"&
 const pad=n=>String(n).padStart(2,"0"),fd=t=>{const d=new Date(t);return d.getDate()+"-"+TM[d.getMonth()]},ft=t=>{const d=new Date(t);return d.getHours()+":"+pad(d.getMinutes())};
 const fdt=t=>fd(t)+" "+ft(t),fhm=m=>{m=Math.round(m);return Math.floor(m/60)+":"+pad(m%60)},dl=t=>{const d=new Date(t);return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate())+"T"+pad(d.getHours())+":"+pad(d.getMinutes())};
 const snap=t=>Math.round(t/(15*MN))*15*MN,uid=()=>"b"+(++S.idn);
+const hhmm=m=>{m=Math.round(m);return pad(Math.floor(m/60))+":"+pad(m%60)},pdur=v=>{v=String(v||"").trim();let m=v.match(/^(\d{1,2})[:.](\d{2})$/);
+  if(m)return +m[1]*60+ +m[2];m=v.match(/^\d+(\.\d+)?$/);return m?Math.round(+v*60):NaN};
 const short=p=>p.replace(/^EX-/,""),cls=p=>/เคลียร์/.test(p)?"cl":/แจ้งระบบพร้อม/.test(p)?"rd":!RM[p]||RM[p][2]==="std"?"":RM[p]&&RM[p][2]==="pd"?"pdc":RM[p]&&RM[p][2]==="md"?"mdc":"gy";
 const dur=b=>b.k==="P"?Math.round(b.q/b.cap*60):b.d,end=b=>b.s+dur(b)*MN;
 const S={vs:(()=>{const d=new Date(Date.now()-8*36e5);d.setHours(8,0,0,0);return d.getTime()-24*36e5})(),days:3,pxh:44,sel:null,dirty:0,hist:[],net:{n:0,kb:0},W:{},tok:null,ro:true,me:"",act:null,mode:{ext:"EXT-1",k:"P",start:"tail",pk:""},idn:0,bs:1200,std:true};
@@ -253,13 +257,14 @@ function build(a0){const std=S.std,pool={rdy:[],co:[],end:[],clr:[]};if(std)a0.f
   const sk=(p,k)=>p&&p.sk&&p.sk[k];
   const close=e=>{if(run){if(!sk(lastP,"end"))put(take("end",e));if(!sk(lastP,"clr"))put(take("clr",e));run=false}};
   items.forEach(x=>{const pin=x.k==="P"?x.pin:null;
-    if(!std){put(x,pin);x.late=pin!=null&&x.s>pin;return}
+    if(!std){put(x,x.pin);x.late=x.pin!=null&&x.s>x.pin;return}
     if(x.k==="P"){const dd=(r,p)=>pool[r][0]?pool[r][0].d:RM[p][1],gap=pin!=null&&pin-cur>=(dd("end",CO)+dd("clr",CLR)+dd("rdy",RDY))*MN;   // ว่างพอ หยุด+เคลียร์+แจ้งพร้อม → ปิดรอบ · ไม่พอ = รอ
       if(run&&(x.tr==="clr"||gap))close(x.ext);
       if(!run){if(!sk(x,"rdy")){const r=take("rdy",x.ext);put(r,pin!=null?pin-r.d*MN:null)}run=true}
       else if(lastP&&x.tr!=="run"&&!since.some(d=>RM[d.proc]&&RM[d.proc][2]==="std"))put(take("co",x.ext));   // มีหยุด/เคลียร์ที่เพิ่มเองคั่นแล้ว ไม่ใส่จบเบอร์ซ้ำ
       put(x,pin);x.late=pin!=null&&x.s>pin;lastP=x;since=[]}
-    else if(RM[x.proc]&&RM[x.proc][2]==="pl"){close(x.ext);put(x);lastP=null;since=[]}else{put(x);since.push(x)}});
+    else if(RM[x.proc]&&RM[x.proc][2]==="pl"){close(x.ext);put(x,x.pin);x.late=x.pin!=null&&x.s>x.pin;lastP=null;since=[]}
+    else{put(x,x.pin);x.late=x.pin!=null&&x.s>x.pin;since.push(x)}});
   close(a0[0].ext);return o}
 function fix(){for(const e of EX){let a=lane(e);if(!a.length)continue;
   if($("#rip").checked){a=build(a);a.forEach(x=>x.ov=false);setLane(e,a)}
@@ -268,30 +273,34 @@ function setPin(b,t){const L=lane(b.ext),i=L.indexOf(b),d=t-b.s;L.slice(i).forEa
   const pv=L[i-1];if(pv&&b.s<=pv.s){const dd=pv.s+1-b.s;L.slice(i).forEach(x=>x.s+=dd)}}
 function tailOf(e){const L=B.filter(b=>b.ext===e);return L.length?Math.max(...L.map(end)):snap(Date.now())}
 // ---- Gantt ----
-function gantt(){
-  const hrs=S.days*24,W=hrs*S.pxh,ve=S.vs+hrs*H,g=$("#g");let h="";
-  g.style.width=W+"px";g.style.height=HD+GH*2+14+"px";
-  for(let t=S.vs;t<ve;){const d=new Date(t);d.setHours(24,0,0,0);const e=Math.min(d.getTime(),ve);h+=`<div class="dh" style="left:${(t-S.vs)/H*S.pxh}px;width:${(e-t)/H*S.pxh}px">${fd(t)}</div>`;t=e}
-  for(let i=0;i<hrs;i++){const hr=new Date(S.vs+i*H).getHours();h+=`<div class="hh" style="left:${i*S.pxh}px;width:${S.pxh}px">${S.pxh>=30||hr%2==0?hr+":00":""}</div>`;
-    h+=`<div class="vl ${hr==8?"pd":hr%8==0?"sh":""}" style="left:${i*S.pxh}px"></div>`}
-  EX.forEach((e,i)=>h+=`<div class="lane" style="top:${HD+i*GH}px;width:${W}px"></div>`);
-  for(const b of B){if(end(b)<=S.vs||b.s>=ve)continue;const x=(b.s-S.vs)/H*S.pxh,w=Math.max(dur(b)/60*S.pxh,6),y=HD+EX.indexOf(b.ext)*GH+2,c=(S.sel===b.id?" sel":"")+(b.ov?" ov":"");
-    h+=b.k==="P"?`<div class="blk${c}${b.tr==="run"?" cont":""}${b.pin!=null?" pin":""}${b.late?" late":""}" data-id="${b.id}" style="left:${x}px;width:${w}px;top:${y}px"><div class="t">Cap ${b.cap} t/hr · ${bt(b)} B${b.pk?`<i>${b.pk.replace("PACK-","Pack ")}</i>`:""}</div><div class="b">${esc(name(b))} (${b.q} t)</div>${w>=20?'<div class="rs"></div>':""}<button class="bx bxa" data-addafter="${b.id}" title="เพิ่ม Runtime ต่อจากงานนี้">+</button></div>`
-    :`<div class="blk D ${cls(b.proc)}${c}" data-id="${b.id}" style="left:${x}px;width:${w}px;top:${y}px">${w>40?esc(short(b.proc)):""}${w>=20?'<div class="rs"></div>':""}<button class="bx bxa" data-addafter="${b.id}" title="เพิ่ม Runtime ต่อจากนี้">+</button><button class="bx bxd" data-rm="${b.id}" title="ลบ ${esc(short(b.proc))}">−</button></div>`}
-  const n=Date.now();if(n>S.vs&&n<ve)h+=`<div class="now" style="left:${(n-S.vs)/H*S.pxh}px"></div>`;
-  g.innerHTML=h;$("#rng").textContent=fdt(S.vs)+" – "+fd(ve-1);
+function gantt(){const g=$("#g"),o=gHTML(S.vs,S.days,S.pxh,false);g.style.width=o.W+"px";g.style.height=HD+GH*2+14+"px";
+  g.innerHTML=o.h;$("#rng").textContent=fdt(S.vs)+" – "+fd(S.vs+S.days*24*H-1);
   document.querySelectorAll(".seg [data-d]").forEach(x=>x.classList.toggle("on",+x.dataset.d===S.days));
+  status();if(!$("#vBat").hidden)batch()}
+// ผัง Gantt เป็น HTML (cut = ตัดบล็อกที่ล้นขอบ ให้ชื่อสินค้าอยู่ในกรอบ — ใช้ตอนส่งออกรูปแบบแถวละวัน)
+function gHTML(vs,days,pxh,cut){
+  const hrs=days*24,W=hrs*pxh,ve=vs+hrs*H;let h="";
+  for(let t=vs;t<ve;){const d=new Date(t);d.setHours(24,0,0,0);const e=Math.min(d.getTime(),ve);h+=`<div class="dh" style="left:${(t-vs)/H*pxh}px;width:${(e-t)/H*pxh}px">${fd(t)}</div>`;t=e}
+  for(let i=0;i<hrs;i++){const hr=new Date(vs+i*H).getHours();h+=`<div class="hh" style="left:${i*pxh}px;width:${pxh}px">${pxh>=30||hr%2==0?hr+":00":""}</div>`;
+    h+=`<div class="vl ${hr==8?"pd":hr%8==0?"sh":""}" style="left:${i*pxh}px"></div>`}
+  EX.forEach((e,i)=>h+=`<div class="lane" style="top:${HD+i*GH}px;width:${W}px"></div>`);
+  for(const b of B){if(end(b)<=vs||b.s>=ve)continue;let x=(b.s-vs)/H*pxh,w=Math.max(dur(b)/60*pxh,6);const y=HD+EX.indexOf(b.ext)*GH+2;let c=cut?"":(S.sel===b.id?" sel":"")+(b.ov?" ov":"");
+    if(cut){if(x<0){w+=x;x=0;c+=" cutl"}if(x+w>W){w=W-x;c+=" cutr"}}
+    h+=b.k==="P"?`<div class="blk${c}${b.tr==="run"?" cont":""}${b.pin!=null?" pin":""}${b.late?" late":""}" data-id="${b.id}" style="left:${x}px;width:${w}px;top:${y}px"><div class="t">Cap ${b.cap} t/hr · ${bt(b)} B${b.pk?`<i>${b.pk.replace("PACK-","Pack ")}</i>`:""}</div><div class="b">${esc(name(b))} (${b.q} t)</div>${w>=20?'<div class="rs"></div>':""}<button class="bx bxa" data-addafter="${b.id}" title="เพิ่ม Runtime ต่อจากงานนี้">+</button></div>`
+    :`<div class="blk D ${cls(b.proc)}${c}${b.pin!=null?" pin":""}${b.late?" late":""}" data-id="${b.id}" style="left:${x}px;width:${w}px;top:${y}px">${w>40?esc(short(b.proc)):""}${w>=20?'<div class="rs"></div>':""}<button class="bx bxa" data-addafter="${b.id}" title="เพิ่ม Runtime ต่อจากนี้">+</button><button class="bx bxd" data-rm="${b.id}" title="ลบ ${esc(short(b.proc))}">−</button></div>`}
+  const n=Date.now();if(n>vs&&n<ve)h+=`<div class="now" style="left:${(n-vs)/H*pxh}px"></div>`;
+  return {h,W}
   status();if(!$("#vBat").hidden)batch()}
 const wkOf=t=>{const d=new Date(t-8*H);d.setHours(0,0,0,0);d.setDate(d.getDate()-((d.getDay()+6)%7));return d.getTime()+8*H};
 const wkKey=w=>{const d=new Date(w);return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate())},wkT=k=>new Date(k+"T08:00:00").getTime();
 const isDef=b=>b.r&&S.std&&b.proc===DEF[b.r]&&RM[DEF[b.r]]&&b.d===RM[DEF[b.r]][1];
 function enc(b,w){const r={x:EX.indexOf(b.ext)+1,t:Math.round((b.s-w)/MN)};
   if(b.k==="P")Object.assign(r,{c:b.pid,q:b.q,cp:b.cap,pk:b.pk&&+b.pk.slice(-1),bs:b.bs,pl:b.pl,bd:b.bd,wo:b.wo,nt:b.nt,tr:b.tr!=="co"&&b.tr,pn:b.pin!=null?Math.round((b.pin-w)/MN):null,sk:b.sk?["rdy","end","clr"].filter(k=>b.sk[k]).map(k=>k[0]).join("")||null:null});
-  else Object.assign(r,{r:b.r,p:b.r&&b.proc===DEF[b.r]?undefined:b.proc,d:b.r&&RM[DEF[b.r]]&&b.d===RM[DEF[b.r]][1]?undefined:b.d});
+  else Object.assign(r,{r:b.r,p:b.r&&b.proc===DEF[b.r]?undefined:b.proc,d:b.r&&RM[DEF[b.r]]&&b.d===RM[DEF[b.r]][1]?undefined:b.d,pn:!b.r&&b.pin!=null?Math.round((b.pin-w)/MN):null});
   Object.keys(r).forEach(k=>{if(r[k]==null||r[k]===""||r[k]===false||r[k]===0&&k==="pk")delete r[k]});return r}
 function dec(r,w){const ext=EX[(r.x||1)-1],s=w+(r.t||0)*MN;
   if(r.c)return {id:uid(),ext,k:"P",pid:r.c,q:+r.q||1,cap:+r.cp||mcap(r.c)||3,pk:r.pk?"PACK-"+r.pk:"",bs:r.bs?(r.bs<50?r.bs*1000:r.bs):null,pl:r.pl||"",bd:r.bd||"",wo:r.wo||"",nt:r.nt||"",tr:r.tr||"co",pin:r.pn!=null?w+r.pn*MN:null,sk:r.sk?{rdy:r.sk.includes("r"),end:r.sk.includes("e"),clr:r.sk.includes("c")}:null,s};
-  const proc=r.p||(r.r?DEF[r.r]:"EX-ตามแผน-รอระบุ");return {id:uid(),ext,k:"D",r:r.r,proc,d:+r.d||(RM[proc]?RM[proc][1]:60),s}}
+  const proc=r.p||(r.r?DEF[r.r]:"EX-ตามแผน-รอระบุ");return {id:uid(),ext,k:"D",r:r.r,proc,d:+r.d||(RM[proc]?RM[proc][1]:60),pin:r.pn!=null?w+r.pn*MN:null,s}}
 const docW=w=>B.filter(b=>wkOf(b.s)===w&&!isDef(b)).sort((a,b)=>a.s-b.s).map(b=>enc(b,w));
 function changed(){const ks=new Set(Object.keys(S.W));B.forEach(b=>ks.add(wkKey(wkOf(b.s))));
   return [...ks].sort().filter(k=>JSON.stringify(docW(wkT(k)))!==((S.W[k]&&S.W[k].js)||"[]"))}
@@ -325,7 +334,7 @@ $("#g").addEventListener("pointermove",ev=>{const el=ev.target.closest(".blk");
   b.ext=ne;b.s=snap(drag.s0+dt);place(b);showTip(ev,`${b.ext} · วางที่ ${fdt(b.s)}`)});
 $("#g").addEventListener("pointerup",()=>{if(!drag)return;const d=drag;drag=null;tip.style.display="none";
   if(d.mv){S.hist.push(d.sn);S.dirty++;const b=d.b,lsh=d.first&&rip()&&b.ext===d.e0;
-    if(b.k==="P"&&rip()&&!lsh){b.pin=b.s;fix();const L=lane(b.ext),i=L.indexOf(b),pv=L[i-1],pp=pv&&pv.r==="rdy"?L[i-2]:pv,gap=pp?(pv.r==="rdy"?pv.s:b.s)-end(pp):1;
+    if((b.k==="P"||!b.r)&&rip()&&!lsh){b.pin=b.s;fix();const L=lane(b.ext),i=L.indexOf(b),pv=L[i-1],pp=pv&&pv.r==="rdy"?L[i-2]:pv,gap=pp?(pv.r==="rdy"?pv.s:b.s)-end(pp):1;
       if(b.late||gap<=0)b.pin=null;else toast(`กำหนดเริ่ม ${name(b)} ${fdt(b.pin)}`)}
     fix();if(S.sel===b.id)side()}else{S.sel=d.b.id;side()}gantt()});
 $("#g").addEventListener("pointerleave",()=>{if(!drag)tip.style.display="none"});
@@ -333,7 +342,7 @@ $("#g").addEventListener("pointerleave",()=>{if(!drag)tip.style.display="none"})
 const rtpop=$("#rtpop");let rtAfter=null;
 const RTC={std:"#E53935",pl:"#9AA3B5",pd:"#E08A00",md:"#7B1FA2"};
 function openRt(btn,id){if(S.ro)return;rtAfter=id;tip.style.display="none";const after=B.find(x=>x.id===id);
-  rtpop.innerHTML=`<div class="gh">เพิ่มต่อจาก: ${esc(name(after))}</div>`+Object.entries(RTG).map(([g,l])=>`<div class="gh">${l}</div>`+RT.filter(r=>r[2]===g).map(r=>`<button type="button" data-rt="${esc(r[0])}"><span class="r1"><span><i style="background:${/เคลียร์/.test(r[0])?"#A3100F":/แจ้งระบบ/.test(r[0])?"#2E7D32":RTC[g]}"></i>${esc(short(r[0]))}</span><span class="cap">${fhm(r[1])} ชม.</span></span></button>`).join("")).join("");
+  rtpop.innerHTML=`<div class="gh">เพิ่มต่อจาก: ${esc(name(after))}</div>`+Object.entries(RTG).map(([g,l])=>`<div class="gh">${l}</div>`+RT.filter(r=>r[2]===g).map(r=>`<button type="button" data-rt="${esc(r[0])}"><span class="r1"><span><i style="background:${/เคลียร์/.test(r[0])?"#A3100F":/แจ้งระบบ/.test(r[0])?"#2E7D32":RTC[g]}"></i>${esc(short(r[0]))}</span><span class="cap">${hhmm(r[1])} ชม.</span></span></button>`).join("")).join("");
   rtpop.hidden=false;const r=btn.getBoundingClientRect(),w=300;rtpop.style.width=w+"px";rtpop.style.left=Math.max(8,Math.min(r.left-w/2,innerWidth-w-8))+"px";
   const h=Math.min(rtpop.scrollHeight,340);rtpop.style.top=(r.bottom+h+6>innerHeight&&r.top>h?r.top-h-4:r.bottom+4)+"px"}
 function addRt(proc,afterId){const a=B.find(x=>x.id===afterId);if(!a||!RM[proc])return;push();
@@ -368,7 +377,7 @@ const rtOpts=sel=>Object.entries(RTG).map(([g,l])=>`<optgroup label="${l}">`+RT.
 const seg=(id,opts,v)=>`<div class="seg" id="${id}">`+opts.map(([k,l])=>`<button type="button" data-v="${k}" class="${k===v?"on":""}">${l}</button>`).join("")+"</div>";
 const trOpts=v=>Object.entries(TR).map(([k,l])=>`<option value="${k}"${k===(v||"co")?" selected":""}>${l}</option>`).join("");
 const RL={rdy:"แจ้งพร้อมเดิน (เริ่มรอบ)",co:"เปลี่ยนเบอร์ระหว่างสินค้า",end:"หยุดเครื่อง (จบรอบ)",clr:"เคลียร์ระบบลำเลียง (จบรอบ)"};
-function side(){const b=S.sel&&B.find(x=>x.id===S.sel),m=b?{ext:b.ext,k:b.k,pk:b.pk||"",start:b.k==="P"?(b.pin!=null?"set":"tail"):"set"}:S.mode,k=m.k,auto=b&&b.r&&S.std;
+function side(){const b=S.sel&&B.find(x=>x.id===S.sel),m=b?{ext:b.ext,k:b.k,pk:b.pk||"",start:b.pin!=null?"set":"tail"}:S.mode,k=m.k,auto=b&&b.r&&S.std;
   const pid=b&&b.k==="P"?b.pid:($("#fP")&&!b?$("#fP").value:(P[0]||[""])[0]),cap=b&&b.k==="P"?b.cap:(mcap(pid)||3),proc=b&&b.k==="D"?b.proc:((RT.find(r=>r[2]==="pl")||RT[0])[0]);
   if(S.ro&&!b){$("#side").innerHTML=`<h2>ดูอย่างเดียว</h2><p class="note">บัญชีนี้ดูแผนได้อย่างเดียว · คลิกบล็อกเพื่อดูรายละเอียด · ขอสิทธิ์แก้ไขจาก Admin (Hub → ผู้ใช้ → แผนเดินเครื่อง = แก้ไขแผนได้)</p>`;return}
   $("#side").innerHTML=`<h2>${b?(S.ro?"รายละเอียด":auto?"บล็อกมาตรฐาน":"แก้ไขงาน"):"เพิ่มงานลงแผน"}</h2>
@@ -383,10 +392,12 @@ function side(){const b=S.sel&&B.find(x=>x.id===S.sel),m=b?{ext:b.ext,k:b.k,pk:b
     <div><label for="fT">ก่อนงานนี้</label><select id="fT">${trOpts(b?b.tr:"co")}</select></div></div>
     <label>สายแพค (ไม่บังคับ)</label>${seg("fPk",[["","ไม่ระบุ"],["PACK-3","Pack 3"],["PACK-4","Pack 4"]],m.pk||"")}`
   :`<label for="fR">Runtime type</label><select id="fR">${rtOpts(proc)}</select>
-    <label for="fD">ระยะเวลา (ชม.)</label><input id="fD" type="number" min="0.25" step="0.25" value="${(b?b.d:RM[proc][1])/60}">`}
-  ${auto?"":`<label>เวลาเริ่ม Extruder</label>${b&&k!=="P"?"":seg("fSt",[["tail",b?"ต่อจากงานก่อนหน้า":"ต่อท้ายงานล่าสุด"],["set","กำหนดวัน-เวลา"]],m.start)}
-  <input id="fS" type="datetime-local" step="900" value="${dl(b?(b.pin!=null?b.pin:b.s):tailOf(m.ext))}" ${(!b||k==="P")&&m.start==="tail"?"disabled":""} style="margin-top:6px">
-  ${k==="P"?`<div class="hint"><span>กำหนดวัน-เวลา = วางล่วงหน้าได้ (เว้นช่องว่าง) · งานตามหลังต่อจากงานนี้</span></div>`:""}${b&&b.late?`<div class="hint"><span class="bd">เลยเวลาที่กำหนด ${fdt(b.pin)} — งานก่อนหน้ายังไม่จบ (เริ่มจริง ${fdt(b.s)})</span></div>`:""}`}
+    <label for="fD">ระยะเวลา (ชม.:นาที)</label><input id="fD" list="durs" inputmode="numeric" placeholder="01:00" value="${hhmm(b?b.d:RM[proc][1])}" style="font-size:18px;font-weight:600;letter-spacing:1px">
+    <datalist id="durs">${[15,30,45,60,90,120,180,240,300,360,480,600,720,960,1440].map(x=>`<option value="${hhmm(x)}">`).join("")}</datalist>
+    <div class="hint"><span>พิมพ์เป็น ชม.:นาที เช่น 00:45, 01:00, 08:00 หรือเลือกจากรายการ</span></div>`}
+  ${auto?"":`<label>${k==="P"?"เวลาเริ่ม Extruder":"เวลาเริ่มหยุด"}</label>${seg("fSt",[["tail",b?"ต่อจากงานก่อนหน้า":"ต่อท้ายงานล่าสุด"],["set","กำหนดวัน-เวลา"]],m.start)}
+  <input id="fS" type="datetime-local" step="900" value="${dl(b?(b.pin!=null?b.pin:b.s):tailOf(m.ext))}" ${m.start==="tail"?"disabled":""} style="margin-top:6px">
+  <div class="hint"><span>${k==="P"?"กำหนดวัน-เวลา = วางล่วงหน้าได้ (เว้นช่องว่าง) · งานตามหลังต่อจากงานนี้":"กำหนดวัน-เวลา = หยุดตรงเวลานั้น (เช่น วันหยุด/ซ่อมบำรุง) · งานตามหลังต่อจากนี้"}</span></div>${b&&b.late?`<div class="hint"><span class="bd">เลยเวลาที่กำหนด ${fdt(b.pin)} — งานก่อนหน้ายังไม่จบ (เริ่มจริง ${fdt(b.s)})</span></div>`:""}`}
   ${b&&b.k==="P"&&b.sk&&(b.sk.rdy||b.sk.end||b.sk.clr)?`<div class="hint" style="margin-top:8px"><span>ปิดไว้: ${[b.sk.rdy&&"แจ้งพร้อมเดิน (ก่อนงานนี้)",b.sk.end&&"หยุดเครื่อง (ท้ายรอบ)",b.sk.clr&&"เคลียร์ระบบลำเลียง (ท้ายรอบ)"].filter(Boolean).join(" · ")}</span><a id="fSk">คืนลำดับมาตรฐาน</a></div>`:""}
   <div class="prev" id="fPv"></div>
   ${b&&!S.ro?`<button class="btn g" id="fAddRt" style="width:100%;margin-top:12px;border-color:var(--blue);color:var(--blue)">+ เพิ่ม Runtime ต่อจากนี้</button>`:""}
@@ -395,11 +406,11 @@ function side(){const b=S.sel&&B.find(x=>x.id===S.sel),m=b?{ext:b.ext,k:b.k,pk:b
 function capHint(){const p=$("#fP"),c=$("#fC");if(!p)return;const ms=mcap(p.value),v=+c.value;if(!p.value){$("#fM").textContent="";return}if(ms==null){$("#fM").textContent="ไม่มีใน master";return}
   $("#fM").innerHTML=`master ${ms} t/hr`+(v>0&&v!==ms?` · <a id="fRs">ใช้ค่า master</a> · ${S.ro?"":`<a id="fUp">อัปเดต master เป็น ${v}</a>`}`:"")}
 function vals(){const g=id=>$(id),on=id=>g(id)&&g(id).querySelector(".on").dataset.v,b=S.sel&&B.find(x=>x.id===S.sel);
-  return {ext:g("#fE")?on("#fE"):b.ext,k:g("#fP")?"P":"D",pid:g("#fP")&&g("#fP").value,q:g("#fQ")&&+g("#fQ").value,cap:g("#fC")&&+g("#fC").value,pk:on("#fPk"),proc:g("#fR")&&g("#fR").value,d:g("#fD")&&Math.round(+g("#fD").value*60),
+  return {ext:g("#fE")?on("#fE"):b.ext,k:g("#fP")?"P":"D",pid:g("#fP")&&g("#fP").value,q:g("#fQ")&&+g("#fQ").value,cap:g("#fC")&&+g("#fC").value,pk:on("#fPk"),proc:g("#fR")&&g("#fR").value,d:g("#fD")&&pdur(g("#fD").value),
     bs:g("#fB")&&(+g("#fB").value||null),tr:g("#fT")&&g("#fT").value,set:!!g("#fS")&&!g("#fS").disabled,
     s:!g("#fS")?b.s:g("#fS").disabled?(b?b.s:tailOf(on("#fE"))):snap(new Date(g("#fS").value).getTime())}}
-function preview(){const v=vals(),m=v.k==="P"?(v.q>0&&v.cap>0?Math.round(v.q/v.cap*60):0):v.d;
-  $("#fPv").innerHTML=m?`ใช้เวลา <b>${fhm(m)} ชม.</b>${v.k==="P"?` (${v.q} t ÷ ${v.cap} t/hr) · ≈ ${Math.round(v.q*1000/(v.bs||S.bs))} batch`:""}<br>เริ่ม ${fdt(v.s)} → จบ <b>${fdt(v.s+m*MN)}</b>`:`<span class="bd">กรอกจำนวนและ Std Cap ให้มากกว่า 0</span>`}
+function preview(){const v=vals(),m=v.k==="P"?(v.q>0&&v.cap>0?Math.round(v.q/v.cap*60):0):(v.d>0?v.d:0);
+  $("#fPv").innerHTML=m?`ใช้เวลา <b>${fhm(m)} ชม.</b>${v.k==="P"?` (${v.q} t ÷ ${v.cap} t/hr) · ≈ ${Math.round(v.q*1000/(v.bs||S.bs))} batch`:""}<br>เริ่ม ${fdt(v.s)} → จบ <b>${fdt(v.s+m*MN)}</b>`:`<span class="bd">${v.k==="P"?"กรอกจำนวนและ Std Cap ให้มากกว่า 0":"ระยะเวลาไม่ถูกต้อง — พิมพ์เป็น ชม.:นาที เช่น 01:00"}</span>`}
 function bindSide(b){
   document.querySelectorAll("#side .seg").forEach(sg=>sg.addEventListener("click",ev=>{const bt=ev.target.closest("button");if(!bt)return;
     sg.querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===bt));const v=bt.dataset.v;
@@ -416,7 +427,8 @@ function bindSide(b){
       ask(`อัปเดต Std Cap ของ ${PM[pid][1]} (${pid}) จาก ${PM[pid][2]/1000} เป็น ${v} t/hr ใน Product_Detail?`,"มีผลกับการวางแผนครั้งต่อไปของทุกคน · งานที่อยู่ในแผนแล้วไม่เปลี่ยน","ยืนยันอัปเดต").then(async a=>{if(a!=="y")return;
         const r=await rpc("ext_plan_cap",{p_tok:S.tok,p_product:pid,p_cap:Math.round(v*1000)});if(!r.ok)return toast("อัปเดตไม่สำเร็จ: "+r.error);
         PM[pid][2]=Math.round(v*1000);try{localStorage.removeItem("ep_m")}catch(e){}capHint();status();toast(`อัปเดต master แล้ว: ${pid} = ${v} t/hr`)})}});
-  const r=$("#fR");if(r)r.addEventListener("change",()=>{$("#fD").value=RM[r.value][1]/60;if(b)apply(b);preview()});
+  const r=$("#fR");if(r)r.addEventListener("change",()=>{$("#fD").value=hhmm(RM[r.value][1]);if(b)apply(b);preview()});
+  const fdu=$("#fD");if(fdu)fdu.addEventListener("change",()=>{const m=pdur(fdu.value);if(m>0)fdu.value=hhmm(m)});
   ["#fQ","#fC","#fD","#fS","#fB"].forEach(id=>{const e=$(id);if(e){e.addEventListener("input",()=>{preview();if(id==="#fC")capHint()});if(b)e.addEventListener("change",()=>apply(b))}});
   const t=$("#fT");if(t&&b)t.addEventListener("change",()=>apply(b));
   if(b){const d=$("#fDel");if(d)d.onclick=()=>delBlock(b);const ar=$("#fAddRt");if(ar)ar.onclick=()=>openRt(ar,b.id);const k=$("#fSk");if(k)k.onclick=()=>{push();b.sk=null;fix();side();gantt()};const st=$("#fStd");if(st)st.onclick=()=>{push();b.proc=DEF[b.r];b.d=RM[b.proc][1];fix();side();gantt()};$("#fOk").onclick=()=>{S.sel=null;side();gantt()}}
@@ -425,12 +437,12 @@ function delBlock(b){if(S.ro)return;if(b.r&&S.std){if(b.r==="co"){const L=lane(b
   else{const L=lane(b.ext),i=L.indexOf(b),p=b.r==="rdy"?L.slice(i+1).find(x=>x.k==="P"):L.slice(0,i).reverse().find(x=>x.k==="P");
     if(p){push();p.sk=Object.assign({},p.sk,{[b.r]:true});S.sel=null;fix();side();gantt();toast(`ลบ ${short(b.proc)} แล้ว — คืนได้ที่งาน ${name(p)} (คืนลำดับมาตรฐาน) หรือกดย้อนกลับ`)}}return}
   push();B=B.filter(x=>x!==b);S.sel=null;fix();side();gantt()}
-function apply(b){if(S.ro)return;const v=vals();if(v.k==="P"&&(!PM[v.pid]||!(v.q>0&&v.cap>0)))return;push();const L=lane(b.ext),first=rip()&&L[0]===b&&v.ext===b.ext,d=v.s-b.s;
+function apply(b){if(S.ro)return;const v=vals();if(v.k==="P"&&(!PM[v.pid]||!(v.q>0&&v.cap>0)))return;if(v.k==="D"&&!(v.d>0))return toast("ระยะเวลาไม่ถูกต้อง — พิมพ์เป็น ชม.:นาที เช่น 01:00");push();const L=lane(b.ext),first=rip()&&L[0]===b&&v.ext===b.ext,d=v.s-b.s;
   if(v.k==="P"){Object.assign(b,{ext:v.ext,pid:v.pid,q:v.q,cap:v.cap,pk:v.pk,bs:v.bs,tr:v.tr});if(v.set){if(v.ext!==L[0].ext||b.pin!==v.s)setPin(b,v.s)}else b.pin=null}
-  else{Object.assign(b,{ext:v.ext,proc:v.proc,d:v.d});if(first)L.forEach(x=>{x.s+=d;if(x.pin!=null)x.pin+=d});else b.s=v.s}
+  else{Object.assign(b,{ext:v.ext,proc:v.proc,d:v.d});if(v.set){if(b.pin!==v.s)setPin(b,v.s)}else b.pin=null}
   fix();gantt();if(b.late)toast(`เลยเวลาที่กำหนด — งานก่อนหน้ายังไม่จบ เริ่มได้ ${fdt(b.s)}`);side()}
-function add(){if(S.ro)return;const v=vals();if(v.k==="P"&&!PM[v.pid])return toast("เลือกสินค้าจากรายการก่อน");if(v.k==="P"&&!(v.q>0&&v.cap>0))return toast("กรอกจำนวนและ Std Cap ก่อน");push();
-  const nb=v.k==="P"?{id:uid(),ext:v.ext,k:"P",pid:v.pid,q:v.q,cap:v.cap,pk:v.pk,nt:"",pl:"",bd:"",wo:"",bs:v.bs,tr:v.tr,pin:v.set?v.s:null,s:v.s+1}:{id:uid(),ext:v.ext,k:"D",proc:v.proc,d:v.d,s:v.s+1};B.push(nb);fix();
+function add(){if(S.ro)return;const v=vals();if(v.k==="P"&&!PM[v.pid])return toast("เลือกสินค้าจากรายการก่อน");if(v.k==="P"&&!(v.q>0&&v.cap>0))return toast("กรอกจำนวนและ Std Cap ก่อน");if(v.k==="D"&&!(v.d>0))return toast("ระยะเวลาไม่ถูกต้อง — พิมพ์เป็น ชม.:นาที เช่น 01:00");push();
+  const nb=v.k==="P"?{id:uid(),ext:v.ext,k:"P",pid:v.pid,q:v.q,cap:v.cap,pk:v.pk,nt:"",pl:"",bd:"",wo:"",bs:v.bs,tr:v.tr,pin:v.set?v.s:null,s:v.s+1}:{id:uid(),ext:v.ext,k:"D",proc:v.proc,d:v.d,pin:v.set?v.s:null,s:v.s+1};B.push(nb);fix();
   if(nb.s<S.vs||nb.s>S.vs+S.days*24*H)S.vs=new Date(nb.s).setHours(8,0,0,0);$("#fS").value=dl(tailOf(v.ext));gantt();preview();toast(`เพิ่ม ${name(nb)} → ${v.ext} เริ่ม ${fdt(nb.s)} จบ ${fdt(end(nb))}${nb.late?" (เลยเวลาที่กำหนด)":""}`)}
 let askFn=null;function ask(t,sub,yes,no){$("#cfT").textContent=t;$("#cfS").textContent=sub;$("#cfY").textContent=yes||"ยืนยัน";$("#cfN").textContent=no||"ยกเลิก";$("#cfm").hidden=false;return new Promise(r=>askFn=r)}
 $("#cfm").addEventListener("click",ev=>{const v=ev.target.id==="cfY"?"y":ev.target.id==="cfN"?"n":ev.target.id==="cfm"?null:undefined;if(v===undefined)return;$("#cfm").hidden=true;if(askFn){const f=askFn;askFn=null;f(v)}});
@@ -516,7 +528,14 @@ async function exportImg(el,title,fname){if(!window.html2canvas)return toast("�
 $("#imgm").addEventListener("click",async ev=>{const m=$("#imgm");if(ev.target.id==="imgClose"||ev.target===m){m.hidden=true;URL.revokeObjectURL(m.querySelector("img").src)}
   if(ev.target.id==="imgCopy"){try{await navigator.clipboard.write([new ClipboardItem({"image/png":m._blob})]);toast("คัดลอกรูปแล้ว — วางใน LINE/Excel ได้เลย")}catch(e){toast("คัดลอกไม่ได้ในหน้านี้ — คลิกขวาที่รูปแล้วเลือกคัดลอกรูปภาพ")}}});
 const wk=()=>fd(S.vs).replace(/\./g,"");
-$("#xG").onclick=()=>exportImg($("#gcard"),`แผนเดินเครื่อง Extruder ${fdt(S.vs)} – ${fd(S.vs+S.days*24*H-1)}`,`ExtPlan_Gantt_${wk()}`);
+// ส่งออก Gantt: ตัดเป็นแถวละ 1 วันผลิต (08:00–08:00) เรียงลงล่าง อ่านง่าย
+$("#xG").onclick=async()=>{const px=50,lab=$(".glab").innerHTML,day0=wkOf(S.vs)===0?S.vs:S.vs;let rows="";
+  for(let d=0;d<S.days;d++){const vs=S.vs+d*24*H,o=gHTML(vs,1,px,true);
+    rows+=`<div class="exday"><div class="exdh">วันผลิต ${fd(vs)} (08:00) – ${fd(vs+24*H)} (08:00)</div><div class="gwrap" style="grid-template-columns:96px ${o.W}px"><div class="glab">${lab}</div><div style="position:relative;overflow:hidden;width:${o.W}px;height:${HD+GH*2+4}px">${o.h}</div></div></div>`}
+  const box=document.createElement("div");box.className="card";box.style.cssText=`width:${96+24*px+34}px;position:absolute;left:0;top:${document.body.scrollHeight+40}px`;
+  box.innerHTML=rows+`<div class="legend">${$("#gcard .legend").innerHTML}</div><div class="stdbar">${$("#gcard .stdbar").innerHTML}</div>`;
+  box.querySelectorAll(".bx,.rs,.now").forEach(x=>x.remove());document.body.appendChild(box);
+  try{await exportImg(box,`แผนเดินเครื่อง Extruder ${fdt(S.vs)} – ${fd(S.vs+S.days*24*H-1)}`,`ExtPlan_Gantt_${wk()}`)}finally{box.remove()}};
 $("#xB").onclick=()=>exportImg($("#bcard"),"Plan Batch Extruder",`ExtPlan_Batch_${wk()}`);
 $("#xS").onclick=()=>exportImg($("#vSum"),`สรุป Plan vs Actual ${$("#sF").value} ถึง ${$("#sT").value}`,`ExtPlan_Summary_${$("#sF").value}`);
 $("#exc").addEventListener("click",ev=>{const x=ev.target.dataset.xe;if(x)exportImg(ev.target.closest(".exc"),`สรุป Plan vs Actual ${x} ${$("#sF").value} ถึง ${$("#sT").value}`,`ExtPlan_${x}_${$("#sF").value}`)});
@@ -595,7 +614,7 @@ async function start(){const q=new URLSearchParams(location.search),tk=q.get("hu
   ingest(r.plans,a,b);fix();baseline();side();gantt();$("#gate").hidden=true}
 start();
 // เวอร์ชันใหม่: เช็คหน้าเว็บตัวเองตอนเปิด/กลับมาที่แท็บ → ขึ้นแถบให้กดโหลดใหม่ (ไม่ต้องจำกด F5)
-const EP_BUILD="202611271401";let epChk=0;
+const EP_BUILD="202611271409";let epChk=0;
 async function chkVer(){if(Date.now()-epChk<5*60e3)return;epChk=Date.now();try{const h=await (await fetch(location.pathname+"?_="+Date.now(),{cache:"no-store"})).text(),m=h.match(/const EP_BUILD="([0-9]+)"/);
   if(m&&m[1]!==EP_BUILD&&!$("#verbar")){const d=document.createElement("div");d.id="verbar";d.style.cssText="position:fixed;left:50%;top:64px;transform:translateX(-50%);z-index:50;background:#FAAA20;color:#2E2E2E;padding:10px 16px;border-radius:10px;font-weight:600;box-shadow:0 4px 14px #0004;cursor:pointer";
     d.textContent="มีเวอร์ชันใหม่ · แตะเพื่อโหลดใหม่"+(changed().length?" (บันทึกแผนก่อน)":"");d.onclick=()=>{if(!S.ro&&changed().length)return toast("บันทึกแผนก่อนโหลดใหม่");location.replace(location.pathname+"?v="+m[1])};document.body.appendChild(d)}}catch(e){}}
