@@ -63,7 +63,7 @@ input:focus,select:focus,button:focus-visible{outline:2px solid var(--blue);outl
 .vl{position:absolute;top:50px;bottom:0;width:1px;background:var(--line)}.vl.sh{background:#B9C2D6}.vl.pd{background:var(--navy);opacity:.45;width:2px}
 .now{position:absolute;top:0;bottom:0;width:2px;background:var(--amber);z-index:5;pointer-events:none}
 .now::after{content:"ตอนนี้";position:absolute;top:2px;left:4px;font-size:11px;background:var(--amber);color:#2E2E2E;padding:0 4px;border-radius:4px;white-space:nowrap}
-.blk{position:absolute;height:62px;border-radius:4px;overflow:hidden;cursor:grab;display:grid;grid-template-rows:1fr 1fr;font-size:12px;color:#1d1d1d;box-shadow:0 1px 0 #0002;z-index:2}
+.blk{position:absolute;height:62px;border-radius:4px;overflow:visible;cursor:grab;display:grid;grid-template-rows:1fr 1fr;font-size:12px;color:#1d1d1d;box-shadow:0 1px 0 #0002;z-index:2}
 .blk:active{cursor:grabbing}
 .blk .t{background:var(--gP);padding:2px 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.blk .t i{font-style:normal;color:#0B4FBF;font-weight:700;margin-left:6px}
 .blk .b{background:var(--yP);padding:2px 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600}
@@ -72,6 +72,9 @@ input:focus,select:focus,button:focus-visible{outline:2px solid var(--blue);outl
 .blk.pin::before{content:"";position:absolute;left:0;top:0;border-top:12px solid #162C9A;border-right:12px solid transparent;z-index:1}.blk.late{outline:3px dashed var(--bad);outline-offset:1px}
 .bc input.pinned{background:#DCEBFF;font-weight:600}.bc input.autot{color:#8a8a8a}.bc input.firstt{outline:2px solid var(--blue);outline-offset:-2px;font-weight:600}.bc-e{font-size:11px;display:flex;align-items:center;justify-content:center;gap:4px;color:#444}.bc-e button{border:0;background:none;color:#0B4FBF;text-decoration:underline;font:inherit;font-size:11px;cursor:pointer;padding:0}
 .blk.sel{outline:3px solid var(--blue);outline-offset:1px;z-index:4}.blk.ov{outline:3px dashed var(--bad);outline-offset:1px}
+.bx{display:none;position:absolute;width:22px;height:22px;border-radius:50%;border:2px solid #fff;font:700 15px/1 system-ui,sans-serif;color:#fff;cursor:pointer;align-items:center;justify-content:center;padding:0;z-index:8;box-shadow:0 1px 4px #0006}
+.bxa{background:var(--blue);right:-12px;bottom:-10px}.bxd{background:var(--bad);right:-10px;top:-10px}.blk:hover .bx,.blk.sel .bx{display:flex}.blk:hover{z-index:7}
+@media(hover:none){.blk.sel .bx{display:flex}}
 .blk .rs{position:absolute;right:0;top:0;bottom:0;width:7px;cursor:ew-resize;background:#0002;grid-row:1/3}
 .tip{position:fixed;z-index:20;background:#1d2440;color:#fff;font-size:12px;padding:6px 8px;border-radius:6px;pointer-events:none;display:none;white-space:nowrap}
 .legend{display:flex;flex-wrap:wrap;gap:14px;font-size:12px;color:var(--mut);margin-top:8px}.legend i{display:inline-block;width:14px;height:10px;border-radius:2px;margin-right:4px;vertical-align:-1px}
@@ -90,7 +93,7 @@ table{border-collapse:collapse;width:100%;font-size:13px}th,td{padding:7px 8px;b
 th{font-size:12px;color:var(--mut);font-weight:600;background:var(--bg)}td.n{text-align:right}
 .chip{display:inline-block;padding:1px 8px;border-radius:10px;font-size:12px;font-weight:600;color:#fff}
 .note{font-size:12px;color:var(--mut);margin:8px 0 0}
-.ro #save,.ro #save2,.ro .bc.add,.ro .bc-h .x,.ro .blk .rs,.ro #undo{display:none!important}.ro .blk{cursor:pointer}
+.ro .bx,.ro #save,.ro #save2,.ro .bc.add,.ro .bc-h .x,.ro .blk .rs,.ro #undo{display:none!important}.ro .blk{cursor:pointer}
 .chip.warn2{background:#7B1FA2}.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#1d2440;color:#fff;padding:10px 16px;border-radius:8px;font-size:14px;display:none;z-index:30}
 .stdbar{font-size:12px;color:var(--mut);margin-top:6px}.stdbar b{color:var(--ink);font-weight:600}
 .captitle{font-size:18px;font-weight:700;color:var(--navy);margin:0 0 10px}:root[data-theme=dark] .captitle{color:#fff}
@@ -101,7 +104,8 @@ th{font-size:12px;color:var(--mut);font-weight:600;background:var(--bg)}td.n{tex
 .ppop{position:fixed;z-index:35;background:var(--card);border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 24px #0003;max-height:340px;overflow:auto;padding:4px}.ppop[hidden]{display:none}
 .ppop button{display:block;width:100%;text-align:left;border:0;background:none;padding:6px 10px;border-radius:6px;font:inherit;font-size:14px;line-height:1.35;color:var(--ink);cursor:pointer;min-height:44px}
 .ppop .r1{display:flex;gap:8px;justify-content:space-between}.ppop .nm{display:block;font-weight:500}
-.ppop button.on,.ppop button:hover{background:var(--bg)}.ppop .mono{font-size:12px;color:var(--mut);white-space:nowrap}.ppop .cap{margin-left:auto;font-size:12px;color:var(--mut);white-space:nowrap}
+.ppop button.on,.ppop button:hover{background:var(--bg)}.ppop .gh{font-size:11px;color:var(--mut);padding:6px 10px 2px;font-weight:600}
+#rtpop button{min-height:36px;padding:6px 10px}#rtpop .r1 i{width:10px;height:10px;border-radius:2px;display:inline-block;margin-right:6px;vertical-align:0}.ppop .mono{font-size:12px;color:var(--mut);white-space:nowrap}.ppop .cap{margin-left:auto;font-size:12px;color:var(--mut);white-space:nowrap}
 .ppsel{margin-top:6px;border:1px solid var(--blue);border-radius:8px;padding:6px 10px;font-size:12px;background:var(--bg)}.ppsel b{font-size:14px;display:block}
 /* Plan Batch */
 .bl-lane{border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-top:12px}
@@ -160,7 +164,7 @@ th{font-size:12px;color:var(--mut);font-weight:600;background:var(--bg)}td.n{tex
         <div class="gscroll" id="gs"><div id="g"></div></div>
       </div>
       <div class="legend"><span><i style="background:var(--gP)"></i>Cap / Pack</span><span><i style="background:var(--yP)"></i>สินค้า (จำนวน)</span><span><i style="background:#2E7D32"></i>แจ้งพร้อมเดิน</span><span><i style="background:var(--red)"></i>หยุดเครื่อง (จบเบอร์/เปลี่ยนสี)</span><span><i style="background:var(--dred)"></i>เคลียร์ระบบลำเลียง</span><span><i style="background:var(--gray)"></i>หยุดตามแผนอื่น</span><span><i style="border-left:3px dashed #162C9A;background:var(--yP)"></i>เปลี่ยนเบอร์ต่อเนื่อง</span><span><i style="background:linear-gradient(135deg,#162C9A 40%,var(--yP) 40%)"></i>กำหนดวัน-เวลาเริ่ม</span><span><i style="background:var(--amber)"></i>เวลาปัจจุบัน</span></div>
-      <div class="legend" data-html2canvas-ignore><span>ลากบล็อก = เปลี่ยนลำดับ/ย้ายเครื่อง · ลากงานแรกของเครื่อง = เลื่อนทั้งเครื่อง · ลากขอบขวา = ยืด/หด (สินค้า = ปรับตัน) · คลิก = แก้ · Delete = ลบ · ←/→ = สลับลำดับ (งานแรก = เลื่อน 15 นาที)</span></div>
+      <div class="legend" data-html2canvas-ignore><span>ลากบล็อก = เปลี่ยนลำดับ/ย้ายเครื่อง · ลากงานแรกของเครื่อง = เลื่อนทั้งเครื่อง · ลากขอบขวา = ยืด/หด (สินค้า = ปรับตัน) · <b>ชี้บล็อก: + = เพิ่ม Runtime ต่อจากนี้ · − = ลบ Runtime</b> · คลิก = แก้ · Delete = ลบ · ←/→ = สลับลำดับ (งานแรก = เลื่อน 15 นาที)</span></div>
       <div class="stdbar">ลำดับมาตรฐานต่อรอบเดิน: <b>แจ้งพร้อมเดิน 0:15</b> → <b>เดินเครื่อง</b> (ระหว่างสินค้า = หยุดเครื่อง-จบเบอร์ 0:45 หรือเลือก "ต่อเนื่อง ไม่หยุด") → <b>หยุดเครื่อง 0:45</b> → <b>เคลียร์ระบบลำเลียง 1:00</b> · หยุดตามแผนอื่น (วันหยุด/ซ่อมบำรุง/…) = ปิดรอบ · คลิกบล็อกมาตรฐานเพื่อเลือกประเภทเอง (manual)</div>
       <div class="stat" id="stat" data-html2canvas-ignore></div>
       <details data-html2canvas-ignore><summary>ข้อมูลที่บันทึกใน Supabase (สัปดาห์ที่กำลังดู)</summary><pre id="doc"></pre></details>
@@ -195,7 +199,7 @@ th{font-size:12px;color:var(--mut);font-weight:600;background:var(--bg)}td.n{tex
   <p class="note">ถ้าดาวน์โหลดไม่ได้ในหน้านี้: คลิกขวาที่รูป → บันทึกรูปภาพ หรือกด "คัดลอกรูป" แล้ววางใน LINE / Excel</p><div class="mimg"><img alt="รูปที่ส่งออก"></div></div></div>
 <div class="modal" id="gate"><div class="mbox" style="max-width:460px;text-align:center"><b style="font-size:18px">แผนเดินเครื่อง BFL</b><p id="gateT" class="note" style="font-size:15px">กำลังโหลด…</p></div></div>
 <div class="modal" id="cfm" hidden><div class="mbox" style="max-width:480px"><b id="cfT" style="font-size:16px"></b><p class="note" id="cfS"></p><div class="row2"><button class="btn g" id="cfN">ยกเลิก</button><button class="btn p" id="cfY" style="margin:0">ยืนยัน</button></div></div></div>
-<div class="ppop" id="ppop" hidden></div>
+<div class="ppop" id="ppop" hidden></div><div class="ppop" id="rtpop" hidden></div>
 <div class="tip" id="tip"></div><div class="toast" id="toast"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script>
@@ -243,17 +247,19 @@ const push=()=>{S.hist.push(JSON.stringify(B));if(S.hist.length>40)S.hist.shift(
 // ถ้างานก่อนหน้ายาวเลยเวลาที่กำหนด งานนั้นถูกดันออก (late = กรอบแดงประ)
 function build(a0){const std=S.std,pool={rdy:[],co:[],end:[],clr:[]};if(std)a0.forEach(x=>{if(x.r)pool[x.r].push(x)});
   const take=(r,e)=>pool[r].shift()||{id:uid(),ext:e,k:"D",r,proc:DEF[r],d:RM[DEF[r]][1],s:null},o=[],items=std?a0.filter(x=>!x.r):a0;
-  const f=items[0],rd=std?(pool.rdy[0]?pool.rdy[0].d:RM[RDY][1])*MN:0;let cur=a0[0].s;
-  if(f&&f.k==="P"&&f.pin!=null)cur=Math.min(cur,f.pin-rd);else if(std&&f&&f.k==="P"&&a0[0]===f)cur=f.s-rd;   // แจ้งพร้อมเดินอยู่ก่อนงานแรก ไม่ดันงานแรกเลื่อน
-  let run=false;const put=(b,t)=>{b.s=t!=null?Math.max(cur,t):cur;cur=end(b);o.push(b);return b};
-  const close=e=>{if(run){put(take("end",e));put(take("clr",e));run=false}};
+  const f=items[0],rd=std&&!(f&&f.sk&&f.sk.rdy)?(pool.rdy[0]?pool.rdy[0].d:RM[RDY][1])*MN:0;let cur=a0[0].s;
+  if(f&&f.k==="P"&&f.pin!=null)cur=Math.min(cur,f.pin-rd);else if(std&&f&&f.k==="P")cur=f.s-rd;   // แจ้งพร้อมเดินอยู่ก่อนงานแรก ไม่ดันงานแรกเลื่อน
+  let run=false,lastP=null,since=[];const put=(b,t)=>{b.s=t!=null?Math.max(cur,t):cur;cur=end(b);o.push(b);return b};
+  const sk=(p,k)=>p&&p.sk&&p.sk[k];
+  const close=e=>{if(run){if(!sk(lastP,"end"))put(take("end",e));if(!sk(lastP,"clr"))put(take("clr",e));run=false}};
   items.forEach(x=>{const pin=x.k==="P"?x.pin:null;
     if(!std){put(x,pin);x.late=pin!=null&&x.s>pin;return}
     if(x.k==="P"){const dd=(r,p)=>pool[r][0]?pool[r][0].d:RM[p][1],gap=pin!=null&&pin-cur>=(dd("end",CO)+dd("clr",CLR)+dd("rdy",RDY))*MN;   // ว่างพอ หยุด+เคลียร์+แจ้งพร้อม → ปิดรอบ · ไม่พอ = รอ
       if(run&&(x.tr==="clr"||gap))close(x.ext);
-      if(!run){const r=take("rdy",x.ext);put(r,pin!=null?pin-r.d*MN:null);run=true}else if(o[o.length-1].k==="P"&&x.tr!=="run")put(take("co",x.ext));
-      put(x,pin);x.late=pin!=null&&x.s>pin}
-    else if(RM[x.proc]&&RM[x.proc][2]==="pl"){close(x.ext);put(x)}else put(x)});
+      if(!run){if(!sk(x,"rdy")){const r=take("rdy",x.ext);put(r,pin!=null?pin-r.d*MN:null)}run=true}
+      else if(lastP&&x.tr!=="run"&&!since.some(d=>RM[d.proc]&&RM[d.proc][2]==="std"))put(take("co",x.ext));   // มีหยุด/เคลียร์ที่เพิ่มเองคั่นแล้ว ไม่ใส่จบเบอร์ซ้ำ
+      put(x,pin);x.late=pin!=null&&x.s>pin;lastP=x;since=[]}
+    else if(RM[x.proc]&&RM[x.proc][2]==="pl"){close(x.ext);put(x);lastP=null;since=[]}else{put(x);since.push(x)}});
   close(a0[0].ext);return o}
 function fix(){for(const e of EX){let a=lane(e);if(!a.length)continue;
   if($("#rip").checked){a=build(a);a.forEach(x=>x.ov=false);setLane(e,a)}
@@ -270,8 +276,8 @@ function gantt(){
     h+=`<div class="vl ${hr==8?"pd":hr%8==0?"sh":""}" style="left:${i*S.pxh}px"></div>`}
   EX.forEach((e,i)=>h+=`<div class="lane" style="top:${HD+i*GH}px;width:${W}px"></div>`);
   for(const b of B){if(end(b)<=S.vs||b.s>=ve)continue;const x=(b.s-S.vs)/H*S.pxh,w=Math.max(dur(b)/60*S.pxh,6),y=HD+EX.indexOf(b.ext)*GH+2,c=(S.sel===b.id?" sel":"")+(b.ov?" ov":"");
-    h+=b.k==="P"?`<div class="blk${c}${b.tr==="run"?" cont":""}${b.pin!=null?" pin":""}${b.late?" late":""}" data-id="${b.id}" style="left:${x}px;width:${w}px;top:${y}px"><div class="t">Cap ${b.cap} t/hr · ${bt(b)} B${b.pk?`<i>${b.pk.replace("PACK-","Pack ")}</i>`:""}</div><div class="b">${esc(name(b))} (${b.q} t)</div>${w>=20?'<div class="rs"></div>':""}</div>`
-    :`<div class="blk D ${cls(b.proc)}${c}" data-id="${b.id}" style="left:${x}px;width:${w}px;top:${y}px">${w>40?esc(short(b.proc)):""}${w>=20?'<div class="rs"></div>':""}</div>`}
+    h+=b.k==="P"?`<div class="blk${c}${b.tr==="run"?" cont":""}${b.pin!=null?" pin":""}${b.late?" late":""}" data-id="${b.id}" style="left:${x}px;width:${w}px;top:${y}px"><div class="t">Cap ${b.cap} t/hr · ${bt(b)} B${b.pk?`<i>${b.pk.replace("PACK-","Pack ")}</i>`:""}</div><div class="b">${esc(name(b))} (${b.q} t)</div>${w>=20?'<div class="rs"></div>':""}<button class="bx bxa" data-addafter="${b.id}" title="เพิ่ม Runtime ต่อจากงานนี้">+</button></div>`
+    :`<div class="blk D ${cls(b.proc)}${c}" data-id="${b.id}" style="left:${x}px;width:${w}px;top:${y}px">${w>40?esc(short(b.proc)):""}${w>=20?'<div class="rs"></div>':""}<button class="bx bxa" data-addafter="${b.id}" title="เพิ่ม Runtime ต่อจากนี้">+</button><button class="bx bxd" data-rm="${b.id}" title="ลบ ${esc(short(b.proc))}">−</button></div>`}
   const n=Date.now();if(n>S.vs&&n<ve)h+=`<div class="now" style="left:${(n-S.vs)/H*S.pxh}px"></div>`;
   g.innerHTML=h;$("#rng").textContent=fdt(S.vs)+" – "+fd(ve-1);
   document.querySelectorAll(".seg [data-d]").forEach(x=>x.classList.toggle("on",+x.dataset.d===S.days));
@@ -280,11 +286,11 @@ const wkOf=t=>{const d=new Date(t-8*H);d.setHours(0,0,0,0);d.setDate(d.getDate()
 const wkKey=w=>{const d=new Date(w);return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate())},wkT=k=>new Date(k+"T08:00:00").getTime();
 const isDef=b=>b.r&&S.std&&b.proc===DEF[b.r]&&RM[DEF[b.r]]&&b.d===RM[DEF[b.r]][1];
 function enc(b,w){const r={x:EX.indexOf(b.ext)+1,t:Math.round((b.s-w)/MN)};
-  if(b.k==="P")Object.assign(r,{c:b.pid,q:b.q,cp:b.cap,pk:b.pk&&+b.pk.slice(-1),bs:b.bs,pl:b.pl,bd:b.bd,wo:b.wo,nt:b.nt,tr:b.tr!=="co"&&b.tr,pn:b.pin!=null?Math.round((b.pin-w)/MN):null});
+  if(b.k==="P")Object.assign(r,{c:b.pid,q:b.q,cp:b.cap,pk:b.pk&&+b.pk.slice(-1),bs:b.bs,pl:b.pl,bd:b.bd,wo:b.wo,nt:b.nt,tr:b.tr!=="co"&&b.tr,pn:b.pin!=null?Math.round((b.pin-w)/MN):null,sk:b.sk?["rdy","end","clr"].filter(k=>b.sk[k]).map(k=>k[0]).join("")||null:null});
   else Object.assign(r,{r:b.r,p:b.r&&b.proc===DEF[b.r]?undefined:b.proc,d:b.r&&RM[DEF[b.r]]&&b.d===RM[DEF[b.r]][1]?undefined:b.d});
   Object.keys(r).forEach(k=>{if(r[k]==null||r[k]===""||r[k]===false||r[k]===0&&k==="pk")delete r[k]});return r}
 function dec(r,w){const ext=EX[(r.x||1)-1],s=w+(r.t||0)*MN;
-  if(r.c)return {id:uid(),ext,k:"P",pid:r.c,q:+r.q||1,cap:+r.cp||mcap(r.c)||3,pk:r.pk?"PACK-"+r.pk:"",bs:r.bs?(r.bs<50?r.bs*1000:r.bs):null,pl:r.pl||"",bd:r.bd||"",wo:r.wo||"",nt:r.nt||"",tr:r.tr||"co",pin:r.pn!=null?w+r.pn*MN:null,s};
+  if(r.c)return {id:uid(),ext,k:"P",pid:r.c,q:+r.q||1,cap:+r.cp||mcap(r.c)||3,pk:r.pk?"PACK-"+r.pk:"",bs:r.bs?(r.bs<50?r.bs*1000:r.bs):null,pl:r.pl||"",bd:r.bd||"",wo:r.wo||"",nt:r.nt||"",tr:r.tr||"co",pin:r.pn!=null?w+r.pn*MN:null,sk:r.sk?{rdy:r.sk.includes("r"),end:r.sk.includes("e"),clr:r.sk.includes("c")}:null,s};
   const proc=r.p||(r.r?DEF[r.r]:"EX-ตามแผน-รอระบุ");return {id:uid(),ext,k:"D",r:r.r,proc,d:+r.d||(RM[proc]?RM[proc][1]:60),s}}
 const docW=w=>B.filter(b=>wkOf(b.s)===w&&!isDef(b)).sort((a,b)=>a.s-b.s).map(b=>enc(b,w));
 function changed(){const ks=new Set(Object.keys(S.W));B.forEach(b=>ks.add(wkKey(wkOf(b.s))));
@@ -305,10 +311,10 @@ let drag=null;const tip=$("#tip"),rip=()=>$("#rip").checked;
 const place=b=>{const el=document.querySelector(`.blk[data-id="${b.id}"]`);if(!el)return;el.style.left=(b.s-S.vs)/H*S.pxh+"px";el.style.top=HD+EX.indexOf(b.ext)*GH+2+"px";el.style.width=Math.max(dur(b)/60*S.pxh,6)+"px";
   if(b.k==="P"){el.querySelector(".t").firstChild.textContent=`Cap ${b.cap} t/hr · ${bt(b)} B`;el.querySelector(".b").textContent=`${name(b)} (${b.q} t)`}};
 const showTip=(ev,t)=>{tip.style.display="block";tip.style.left=ev.clientX+12+"px";tip.style.top=ev.clientY+12+"px";tip.textContent=t};
-$("#g").addEventListener("pointerdown",ev=>{const el=ev.target.closest(".blk");if(!el)return;if(S.ro){S.sel=el.dataset.id;side();gantt();return}const b=B.find(x=>x.id===el.dataset.id),L=lane(b.ext);
+$("#g").addEventListener("pointerdown",ev=>{if(ev.target.closest(".bx"))return;const el=ev.target.closest(".blk");if(!el)return;if(S.ro){S.sel=el.dataset.id;side();gantt();return}const b=B.find(x=>x.id===el.dataset.id),L=lane(b.ext);
   drag={b,el,x0:ev.clientX,s0:b.s,d0:dur(b),e0:b.ext,rs:ev.target.classList.contains("rs"),mv:false,sn:JSON.stringify(B),first:L[0]===b,ls:L.map(x=>[x,x.s,x.pin])};el.setPointerCapture(ev.pointerId)});
 $("#g").addEventListener("pointermove",ev=>{const el=ev.target.closest(".blk");
-  if(!drag){if(el){const b=B.find(x=>x.id===el.dataset.id);showTip(ev,`${b.ext} · ${name(b)} · ${fdt(b.s)} → ${fdt(end(b))} (${fhm(dur(b))} ชม.)${b.pin!=null?" · กำหนดเริ่ม "+fdt(b.pin)+(b.late?" (เลยเวลา)":""):""}`)}else tip.style.display="none";return}
+  if(!drag){if(el&&(ev.target.closest(".bx")||!rtpop.hidden)){tip.style.display="none";return}if(el){const b=B.find(x=>x.id===el.dataset.id);showTip(ev,`${b.ext} · ${name(b)} · ${fdt(b.s)} → ${fdt(end(b))} (${fhm(dur(b))} ชม.)${b.pin!=null?" · กำหนดเริ่ม "+fdt(b.pin)+(b.late?" (เลยเวลา)":""):""}`)}else tip.style.display="none";return}
   const dx=ev.clientX-drag.x0;if(Math.abs(dx)>3)drag.mv=true;if(!drag.mv)return;const b=drag.b,dt=dx/S.pxh*H;
   if(drag.rs){const nd=Math.max(15,Math.round((drag.d0*MN+dt)/(15*MN))*15);                    // ยืด/หด
     if(b.k==="P")b.q=Math.max(0.5,Math.round(nd/60*b.cap*2)/2);else b.d=nd;
@@ -323,6 +329,21 @@ $("#g").addEventListener("pointerup",()=>{if(!drag)return;const d=drag;drag=null
       if(b.late||gap<=0)b.pin=null;else toast(`กำหนดเริ่ม ${name(b)} ${fdt(b.pin)}`)}
     fix();if(S.sel===b.id)side()}else{S.sel=d.b.id;side()}gantt()});
 $("#g").addEventListener("pointerleave",()=>{if(!drag)tip.style.display="none"});
+// ---- ปุ่ม + / − บน timeline: เพิ่ม / ลบ Runtime ----
+const rtpop=$("#rtpop");let rtAfter=null;
+const RTC={std:"#E53935",pl:"#9AA3B5",pd:"#E08A00",md:"#7B1FA2"};
+function openRt(btn,id){if(S.ro)return;rtAfter=id;tip.style.display="none";const after=B.find(x=>x.id===id);
+  rtpop.innerHTML=`<div class="gh">เพิ่มต่อจาก: ${esc(name(after))}</div>`+Object.entries(RTG).map(([g,l])=>`<div class="gh">${l}</div>`+RT.filter(r=>r[2]===g).map(r=>`<button type="button" data-rt="${esc(r[0])}"><span class="r1"><span><i style="background:${/เคลียร์/.test(r[0])?"#A3100F":/แจ้งระบบ/.test(r[0])?"#2E7D32":RTC[g]}"></i>${esc(short(r[0]))}</span><span class="cap">${fhm(r[1])} ชม.</span></span></button>`).join("")).join("");
+  rtpop.hidden=false;const r=btn.getBoundingClientRect(),w=300;rtpop.style.width=w+"px";rtpop.style.left=Math.max(8,Math.min(r.left-w/2,innerWidth-w-8))+"px";
+  const h=Math.min(rtpop.scrollHeight,340);rtpop.style.top=(r.bottom+h+6>innerHeight&&r.top>h?r.top-h-4:r.bottom+4)+"px"}
+function addRt(proc,afterId){const a=B.find(x=>x.id===afterId);if(!a||!RM[proc])return;push();
+  const nb={id:uid(),ext:a.ext,k:"D",proc,d:RM[proc][1],s:a.s+1};B.push(nb);fix();S.sel=nb.id;side();gantt();toast(`เพิ่ม ${short(proc)} ${fhm(nb.d)} ชม. — ${fdt(nb.s)} · ปรับเวลาได้ที่แผงซ้าย หรือลากขอบขวา`)}
+rtpop.addEventListener("pointerdown",ev=>{const bt=ev.target.closest("button");if(!bt)return;ev.preventDefault();rtpop.hidden=true;addRt(bt.dataset.rt,rtAfter)});
+document.addEventListener("pointerdown",ev=>{if(!rtpop.hidden&&!rtpop.contains(ev.target)&&!ev.target.closest(".bxa"))rtpop.hidden=true});
+document.addEventListener("keydown",ev=>{if(ev.key==="Escape")rtpop.hidden=true});
+$("#gs").addEventListener("scroll",()=>rtpop.hidden=true);
+$("#g").addEventListener("click",ev=>{const a=ev.target.closest(".bxa"),d=ev.target.closest(".bxd");if(!a&&!d)return;ev.stopPropagation();
+  if(a)return openRt(a,a.dataset.addafter);const b=B.find(x=>x.id===d.dataset.rm);if(b)delBlock(b)});
 // ---- แผงซ้าย: เพิ่ม / แก้ ----
 function prodOpts(sel){const gs={Dog:[],Cat:[],Fish:[],Koi:[],Bird:[]};P.forEach(p=>{const k=Object.keys(gs).find(k=>p[1].toLowerCase().startsWith(k.toLowerCase()))||"Fish";gs[k].push(p)});
   return Object.entries(gs).map(([k,a])=>`<optgroup label="${k}">`+a.map(p=>`<option value="${p[0]}"${p[0]===sel?" selected":""}>${esc(p[1])}</option>`).join("")+"</optgroup>").join("")}
@@ -366,6 +387,7 @@ function side(){const b=S.sel&&B.find(x=>x.id===S.sel),m=b?{ext:b.ext,k:b.k,pk:b
   ${auto?"":`<label>เวลาเริ่ม Extruder</label>${b&&k!=="P"?"":seg("fSt",[["tail",b?"ต่อจากงานก่อนหน้า":"ต่อท้ายงานล่าสุด"],["set","กำหนดวัน-เวลา"]],m.start)}
   <input id="fS" type="datetime-local" step="900" value="${dl(b?(b.pin!=null?b.pin:b.s):tailOf(m.ext))}" ${(!b||k==="P")&&m.start==="tail"?"disabled":""} style="margin-top:6px">
   ${k==="P"?`<div class="hint"><span>กำหนดวัน-เวลา = วางล่วงหน้าได้ (เว้นช่องว่าง) · งานตามหลังต่อจากงานนี้</span></div>`:""}${b&&b.late?`<div class="hint"><span class="bd">เลยเวลาที่กำหนด ${fdt(b.pin)} — งานก่อนหน้ายังไม่จบ (เริ่มจริง ${fdt(b.s)})</span></div>`:""}`}
+  ${b&&b.k==="P"&&b.sk&&(b.sk.rdy||b.sk.end||b.sk.clr)?`<div class="hint" style="margin-top:8px"><span>ปิดไว้: ${[b.sk.rdy&&"แจ้งพร้อมเดิน (ก่อนงานนี้)",b.sk.end&&"หยุดเครื่อง (ท้ายรอบ)",b.sk.clr&&"เคลียร์ระบบลำเลียง (ท้ายรอบ)"].filter(Boolean).join(" · ")}</span><a id="fSk">คืนลำดับมาตรฐาน</a></div>`:""}
   <div class="prev" id="fPv"></div>
   ${b?`<div class="row2" style="margin-top:12px">${auto&&b.r!=="co"?`<button class="btn g" id="fStd">คืนค่า std</button>`:`<button class="btn d" id="fDel">${auto?"ไม่หยุด":"ลบงานนี้"}</button>`}<button class="btn g" id="fOk">เสร็จ</button></div>`:`<button class="btn p" id="fAdd">เพิ่มลงแผน</button>`}`;
   bindSide(b);capHint();preview();if(S.ro)$("#side").querySelectorAll("input,select,button:not(#fOk),.seg button").forEach(x=>x.disabled=true)}
@@ -396,10 +418,11 @@ function bindSide(b){
   const r=$("#fR");if(r)r.addEventListener("change",()=>{$("#fD").value=RM[r.value][1]/60;if(b)apply(b);preview()});
   ["#fQ","#fC","#fD","#fS","#fB"].forEach(id=>{const e=$(id);if(e){e.addEventListener("input",()=>{preview();if(id==="#fC")capHint()});if(b)e.addEventListener("change",()=>apply(b))}});
   const t=$("#fT");if(t&&b)t.addEventListener("change",()=>apply(b));
-  if(b){const d=$("#fDel");if(d)d.onclick=()=>delBlock(b);const st=$("#fStd");if(st)st.onclick=()=>{push();b.proc=DEF[b.r];b.d=RM[b.proc][1];fix();side();gantt()};$("#fOk").onclick=()=>{S.sel=null;side();gantt()}}
+  if(b){const d=$("#fDel");if(d)d.onclick=()=>delBlock(b);const k=$("#fSk");if(k)k.onclick=()=>{push();b.sk=null;fix();side();gantt()};const st=$("#fStd");if(st)st.onclick=()=>{push();b.proc=DEF[b.r];b.d=RM[b.proc][1];fix();side();gantt()};$("#fOk").onclick=()=>{S.sel=null;side();gantt()}}
   else $("#fAdd").onclick=add}
 function delBlock(b){if(S.ro)return;if(b.r&&S.std){if(b.r==="co"){const L=lane(b.ext),nx=L.slice(L.indexOf(b)+1).find(x=>x.k==="P");if(nx){push();nx.tr="run";S.sel=null;fix();side();gantt();toast("เปลี่ยนเป็น 'เปลี่ยนเบอร์ต่อเนื่อง ไม่หยุด'")}}
-  else toast("บล็อกมาตรฐานลบไม่ได้ — เปลี่ยนประเภท/เวลาเองได้ หรือปิด 'ลำดับมาตรฐาน'");return}
+  else{const L=lane(b.ext),i=L.indexOf(b),p=b.r==="rdy"?L.slice(i+1).find(x=>x.k==="P"):L.slice(0,i).reverse().find(x=>x.k==="P");
+    if(p){push();p.sk=Object.assign({},p.sk,{[b.r]:true});S.sel=null;fix();side();gantt();toast(`ลบ ${short(b.proc)} แล้ว — คืนได้ที่งาน ${name(p)} (คืนลำดับมาตรฐาน) หรือกดย้อนกลับ`)}}return}
   push();B=B.filter(x=>x!==b);S.sel=null;fix();side();gantt()}
 function apply(b){if(S.ro)return;const v=vals();if(v.k==="P"&&(!PM[v.pid]||!(v.q>0&&v.cap>0)))return;push();const L=lane(b.ext),first=rip()&&L[0]===b&&v.ext===b.ext,d=v.s-b.s;
   if(v.k==="P"){Object.assign(b,{ext:v.ext,pid:v.pid,q:v.q,cap:v.cap,pk:v.pk,bs:v.bs,tr:v.tr});if(v.set){if(v.ext!==L[0].ext||b.pin!==v.s)setPin(b,v.s)}else b.pin=null}
