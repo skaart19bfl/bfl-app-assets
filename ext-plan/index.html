@@ -96,6 +96,11 @@ th{font-size:12px;color:var(--mut);font-weight:600;background:var(--bg)}td.n{tex
 .modal{position:fixed;inset:0;background:#0009;z-index:40;display:grid;place-items:center;padding:20px}.modal[hidden]{display:none}
 .mbox{background:var(--card);border-radius:12px;padding:14px;max-width:min(1200px,96vw);max-height:92vh;display:flex;flex-direction:column;gap:6px}
 .mh{display:flex;gap:8px;align-items:center}.mimg{overflow:auto;border:1px solid var(--line);border-radius:8px}.mimg img{display:block;max-width:100%}
+.ppop{position:fixed;z-index:35;background:var(--card);border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 24px #0003;max-height:340px;overflow:auto;padding:4px}.ppop[hidden]{display:none}
+.ppop button{display:block;width:100%;text-align:left;border:0;background:none;padding:6px 10px;border-radius:6px;font:inherit;font-size:14px;line-height:1.35;color:var(--ink);cursor:pointer;min-height:44px}
+.ppop .r1{display:flex;gap:8px;justify-content:space-between}.ppop .nm{display:block;font-weight:500}
+.ppop button.on,.ppop button:hover{background:var(--bg)}.ppop .mono{font-size:12px;color:var(--mut);white-space:nowrap}.ppop .cap{margin-left:auto;font-size:12px;color:var(--mut);white-space:nowrap}
+.ppsel{margin-top:6px;border:1px solid var(--blue);border-radius:8px;padding:6px 10px;font-size:12px;background:var(--bg)}.ppsel b{font-size:14px;display:block}
 /* Plan Batch */
 .bl-lane{border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-top:12px}
 .bl-h{display:flex;flex-wrap:wrap;gap:14px;align-items:center;padding:8px 12px;background:#5B3A9B;color:#fff;font-size:14px}.bl-h b{font-size:16px}.bl-h .sp{flex:1}
@@ -188,6 +193,7 @@ th{font-size:12px;color:var(--mut);font-weight:600;background:var(--bg)}td.n{tex
   <p class="note">ถ้าดาวน์โหลดไม่ได้ในหน้านี้: คลิกขวาที่รูป → บันทึกรูปภาพ หรือกด "คัดลอกรูป" แล้ววางใน LINE / Excel</p><div class="mimg"><img alt="รูปที่ส่งออก"></div></div></div>
 <div class="modal" id="gate"><div class="mbox" style="max-width:460px;text-align:center"><b style="font-size:18px">แผนเดินเครื่อง BFL</b><p id="gateT" class="note" style="font-size:15px">กำลังโหลด…</p></div></div>
 <div class="modal" id="cfm" hidden><div class="mbox" style="max-width:480px"><b id="cfT" style="font-size:16px"></b><p class="note" id="cfS"></p><div class="row2"><button class="btn g" id="cfN">ยกเลิก</button><button class="btn p" id="cfY" style="margin:0">ยืนยัน</button></div></div></div>
+<div class="ppop" id="ppop" hidden></div>
 <div class="tip" id="tip"></div><div class="toast" id="toast"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script>
@@ -297,6 +303,23 @@ $("#g").addEventListener("pointerleave",()=>{if(!drag)tip.style.display="none"})
 // ---- แผงซ้าย: เพิ่ม / แก้ ----
 function prodOpts(sel){const gs={Dog:[],Cat:[],Fish:[],Koi:[],Bird:[]};P.forEach(p=>{const k=Object.keys(gs).find(k=>p[1].toLowerCase().startsWith(k.toLowerCase()))||"Fish";gs[k].push(p)});
   return Object.entries(gs).map(([k,a])=>`<optgroup label="${k}">`+a.map(p=>`<option value="${p[0]}"${p[0]===sel?" selected":""}>${esc(p[1])}</option>`).join("")+"</optgroup>").join("")}
+// ---- ช่องเลือกสินค้า: พิมพ์ชื่อ/รหัส แล้วเลือกจากรายการ (แบบหน้าสร้าง Lot) ----
+const pop=$("#ppop");let ppT=null;
+const ppMatch=q=>{const qs=q.trim().toLowerCase().split(/\s+/).filter(Boolean);return P.filter(p=>{const h=(p[0]+" "+c97(p[0])+" "+p[1]).toLowerCase();return qs.every(x=>h.includes(x))}).slice(0,12)};
+function ppShow(inp){ppT=inp;const L=ppMatch(inp.value),r=inp.getBoundingClientRect(),w=Math.min(Math.max(r.width,420),innerWidth-16);
+  pop.style.width=w+"px";pop.style.left=Math.max(8,Math.min(r.left,innerWidth-w-8))+"px";
+  pop.innerHTML=L.length?L.map((p,i)=>`<button type="button" data-pid="${esc(p[0])}" class="${i?"":"on"}"><span class="r1"><span class="mono">${esc(c97(p[0]))} / ${esc(p[0])}</span><span class="cap">Std ${p[2]/1000} t/hr</span></span><span class="nm">${esc(p[1])}</span></button>`).join(""):`<div class="note" style="padding:10px">ไม่พบสินค้า "${esc(inp.value)}"</div>`;
+  pop.hidden=false;const h=pop.offsetHeight;pop.style.top=(r.bottom+h+4>innerHeight&&r.top>h?r.top-h-2:r.bottom+2)+"px"}
+function ppPick(pid){const inp=ppT;pop.hidden=true;if(!inp||!PM[pid])return;inp.value=PM[pid][1];const hd=inp.parentElement.querySelector("input[type=hidden]");if(hd){hd.value=pid;hd.dispatchEvent(new Event("change",{bubbles:true}))}}
+document.addEventListener("input",ev=>{const t=ev.target;if(!t.classList||!t.classList.contains("ppq"))return;const hd=t.parentElement.querySelector("input[type=hidden]");
+  if(hd&&hd.value){hd.value="";hd.dispatchEvent(new Event("change",{bubbles:true}))}ppShow(t)});
+document.addEventListener("focusin",ev=>{const t=ev.target;if(t.classList&&t.classList.contains("ppq")){t.select();ppShow(t)}});
+document.addEventListener("focusout",ev=>{if(ev.target.classList&&ev.target.classList.contains("ppq"))setTimeout(()=>{if(document.activeElement!==ppT)pop.hidden=true},150)});
+document.addEventListener("keydown",ev=>{const t=ev.target;if(!t.classList||!t.classList.contains("ppq")||pop.hidden)return;const bs=[...pop.querySelectorAll("button")],i=bs.findIndex(x=>x.classList.contains("on"));
+  if(ev.key==="ArrowDown"||ev.key==="ArrowUp"){ev.preventDefault();if(!bs.length)return;const j=(i+(ev.key==="ArrowDown"?1:-1)+bs.length)%bs.length;bs.forEach((x,k)=>x.classList.toggle("on",k===j));bs[j].scrollIntoView({block:"nearest"})}
+  else if(ev.key==="Enter"){ev.preventDefault();if(bs[i>=0?i:0])ppPick(bs[i>=0?i:0].dataset.pid)}else if(ev.key==="Escape")pop.hidden=true},true);
+pop.addEventListener("pointerdown",ev=>{const bt=ev.target.closest("button");if(!bt)return;ev.preventDefault();ppPick(bt.dataset.pid)});
+window.addEventListener("resize",()=>pop.hidden=true);document.addEventListener("scroll",ev=>{if(!pop.contains(ev.target))pop.hidden=true},true);
 const rtOpts=sel=>Object.entries(RTG).map(([g,l])=>`<optgroup label="${l}">`+RT.filter(r=>r[2]===g).map(r=>`<option value="${r[0]}"${r[0]===sel?" selected":""}>${short(r[0])}${g==="std"?" ("+fhm(r[1])+")":""}</option>`).join("")+"</optgroup>").join("");
 const seg=(id,opts,v)=>`<div class="seg" id="${id}">`+opts.map(([k,l])=>`<button type="button" data-v="${k}" class="${k===v?"on":""}">${l}</button>`).join("")+"</div>";
 const trOpts=v=>Object.entries(TR).map(([k,l])=>`<option value="${k}"${k===(v||"co")?" selected":""}>${l}</option>`).join("");
@@ -307,7 +330,8 @@ function side(){const b=S.sel&&B.find(x=>x.id===S.sel),m=b?{ext:b.ext,k:b.k,pk:b
   $("#side").innerHTML=`<h2>${b?(S.ro?"รายละเอียด":auto?"บล็อกมาตรฐาน":"แก้ไขงาน"):"เพิ่มงานลงแผน"}</h2>
   ${auto?`<p class="note" style="margin:0">ตำแหน่ง: <b>${RL[b.r]}</b> · ระบบวางให้ตามลำดับมาตรฐาน — เลือกประเภท/เวลาเองได้ (manual)</p>`:`<label>เครื่อง</label>${seg("fE",[["EXT-1","EXT-1"],["EXT-2","EXT-2"]],m.ext)}`}
   ${b?"":`<label>ประเภท</label>${seg("fK",[["P","สินค้า"],["D","Runtime type"]],k)}`}
-  ${k==="P"?`<label for="fP">สินค้า</label><select id="fP">${prodOpts(pid)}</select><div class="hint"><span id="fId">${c97(pid)} / ${pid}</span></div>
+  ${k==="P"?`<label for="fPq">สินค้า</label><div><input id="fPq" class="ppq" autocomplete="off" placeholder="พิมพ์ชื่อหรือรหัส (เช่น 8806 M / RTRB)" value="${esc(PM[pid]?PM[pid][1]:"")}"><input type="hidden" id="fP" value="${esc(pid)}"></div>
+    <div class="ppsel" id="fSel">${PM[pid]?`<span class="mono">${esc(c97(pid))} / ${esc(pid)}</span><b>${esc(PM[pid][1])}</b>Std ${PM[pid][2]/1000} t/hr`:`<span class="bd">ยังไม่ได้เลือกสินค้า — พิมพ์แล้วเลือกจากรายการ</span>`}</div><div class="hint" hidden><span id="fId">${c97(pid)} / ${pid}</span></div>
     <div class="row2"><div><label for="fQ">FG ต้องการ (ตัน)</label><input id="fQ" type="number" min="0.5" step="0.5" value="${b?b.q:20}"></div>
     <div><label for="fC">Std Cap (ตัน/ชม.)</label><input id="fC" type="number" min="0.5" step="0.1" value="${cap}"></div></div>
     <div class="hint"><span></span><span id="fM"></span></div>
@@ -321,7 +345,7 @@ function side(){const b=S.sel&&B.find(x=>x.id===S.sel),m=b?{ext:b.ext,k:b.k,pk:b
   <div class="prev" id="fPv"></div>
   ${b?`<div class="row2" style="margin-top:12px">${auto&&b.r!=="co"?`<button class="btn g" id="fStd">คืนค่า std</button>`:`<button class="btn d" id="fDel">${auto?"ไม่หยุด":"ลบงานนี้"}</button>`}<button class="btn g" id="fOk">เสร็จ</button></div>`:`<button class="btn p" id="fAdd">เพิ่มลงแผน</button>`}`;
   bindSide(b);capHint();preview();if(S.ro)$("#side").querySelectorAll("input,select,button:not(#fOk),.seg button").forEach(x=>x.disabled=true)}
-function capHint(){const p=$("#fP"),c=$("#fC");if(!p)return;const ms=mcap(p.value),v=+c.value;if(ms==null){$("#fM").textContent="ไม่มีใน master";return}
+function capHint(){const p=$("#fP"),c=$("#fC");if(!p)return;const ms=mcap(p.value),v=+c.value;if(!p.value){$("#fM").textContent="";return}if(ms==null){$("#fM").textContent="ไม่มีใน master";return}
   $("#fM").innerHTML=`master ${ms} t/hr`+(v>0&&v!==ms?` · <a id="fRs">ใช้ค่า master</a> · ${S.ro?"":`<a id="fUp">อัปเดต master เป็น ${v}</a>`}`:"")}
 function vals(){const g=id=>$(id),on=id=>g(id)&&g(id).querySelector(".on").dataset.v,b=S.sel&&B.find(x=>x.id===S.sel);
   return {ext:g("#fE")?on("#fE"):b.ext,k:g("#fP")?"P":"D",pid:g("#fP")&&g("#fP").value,q:g("#fQ")&&+g("#fQ").value,cap:g("#fC")&&+g("#fC").value,pk:on("#fPk"),proc:g("#fR")&&g("#fR").value,d:g("#fD")&&Math.round(+g("#fD").value*60),
@@ -336,7 +360,9 @@ function bindSide(b){
     if(sg.id==="fE"&&!b){S.mode.ext=v;if($("#fS").disabled)$("#fS").value=dl(tailOf(v))}
     if(sg.id==="fPk"&&!b)S.mode.pk=v;
     if(b)apply(b);preview()}));
-  const p=$("#fP");if(p)p.addEventListener("change",()=>{$("#fC").value=PM[p.value][2]/1000;$("#fId").textContent=c97(p.value)+" / "+p.value;capHint();if(b)apply(b);preview()});
+  const p=$("#fP");if(p)p.addEventListener("change",()=>{const x=PM[p.value];
+    $("#fSel").innerHTML=x?`<span class="mono">${esc(c97(x[0]))} / ${esc(x[0])}</span><b>${esc(x[1])}</b>Std ${x[2]/1000} t/hr`:`<span class="bd">ยังไม่ได้เลือกสินค้า — พิมพ์แล้วเลือกจากรายการ</span>`;
+    if(!x){capHint();return preview()}$("#fC").value=x[2]/1000;$("#fId").textContent=c97(p.value)+" / "+p.value;capHint();if(b)apply(b);preview()});
   $("#side").addEventListener("click",ev=>{if(ev.target.id==="fRs"){$("#fC").value=PM[$("#fP").value][2]/1000;capHint();if(b)apply(b);preview()}
     if(ev.target.id==="fUp"){const pid=$("#fP").value,v=+$("#fC").value;
       ask(`อัปเดต Std Cap ของ ${PM[pid][1]} (${pid}) จาก ${PM[pid][2]/1000} เป็น ${v} t/hr ใน Product_Detail?`,"มีผลกับการวางแผนครั้งต่อไปของทุกคน · งานที่อยู่ในแผนแล้วไม่เปลี่ยน","ยืนยันอัปเดต").then(async a=>{if(a!=="y")return;
@@ -350,9 +376,9 @@ function bindSide(b){
 function delBlock(b){if(S.ro)return;if(b.r&&S.std){if(b.r==="co"){const L=lane(b.ext),nx=L.slice(L.indexOf(b)+1).find(x=>x.k==="P");if(nx){push();nx.tr="run";S.sel=null;fix();side();gantt();toast("เปลี่ยนเป็น 'เปลี่ยนเบอร์ต่อเนื่อง ไม่หยุด'")}}
   else toast("บล็อกมาตรฐานลบไม่ได้ — เปลี่ยนประเภท/เวลาเองได้ หรือปิด 'ลำดับมาตรฐาน'");return}
   push();B=B.filter(x=>x!==b);S.sel=null;fix();side();gantt()}
-function apply(b){if(S.ro)return;const v=vals();if(v.k==="P"&&!(v.q>0&&v.cap>0))return;push();const L=lane(b.ext),first=rip()&&L[0]===b&&v.ext===b.ext,d=v.s-b.s;
+function apply(b){if(S.ro)return;const v=vals();if(v.k==="P"&&(!PM[v.pid]||!(v.q>0&&v.cap>0)))return;push();const L=lane(b.ext),first=rip()&&L[0]===b&&v.ext===b.ext,d=v.s-b.s;
   Object.assign(b,v.k==="P"?{ext:v.ext,pid:v.pid,q:v.q,cap:v.cap,pk:v.pk,bs:v.bs,tr:v.tr}:{ext:v.ext,proc:v.proc,d:v.d});if(first)L.forEach(x=>x.s+=d);else b.s=v.s;fix();gantt()}
-function add(){if(S.ro)return;const v=vals();if(v.k==="P"&&!(v.q>0&&v.cap>0))return toast("กรอกจำนวนและ Std Cap ก่อน");push();
+function add(){if(S.ro)return;const v=vals();if(v.k==="P"&&!PM[v.pid])return toast("เลือกสินค้าจากรายการก่อน");if(v.k==="P"&&!(v.q>0&&v.cap>0))return toast("กรอกจำนวนและ Std Cap ก่อน");push();
   const nb=v.k==="P"?{id:uid(),ext:v.ext,k:"P",pid:v.pid,q:v.q,cap:v.cap,pk:v.pk,nt:"",pl:"",bd:"",wo:"",bs:v.bs,tr:v.tr,s:v.s+1}:{id:uid(),ext:v.ext,k:"D",proc:v.proc,d:v.d,s:v.s+1};B.push(nb);fix();
   if(nb.s<S.vs||nb.s>S.vs+S.days*24*H)S.vs=new Date(nb.s).setHours(8,0,0,0);$("#fS").value=dl(tailOf(v.ext));gantt();preview();toast(`เพิ่ม ${name(nb)} → ${v.ext} เริ่ม ${fdt(nb.s)} จบ ${fdt(end(nb))}`)}
 let askFn=null;function ask(t,sub,yes,no){$("#cfT").textContent=t;$("#cfS").textContent=sub;$("#cfY").textContent=yes||"ยืนยัน";$("#cfN").textContent=no||"ยกเลิก";$("#cfm").hidden=false;return new Promise(r=>askFn=r)}
@@ -396,7 +422,7 @@ function batch(){let h="";EX.forEach(e=>{const L=lane(e).filter(b=>b.k==="P"),[h
     <input data-f="pl" maxlength="20" value="${esc(b.pl||"")}" placeholder="${Math.round(b.q/bsz(b))}" aria-label="PLAN batch"><input data-f="bd" class="${pc}" maxlength="20" value="${esc(b.bd||"")}" placeholder="—" aria-label="แบทแล้ว">
     <input data-f="wo" maxlength="20" value="${esc(b.wo||"")}" placeholder="—" aria-label="WO"><input data-f="nt" maxlength="60" value="${esc(b.nt||"")}" placeholder="—" aria-label="หมายเหตุ">
     <select data-f="tr" aria-label="ก่อนงานนี้" ${i?"":"disabled"}>${i?trOpts(b.tr):`<option>เริ่มรอบ</option>`}</select><div class="bc-t">${fd(b.s)} ${ft(b.s)}–${ft(end(b))}</div></div>`}).join("")
-  +`<div class="bc add"><div class="bc-h">+ เพิ่มงาน</div><select data-a="p" aria-label="สินค้า" style="grid-row:span 2">${prodOpts("")}</select><input data-a="q" type="number" min="0.5" step="0.5" placeholder="FG ตัน" aria-label="FG ตัน"><input data-a="bs" type="number" min="0.1" step="0.05" placeholder="batch size ${S.bs}" aria-label="batch size"><button data-add="${e}">เพิ่มท้ายคิว</button></div></div></div>`});
+  +`<div class="bc add"><div class="bc-h">+ เพิ่มงาน</div><div style="grid-row:span 2;display:flex;flex-direction:column;justify-content:center;padding:0 6px"><input class="ppq" data-a="pq" autocomplete="off" placeholder="พิมพ์ชื่อ/รหัส" aria-label="สินค้า" style="min-height:34px;font-size:13px;text-align:left;border:1px solid var(--line);border-radius:6px;background:var(--card)"><input type="hidden" data-a="p"></div><input data-a="q" type="number" min="0.5" step="0.5" placeholder="FG ตัน" aria-label="FG ตัน"><input data-a="bs" type="number" min="0.1" step="0.05" placeholder="batch size ${S.bs}" aria-label="batch size"><button data-add="${e}">เพิ่มท้ายคิว</button></div></div></div>`});
   $("#bl").innerHTML=h;if(S.ro)$("#bl").querySelectorAll("input,select").forEach(x=>x.disabled=true)}
 const laneKey=()=>JSON.stringify(EX.map(e=>lane(e).map(b=>[b.id,b.s,dur(b)])));
 function commitLanes(sn,k0){fix();if(laneKey()===k0){B=JSON.parse(sn);return gantt()}S.hist.push(sn);S.dirty++;gantt()}
@@ -404,7 +430,7 @@ function moveJob(id,te,idx){const sn=JSON.stringify(B),k0=laneKey(),b=B.find(x=>
   const s0=tgt.length?tgt[0].s:snap(Date.now());tgt.splice(idx<Pl.length?tgt.indexOf(Pl[idx]):Pl.length?tgt.indexOf(Pl[Pl.length-1])+1:tgt.length,0,b);
   if(se!==te){const src=lane(se).filter(x=>x!==b);setLane(se,src)}setLane(te,retime(tgt,s0));commitLanes(sn,k0)}
 function delJob(id){const sn=JSON.stringify(B),k0=laneKey();B=B.filter(x=>x.id!==id);if(S.sel===id){S.sel=null;side()}commitLanes(sn,k0)}
-function addTo(e,pid,q,bs){if(!(q>0))return toast("กรอกจำนวนตันก่อน");const sn=JSON.stringify(B),k0=laneKey();
+function addTo(e,pid,q,bs){if(!PM[pid])return toast("เลือกสินค้าจากรายการก่อน");if(!(q>0))return toast("กรอกจำนวนตันก่อน");const sn=JSON.stringify(B),k0=laneKey();
   B.push({id:uid(),ext:e,k:"P",pid,q,cap:mcap(pid)||3,pk:"",nt:"",pl:"",bd:"",wo:"",bs:bs>0?bs:null,tr:"co",s:tailOf(e)+1});commitLanes(sn,k0);toast(`เพิ่ม ${c97(pid)} ${q} t → ${e}`)}
 function changeDur(b,fn){push();fn();fix();gantt()}
 {const bl=$("#bl");
