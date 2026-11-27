@@ -72,8 +72,8 @@ input:focus,select:focus,button:focus-visible{outline:2px solid var(--blue);outl
 .blk.pin::before{content:"";position:absolute;left:0;top:0;border-top:12px solid #162C9A;border-right:12px solid transparent;z-index:1}.blk.late{outline:3px dashed var(--bad);outline-offset:1px}
 .bc input.pinned{background:#DCEBFF;font-weight:600}.bc input.autot{color:#8a8a8a}.bc input.firstt{outline:2px solid var(--blue);outline-offset:-2px;font-weight:600}.bc-e{font-size:11px;display:flex;align-items:center;justify-content:center;gap:4px;color:#444}.bc-e button{border:0;background:none;color:#0B4FBF;text-decoration:underline;font:inherit;font-size:11px;cursor:pointer;padding:0}
 .blk.sel{outline:3px solid var(--blue);outline-offset:1px;z-index:4}.blk.ov{outline:3px dashed var(--bad);outline-offset:1px}
-.bx{display:none;position:absolute;width:22px;height:22px;border-radius:50%;border:2px solid #fff;font:700 15px/1 system-ui,sans-serif;color:#fff;cursor:pointer;align-items:center;justify-content:center;padding:0;z-index:8;box-shadow:0 1px 4px #0006}
-.bxa{background:var(--blue);right:-12px;bottom:-10px}.bxd{background:var(--bad);right:-10px;top:-10px}.blk:hover .bx,.blk.sel .bx{display:flex}.blk:hover{z-index:7}
+.bx{display:none;position:absolute;width:26px;height:26px;border-radius:50%;border:2px solid #fff;font:700 15px/1 system-ui,sans-serif;color:#fff;cursor:pointer;align-items:center;justify-content:center;padding:0;z-index:8;box-shadow:0 1px 4px #0006}
+.bxa{background:var(--blue);right:-13px;bottom:-11px}.bxd{background:var(--bad);right:-11px;top:-11px}.blk:hover .bx,.blk.sel .bx{display:flex}.blk:hover{z-index:7}
 @media(hover:none){.blk.sel .bx{display:flex}}
 .blk .rs{position:absolute;right:0;top:0;bottom:0;width:7px;cursor:ew-resize;background:#0002;grid-row:1/3}
 .tip{position:fixed;z-index:20;background:#1d2440;color:#fff;font-size:12px;padding:6px 8px;border-radius:6px;pointer-events:none;display:none;white-space:nowrap}
@@ -270,7 +270,7 @@ function tailOf(e){const L=B.filter(b=>b.ext===e);return L.length?Math.max(...L.
 // ---- Gantt ----
 function gantt(){
   const hrs=S.days*24,W=hrs*S.pxh,ve=S.vs+hrs*H,g=$("#g");let h="";
-  g.style.width=W+"px";g.style.height=HD+GH*2+"px";
+  g.style.width=W+"px";g.style.height=HD+GH*2+14+"px";
   for(let t=S.vs;t<ve;){const d=new Date(t);d.setHours(24,0,0,0);const e=Math.min(d.getTime(),ve);h+=`<div class="dh" style="left:${(t-S.vs)/H*S.pxh}px;width:${(e-t)/H*S.pxh}px">${fd(t)}</div>`;t=e}
   for(let i=0;i<hrs;i++){const hr=new Date(S.vs+i*H).getHours();h+=`<div class="hh" style="left:${i*S.pxh}px;width:${S.pxh}px">${S.pxh>=30||hr%2==0?hr+":00":""}</div>`;
     h+=`<div class="vl ${hr==8?"pd":hr%8==0?"sh":""}" style="left:${i*S.pxh}px"></div>`}
@@ -310,7 +310,7 @@ function status(){const cw=wkOf(S.vs),js=JSON.stringify({wk:wkKey(cw),b:docW(cw)
 let drag=null;const tip=$("#tip"),rip=()=>$("#rip").checked;
 const place=b=>{const el=document.querySelector(`.blk[data-id="${b.id}"]`);if(!el)return;el.style.left=(b.s-S.vs)/H*S.pxh+"px";el.style.top=HD+EX.indexOf(b.ext)*GH+2+"px";el.style.width=Math.max(dur(b)/60*S.pxh,6)+"px";
   if(b.k==="P"){el.querySelector(".t").firstChild.textContent=`Cap ${b.cap} t/hr · ${bt(b)} B`;el.querySelector(".b").textContent=`${name(b)} (${b.q} t)`}};
-const showTip=(ev,t)=>{tip.style.display="block";tip.style.left=ev.clientX+12+"px";tip.style.top=ev.clientY+12+"px";tip.textContent=t};
+const showTip=(ev,t)=>{tip.style.display="block";tip.textContent=t;tip.style.left=Math.min(ev.clientX+12,innerWidth-tip.offsetWidth-8)+"px";tip.style.top=Math.max(4,ev.clientY-tip.offsetHeight-14)+"px"};
 $("#g").addEventListener("pointerdown",ev=>{if(ev.target.closest(".bx"))return;const el=ev.target.closest(".blk");if(!el)return;if(S.ro){S.sel=el.dataset.id;side();gantt();return}const b=B.find(x=>x.id===el.dataset.id),L=lane(b.ext);
   drag={b,el,x0:ev.clientX,s0:b.s,d0:dur(b),e0:b.ext,rs:ev.target.classList.contains("rs"),mv:false,sn:JSON.stringify(B),first:L[0]===b,ls:L.map(x=>[x,x.s,x.pin])};el.setPointerCapture(ev.pointerId)});
 $("#g").addEventListener("pointermove",ev=>{const el=ev.target.closest(".blk");
@@ -389,7 +389,8 @@ function side(){const b=S.sel&&B.find(x=>x.id===S.sel),m=b?{ext:b.ext,k:b.k,pk:b
   ${k==="P"?`<div class="hint"><span>กำหนดวัน-เวลา = วางล่วงหน้าได้ (เว้นช่องว่าง) · งานตามหลังต่อจากงานนี้</span></div>`:""}${b&&b.late?`<div class="hint"><span class="bd">เลยเวลาที่กำหนด ${fdt(b.pin)} — งานก่อนหน้ายังไม่จบ (เริ่มจริง ${fdt(b.s)})</span></div>`:""}`}
   ${b&&b.k==="P"&&b.sk&&(b.sk.rdy||b.sk.end||b.sk.clr)?`<div class="hint" style="margin-top:8px"><span>ปิดไว้: ${[b.sk.rdy&&"แจ้งพร้อมเดิน (ก่อนงานนี้)",b.sk.end&&"หยุดเครื่อง (ท้ายรอบ)",b.sk.clr&&"เคลียร์ระบบลำเลียง (ท้ายรอบ)"].filter(Boolean).join(" · ")}</span><a id="fSk">คืนลำดับมาตรฐาน</a></div>`:""}
   <div class="prev" id="fPv"></div>
-  ${b?`<div class="row2" style="margin-top:12px">${auto&&b.r!=="co"?`<button class="btn g" id="fStd">คืนค่า std</button>`:`<button class="btn d" id="fDel">${auto?"ไม่หยุด":"ลบงานนี้"}</button>`}<button class="btn g" id="fOk">เสร็จ</button></div>`:`<button class="btn p" id="fAdd">เพิ่มลงแผน</button>`}`;
+  ${b&&!S.ro?`<button class="btn g" id="fAddRt" style="width:100%;margin-top:12px;border-color:var(--blue);color:var(--blue)">+ เพิ่ม Runtime ต่อจากนี้</button>`:""}
+  ${b?`<div class="row2" style="margin-top:8px">${auto&&b.r!=="co"?`<button class="btn g" id="fStd">คืนค่า std</button>`:`<button class="btn d" id="fDel">${auto?"− ไม่หยุด":b.k==="D"?"− ลบ Runtime นี้":"ลบงานนี้"}</button>`}<button class="btn g" id="fOk">เสร็จ</button></div>`:`<button class="btn p" id="fAdd">เพิ่มลงแผน</button>`}`;
   bindSide(b);capHint();preview();if(S.ro)$("#side").querySelectorAll("input,select,button:not(#fOk),.seg button").forEach(x=>x.disabled=true)}
 function capHint(){const p=$("#fP"),c=$("#fC");if(!p)return;const ms=mcap(p.value),v=+c.value;if(!p.value){$("#fM").textContent="";return}if(ms==null){$("#fM").textContent="ไม่มีใน master";return}
   $("#fM").innerHTML=`master ${ms} t/hr`+(v>0&&v!==ms?` · <a id="fRs">ใช้ค่า master</a> · ${S.ro?"":`<a id="fUp">อัปเดต master เป็น ${v}</a>`}`:"")}
@@ -418,7 +419,7 @@ function bindSide(b){
   const r=$("#fR");if(r)r.addEventListener("change",()=>{$("#fD").value=RM[r.value][1]/60;if(b)apply(b);preview()});
   ["#fQ","#fC","#fD","#fS","#fB"].forEach(id=>{const e=$(id);if(e){e.addEventListener("input",()=>{preview();if(id==="#fC")capHint()});if(b)e.addEventListener("change",()=>apply(b))}});
   const t=$("#fT");if(t&&b)t.addEventListener("change",()=>apply(b));
-  if(b){const d=$("#fDel");if(d)d.onclick=()=>delBlock(b);const k=$("#fSk");if(k)k.onclick=()=>{push();b.sk=null;fix();side();gantt()};const st=$("#fStd");if(st)st.onclick=()=>{push();b.proc=DEF[b.r];b.d=RM[b.proc][1];fix();side();gantt()};$("#fOk").onclick=()=>{S.sel=null;side();gantt()}}
+  if(b){const d=$("#fDel");if(d)d.onclick=()=>delBlock(b);const ar=$("#fAddRt");if(ar)ar.onclick=()=>openRt(ar,b.id);const k=$("#fSk");if(k)k.onclick=()=>{push();b.sk=null;fix();side();gantt()};const st=$("#fStd");if(st)st.onclick=()=>{push();b.proc=DEF[b.r];b.d=RM[b.proc][1];fix();side();gantt()};$("#fOk").onclick=()=>{S.sel=null;side();gantt()}}
   else $("#fAdd").onclick=add}
 function delBlock(b){if(S.ro)return;if(b.r&&S.std){if(b.r==="co"){const L=lane(b.ext),nx=L.slice(L.indexOf(b)+1).find(x=>x.k==="P");if(nx){push();nx.tr="run";S.sel=null;fix();side();gantt();toast("เปลี่ยนเป็น 'เปลี่ยนเบอร์ต่อเนื่อง ไม่หยุด'")}}
   else{const L=lane(b.ext),i=L.indexOf(b),p=b.r==="rdy"?L.slice(i+1).find(x=>x.k==="P"):L.slice(0,i).reverse().find(x=>x.k==="P");
@@ -593,6 +594,12 @@ async function start(){const q=new URLSearchParams(location.search),tk=q.get("hu
   setMasters(m);S.me=r.name;S.ro=!r.edit;document.body.classList.toggle("ro",S.ro);$("#who").textContent=r.name+" · "+(S.ro?"ดูอย่างเดียว":"แก้ไขได้");
   ingest(r.plans,a,b);fix();baseline();side();gantt();$("#gate").hidden=true}
 start();
+// เวอร์ชันใหม่: เช็คหน้าเว็บตัวเองตอนเปิด/กลับมาที่แท็บ → ขึ้นแถบให้กดโหลดใหม่ (ไม่ต้องจำกด F5)
+const EP_BUILD="202611271401";let epChk=0;
+async function chkVer(){if(Date.now()-epChk<5*60e3)return;epChk=Date.now();try{const h=await (await fetch(location.pathname+"?_="+Date.now(),{cache:"no-store"})).text(),m=h.match(/const EP_BUILD="([0-9]+)"/);
+  if(m&&m[1]!==EP_BUILD&&!$("#verbar")){const d=document.createElement("div");d.id="verbar";d.style.cssText="position:fixed;left:50%;top:64px;transform:translateX(-50%);z-index:50;background:#FAAA20;color:#2E2E2E;padding:10px 16px;border-radius:10px;font-weight:600;box-shadow:0 4px 14px #0004;cursor:pointer";
+    d.textContent="มีเวอร์ชันใหม่ · แตะเพื่อโหลดใหม่"+(changed().length?" (บันทึกแผนก่อน)":"");d.onclick=()=>{if(!S.ro&&changed().length)return toast("บันทึกแผนก่อนโหลดใหม่");location.replace(location.pathname+"?v="+m[1])};document.body.appendChild(d)}}catch(e){}}
+setTimeout(chkVer,4000);document.addEventListener("visibilitychange",()=>{if(!document.hidden)chkVer()});
 }
 </script>
 </body>
